@@ -1,22 +1,39 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from '@/contexts/AuthContext';
 
 const Signup = () => {
-  const { toast } = useToast();
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { signup } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // This is just a mock function for now
-    toast({
-      title: "Signup functionality not implemented yet",
-      description: "This is just a demo. Full authentication will be implemented in the future.",
-    });
+    setIsLoading(true);
+    
+    try {
+      await signup({
+        firstName,
+        lastName,
+        email,
+        password,
+        companyName,
+      });
+      // Navigation is handled in the signup function
+    } catch (error) {
+      console.error('Signup error:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -51,30 +68,60 @@ const Signup = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First name</Label>
-                  <Input id="firstName" type="text" required />
+                  <Input 
+                    id="firstName" 
+                    type="text" 
+                    required 
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last name</Label>
-                  <Input id="lastName" type="text" required />
+                  <Input 
+                    id="lastName" 
+                    type="text" 
+                    required 
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                  />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="name@example.com" required />
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder="name@example.com" 
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" required />
+                <Input 
+                  id="password" 
+                  type="password" 
+                  required 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
                 <p className="text-xs text-gray-500">
                   Must be at least 8 characters long
                 </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="companyName">Company name (optional)</Label>
-                <Input id="companyName" type="text" />
+                <Input 
+                  id="companyName" 
+                  type="text"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                />
               </div>
-              <Button type="submit" className="w-full">
-                Create account
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Creating account...' : 'Create account'}
               </Button>
             </form>
           </CardContent>

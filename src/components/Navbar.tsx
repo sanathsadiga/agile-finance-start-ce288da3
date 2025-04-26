@@ -2,10 +2,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User } from "lucide-react";
+import { useAuth } from '@/contexts/AuthContext';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isAuthenticated, user } = useAuth();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -32,12 +34,25 @@ const Navbar = () => {
             Pricing
           </Link>
           <div className="pl-6 space-x-2 border-l border-gray-200">
-            <Link to="/login">
-              <Button variant="outline">Log in</Button>
-            </Link>
-            <Link to="/signup">
-              <Button>Sign up</Button>
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link to="/dashboard">
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Dashboard
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/login">
+                  <Button variant="outline">Log in</Button>
+                </Link>
+                <Link to="/signup">
+                  <Button>Sign up</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
@@ -75,12 +90,23 @@ const Navbar = () => {
               Pricing
             </Link>
             <div className="pt-4 space-y-2 border-t border-gray-200">
-              <Link to="/login" className="w-full" onClick={() => setIsMenuOpen(false)}>
-                <Button variant="outline" className="w-full">Log in</Button>
-              </Link>
-              <Link to="/signup" className="w-full" onClick={() => setIsMenuOpen(false)}>
-                <Button className="w-full">Sign up</Button>
-              </Link>
+              {isAuthenticated ? (
+                <Link to="/dashboard" className="w-full" onClick={() => setIsMenuOpen(false)}>
+                  <Button className="w-full flex items-center justify-center gap-2">
+                    <User className="h-4 w-4" />
+                    Dashboard
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link to="/login" className="w-full" onClick={() => setIsMenuOpen(false)}>
+                    <Button variant="outline" className="w-full">Log in</Button>
+                  </Link>
+                  <Link to="/signup" className="w-full" onClick={() => setIsMenuOpen(false)}>
+                    <Button className="w-full">Sign up</Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
