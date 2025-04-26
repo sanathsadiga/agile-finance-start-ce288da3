@@ -1,10 +1,14 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell as RechartsCell } from "recharts";
 import StatsCard from "@/components/stats/StatsCard";
-import { DollarSign, TrendingUp, CreditCard, ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { DollarSign, TrendingUp, CreditCard, ArrowDownRight, ArrowUpRight, Download, Filter } from "lucide-react";
+import DashboardHeader from '@/components/layout/DashboardHeader';
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const revenueData = [
   { name: "Jan", revenue: 2400 },
@@ -35,16 +39,53 @@ const categoryData = [
 const COLORS = ["#9b87f5", "#7E69AB", "#6E59A5", "#1A1F2C", "#D6BCFA"];
 
 const Reports = () => {
+  const { toast } = useToast();
+  const [timeframe, setTimeframe] = useState("month");
+  const [reportType, setReportType] = useState("overview");
+
+  const handleDownloadReport = () => {
+    toast({
+      title: "Report download started",
+      description: "Your financial report is being generated and will download shortly."
+    });
+  };
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-gray-50">
+      <DashboardHeader />
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold tracking-tight">Financial Reports</h2>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Financial Reports</h2>
+            <p className="text-muted-foreground">Analyze your business performance and make data-driven decisions</p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Select value={timeframe} onValueChange={setTimeframe}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Select timeframe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="month">Last Month</SelectItem>
+                <SelectItem value="quarter">Last Quarter</SelectItem>
+                <SelectItem value="year">Last Year</SelectItem>
+                <SelectItem value="custom">Custom Range</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Button onClick={handleDownloadReport} className="w-full sm:w-auto">
+              <Download className="h-4 w-4 mr-2" />
+              Download Report
+            </Button>
+          </div>
         </div>
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList>
+        
+        <Tabs defaultValue="overview" className="space-y-4" value={reportType} onValueChange={setReportType}>
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="detailed">Detailed Analysis</TabsTrigger>
+            <TabsTrigger value="income">Income</TabsTrigger>
+            <TabsTrigger value="expenses">Expenses</TabsTrigger>
+            <TabsTrigger value="taxes">Tax Report</TabsTrigger>
           </TabsList>
           
           <TabsContent value="overview" className="space-y-4">
@@ -77,11 +118,17 @@ const Reports = () => {
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
               <Card>
-                <CardHeader>
-                  <CardTitle>Revenue vs Expenses</CardTitle>
-                  <CardDescription>
-                    Six month comparison of revenue and expenses
-                  </CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Revenue vs Expenses</CardTitle>
+                    <CardDescription>
+                      Six month comparison of revenue and expenses
+                    </CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm">
+                    <Filter className="h-3.5 w-3.5 mr-2" />
+                    Filter
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={350}>
@@ -106,11 +153,17 @@ const Reports = () => {
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle>Expense Breakdown</CardTitle>
-                  <CardDescription>
-                    Distribution of expenses by category
-                  </CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Expense Breakdown</CardTitle>
+                    <CardDescription>
+                      Distribution of expenses by category
+                    </CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm">
+                    <Filter className="h-3.5 w-3.5 mr-2" />
+                    Filter
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={350}>
@@ -126,7 +179,7 @@ const Reports = () => {
                         label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                       >
                         {categoryData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} dataKey="value" />
+                          <RechartsCell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
                       <Tooltip />
@@ -137,17 +190,53 @@ const Reports = () => {
             </div>
           </TabsContent>
           
-          <TabsContent value="detailed" className="space-y-4">
-            {/* Additional detailed reporting content can go here */}
+          <TabsContent value="income" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Detailed Financial Analysis</CardTitle>
+                <CardTitle>Income Analysis</CardTitle>
                 <CardDescription>
-                  Complete breakdown of financial data
+                  Detailed breakdown of your revenue sources
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p>Detailed financial reports coming soon...</p>
+                <p className="text-sm text-muted-foreground mb-6">Analyze your income streams and identify growth opportunities.</p>
+                <div className="h-[400px] flex items-center justify-center border border-dashed rounded-md">
+                  <p className="text-muted-foreground">Income report visualization will appear here</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="expenses" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Expense Analysis</CardTitle>
+                <CardDescription>
+                  Detailed breakdown of your business expenses
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-6">Track spending patterns and identify cost-saving opportunities.</p>
+                <div className="h-[400px] flex items-center justify-center border border-dashed rounded-md">
+                  <p className="text-muted-foreground">Expense report visualization will appear here</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="taxes" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Tax Report</CardTitle>
+                <CardDescription>
+                  Estimated tax obligations and deductions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-6">Stay ahead of your tax obligations with quarterly estimates.</p>
+                <div className="h-[400px] flex items-center justify-center border border-dashed rounded-md">
+                  <p className="text-muted-foreground">Tax report visualization will appear here</p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
