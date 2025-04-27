@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import DashboardHeader from '@/components/layout/DashboardHeader';
 import InvoiceForm from '@/components/invoices/InvoiceForm';
-import { useFinancialData } from '@/hooks/useFinancialData';
+import { useFinancialData, Invoice } from '@/hooks/useFinancialData';
 
 const Invoices = () => {
   const { toast } = useToast();
@@ -43,7 +43,7 @@ const Invoices = () => {
       dueDate: invoiceData.dueDate,
       items: invoiceData.items,
       amount: invoiceData.total,
-      status: invoiceData.status,
+      status: invoiceData.status as 'paid' | 'pending' | 'overdue' | 'draft' | 'unpaid',
       notes: invoiceData.notes
     };
     
