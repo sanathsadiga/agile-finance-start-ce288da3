@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -10,55 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import DashboardHeader from '@/components/layout/DashboardHeader';
 import ExpenseForm from '@/components/expenses/ExpenseForm';
-
-// Placeholder data
-const expenses = [
-  {
-    id: "EXP-001",
-    description: "Software Subscription",
-    category: "Software",
-    amount: "$49.99",
-    date: "2023-04-22",
-    receipt: true,
-    vendor: "Adobe Inc."
-  },
-  {
-    id: "EXP-002",
-    description: "Office Supplies",
-    category: "Office",
-    amount: "$126.50",
-    date: "2023-04-18",
-    receipt: true,
-    vendor: "Office Depot"
-  },
-  {
-    id: "EXP-003",
-    description: "Client Lunch",
-    category: "Meals",
-    amount: "$78.25",
-    date: "2023-04-15",
-    receipt: false,
-    vendor: "Olive Garden"
-  },
-  {
-    id: "EXP-004",
-    description: "Domain Renewal",
-    category: "Software",
-    amount: "$14.99",
-    date: "2023-04-12",
-    receipt: false,
-    vendor: "GoDaddy"
-  },
-  {
-    id: "EXP-005",
-    description: "Business Travel",
-    category: "Travel",
-    amount: "$350.00",
-    date: "2023-04-08",
-    receipt: true,
-    vendor: "Delta Airlines"
-  }
-];
+import { useFinancialData, Expense } from '@/hooks/useFinancialData';
 
 // Categories with colors
 const categories = {
@@ -66,11 +18,16 @@ const categories = {
   "Office": "bg-purple-100 text-purple-800",
   "Meals": "bg-green-100 text-green-800",
   "Travel": "bg-orange-100 text-orange-800",
+  "Marketing": "bg-yellow-100 text-yellow-800",
+  "Utilities": "bg-indigo-100 text-indigo-800",
+  "Rent": "bg-pink-100 text-pink-800",
+  "Salaries": "bg-cyan-100 text-cyan-800",
   "Other": "bg-gray-100 text-gray-800"
 };
 
 const Expenses = () => {
   const { toast } = useToast();
+  const { expenses, addExpense, updateExpense } = useFinancialData();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [showExpenseForm, setShowExpenseForm] = useState(false);
@@ -98,17 +55,39 @@ const Expenses = () => {
   };
 
   const handleSaveExpense = (expenseData: any) => {
-    toast({
-      title: selectedExpense ? "Expense updated" : "Expense added",
-      description: `Expense has been ${selectedExpense ? "updated" : "added"} successfully.`
-    });
+    const expenseAmount = parseFloat(expenseData.amount.replace(/[^0-9.]/g, ''));
+    
+    const expenseRecord = {
+      description: expenseData.description,
+      vendor: expenseData.vendor,
+      category: expenseData.category,
+      amount: expenseAmount,
+      date: expenseData.date,
+      notes: expenseData.notes,
+      receipt: expenseData.receipt
+    };
+    
+    if (selectedExpense) {
+      updateExpense({ ...expenseRecord, id: selectedExpense.id });
+      toast({
+        title: "Expense updated",
+        description: "Expense has been updated successfully."
+      });
+    } else {
+      const newExpense = addExpense(expenseRecord);
+      toast({
+        title: "Expense added",
+        description: `Expense ${newExpense.id} has been added successfully.`
+      });
+    }
+    
     setShowExpenseForm(false);
   };
 
   // Filter expenses based on search and category
   const filteredExpenses = expenses.filter(expense => {
     const matchesSearch = expense.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         expense.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (expense.vendor && expense.vendor.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          expense.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || expense.category === categoryFilter;
     return matchesSearch && matchesCategory;
@@ -156,6 +135,10 @@ const Expenses = () => {
                     <SelectItem value="Office">Office</SelectItem>
                     <SelectItem value="Meals">Meals</SelectItem>
                     <SelectItem value="Travel">Travel</SelectItem>
+                    <SelectItem value="Marketing">Marketing</SelectItem>
+                    <SelectItem value="Utilities">Utilities</SelectItem>
+                    <SelectItem value="Rent">Rent</SelectItem>
+                    <SelectItem value="Salaries">Salaries</SelectItem>
                     <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
@@ -193,7 +176,7 @@ const Expenses = () => {
                           {expense.category}
                         </Badge>
                       </td>
-                      <td className="py-4 px-4 text-red-600">{expense.amount}</td>
+                      <td className="py-4 px-4 text-red-600">${typeof expense.amount === 'number' ? expense.amount.toFixed(2) : expense.amount}</td>
                       <td className="py-4 px-4">{expense.date}</td>
                       <td className="py-4 px-4">
                         {expense.receipt ? (

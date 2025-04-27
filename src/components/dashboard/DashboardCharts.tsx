@@ -1,19 +1,37 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFinancialData } from '@/hooks/useFinancialData';
 
 const DashboardCharts = () => {
+  const [timePeriod, setTimePeriod] = useState('6months');
   const { calculateFinancialMetrics } = useFinancialData();
   const { monthlyData } = calculateFinancialMetrics();
+
+  // Filter data based on selected time period
+  const filteredData = (() => {
+    switch (timePeriod) {
+      case '30days':
+        return monthlyData.slice(-1);
+      case '3months':
+        return monthlyData.slice(-3);
+      case '12months':
+        return monthlyData; // Assumes we have 12 months of data
+      default: // 6months
+        return monthlyData.slice(-6);
+    }
+  })();
 
   return (
     <Card className="col-span-4">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Financial Overview</CardTitle>
-        <Select defaultValue="6months">
+        <Select 
+          value={timePeriod} 
+          onValueChange={setTimePeriod}
+        >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select period" />
           </SelectTrigger>
@@ -28,13 +46,13 @@ const DashboardCharts = () => {
       <CardContent className="pl-2">
         <ResponsiveContainer width="100%" height={350}>
           <BarChart
-            data={monthlyData}
+            data={filteredData}
             margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis />
-            <Tooltip formatter={(value) => `$${value}`} />
+            <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
             <Legend />
             <Bar dataKey="revenue" fill="#9b87f5" name="Revenue" />
             <Bar dataKey="expenses" fill="#ef4444" name="Expenses" />

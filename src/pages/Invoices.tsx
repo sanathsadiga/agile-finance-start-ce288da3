@@ -3,65 +3,18 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Download, MoreHorizontal, Plus, Search, Filter, Mail } from "lucide-react";
+import { FileText, Download, MoreHorizontal, Plus, Search, Mail } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import DashboardHeader from '@/components/layout/DashboardHeader';
 import InvoiceForm from '@/components/invoices/InvoiceForm';
-
-// Placeholder data with more properties
-const invoices = [
-  {
-    id: "INV-1234",
-    customer: "Acme Inc.",
-    email: "billing@acmeinc.com",
-    amount: "$1,200.00",
-    date: "2023-04-25",
-    dueDate: "2023-05-25",
-    status: "unpaid"
-  },
-  {
-    id: "INV-1233",
-    customer: "Globex Corp",
-    email: "accounts@globexcorp.com",
-    amount: "$2,500.00",
-    date: "2023-04-20",
-    dueDate: "2023-05-20",
-    status: "paid"
-  },
-  {
-    id: "INV-1232",
-    customer: "Initech",
-    email: "finance@initech.com",
-    amount: "$750.00",
-    date: "2023-04-15",
-    dueDate: "2023-05-15",
-    status: "paid"
-  },
-  {
-    id: "INV-1231",
-    customer: "Umbrella Corp",
-    email: "payments@umbrellacorp.com",
-    amount: "$3,000.00",
-    date: "2023-04-10",
-    dueDate: "2023-05-10",
-    status: "overdue"
-  },
-  {
-    id: "INV-1230",
-    customer: "Stark Industries",
-    email: "invoices@stark.com",
-    amount: "$1,800.00",
-    date: "2023-04-05",
-    dueDate: "2023-05-05",
-    status: "unpaid"
-  }
-];
+import { useFinancialData } from '@/hooks/useFinancialData';
 
 const Invoices = () => {
   const { toast } = useToast();
+  const { invoices, addInvoice, updateInvoice } = useFinancialData();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showInvoiceForm, setShowInvoiceForm] = useState(false);
@@ -82,10 +35,32 @@ const Invoices = () => {
   };
 
   const handleSaveInvoice = (invoiceData: any) => {
-    toast({
-      title: selectedInvoice ? "Invoice updated" : "Invoice created",
-      description: `Invoice ${selectedInvoice ? selectedInvoice.id : "has been"} ${selectedInvoice ? "updated" : "created"} successfully.`
-    });
+    // Format the invoice data
+    const formattedInvoice = {
+      customer: invoiceData.customer,
+      email: invoiceData.email,
+      date: invoiceData.date,
+      dueDate: invoiceData.dueDate,
+      items: invoiceData.items,
+      amount: invoiceData.total,
+      status: invoiceData.status,
+      notes: invoiceData.notes
+    };
+    
+    if (selectedInvoice) {
+      updateInvoice({ ...formattedInvoice, id: selectedInvoice.id });
+      toast({
+        title: "Invoice updated",
+        description: `Invoice ${selectedInvoice.id} has been updated successfully.`
+      });
+    } else {
+      const newInvoice = addInvoice(formattedInvoice);
+      toast({
+        title: "Invoice created",
+        description: `Invoice ${newInvoice.id} has been created successfully.`
+      });
+    }
+    
     setShowInvoiceForm(false);
   };
   
@@ -108,6 +83,7 @@ const Invoices = () => {
       case 'paid':
         return 'bg-green-100 text-green-800 hover:bg-green-200';
       case 'unpaid':
+      case 'pending':
         return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
       case 'overdue':
         return 'bg-red-100 text-red-800 hover:bg-red-200';
@@ -118,7 +94,7 @@ const Invoices = () => {
 
   // Filter invoices based on search and status
   const filteredInvoices = invoices.filter(invoice => {
-    const matchesSearch = invoice.customer.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const matchesSearch = (invoice.customer && invoice.customer.toLowerCase().includes(searchTerm.toLowerCase())) || 
                          invoice.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -165,6 +141,7 @@ const Invoices = () => {
                     <SelectItem value="paid">Paid</SelectItem>
                     <SelectItem value="unpaid">Unpaid</SelectItem>
                     <SelectItem value="overdue">Overdue</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -199,7 +176,9 @@ const Invoices = () => {
                           <p className="text-xs text-gray-500">{invoice.email}</p>
                         </div>
                       </td>
-                      <td className="py-4 px-4">{invoice.amount}</td>
+                      <td className="py-4 px-4">
+                        ${typeof invoice.amount === 'number' ? invoice.amount.toFixed(2) : invoice.amount}
+                      </td>
                       <td className="py-4 px-4">{invoice.date}</td>
                       <td className="py-4 px-4">{invoice.dueDate}</td>
                       <td className="py-4 px-4">
@@ -207,9 +186,11 @@ const Invoices = () => {
                           className={`${getStatusColor(invoice.status)} cursor-pointer transition-colors`}
                           onClick={() => {
                             if (invoice.status === 'unpaid') {
+                              const updatedInvoice = {...invoice, status: 'paid'};
+                              updateInvoice(updatedInvoice);
                               toast({ 
-                                title: "Mark as paid?", 
-                                description: `Would you like to mark invoice ${invoice.id} as paid?` 
+                                title: "Invoice marked as paid", 
+                                description: `Invoice ${invoice.id} has been marked as paid.` 
                               });
                             }
                           }}
@@ -222,7 +203,7 @@ const Invoices = () => {
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            onClick={() => handleSendEmail(invoice.id, invoice.email)}
+                            onClick={() => invoice.email && handleSendEmail(invoice.id, invoice.email)}
                             title="Send email"
                           >
                             <Mail className="h-4 w-4" />
