@@ -1,14 +1,18 @@
 
 import React from 'react';
 import { DollarSign, TrendingUp, CreditCard, ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { useFinancialData } from '@/hooks/useFinancialData';
 
 const SummaryCards = () => {
-  // This would normally fetch data from an API
-  const summaryData = {
-    outstandingInvoices: { value: 12500, change: 8.2, isPositive: true },
-    totalRevenue: { value: 48500, change: 12.7, isPositive: true },
-    totalExpenses: { value: 27500, change: 4.3, isPositive: false },
-    netProfit: { value: 21000, change: 15.8, isPositive: true }
+  const { calculateFinancialMetrics } = useFinancialData();
+  const { summary } = calculateFinancialMetrics();
+
+  // Calculate month-over-month changes
+  const changePercentages = {
+    outstandingInvoices: 8.2, // These would be calculated from historical data in a real app
+    totalRevenue: 12.7,
+    totalExpenses: 4.3,
+    netProfit: 15.8
   };
 
   return (
@@ -20,16 +24,10 @@ const SummaryCards = () => {
             <DollarSign className="h-4 w-4 text-blue-500" />
           </div>
         </div>
-        <p className="text-2xl font-bold mt-2">${summaryData.outstandingInvoices.value.toLocaleString()}</p>
+        <p className="text-2xl font-bold mt-2">${summary.outstandingInvoices.toLocaleString()}</p>
         <div className="flex items-center mt-2 text-xs">
-          {summaryData.outstandingInvoices.isPositive ? (
-            <ArrowUpRight className="h-3 w-3 text-green-500 mr-1" />
-          ) : (
-            <ArrowDownRight className="h-3 w-3 text-red-500 mr-1" />
-          )}
-          <span className={summaryData.outstandingInvoices.isPositive ? 'text-green-500' : 'text-red-500'}>
-            {summaryData.outstandingInvoices.change}%
-          </span>
+          <ArrowUpRight className="h-3 w-3 text-green-500 mr-1" />
+          <span className="text-green-500">{changePercentages.outstandingInvoices}%</span>
           <span className="text-gray-500 ml-1">from last month</span>
         </div>
       </div>
@@ -41,16 +39,10 @@ const SummaryCards = () => {
             <DollarSign className="h-4 w-4 text-green-500" />
           </div>
         </div>
-        <p className="text-2xl font-bold mt-2">${summaryData.totalRevenue.toLocaleString()}</p>
+        <p className="text-2xl font-bold mt-2">${summary.totalRevenue.toLocaleString()}</p>
         <div className="flex items-center mt-2 text-xs">
-          {summaryData.totalRevenue.isPositive ? (
-            <ArrowUpRight className="h-3 w-3 text-green-500 mr-1" />
-          ) : (
-            <ArrowDownRight className="h-3 w-3 text-red-500 mr-1" />
-          )}
-          <span className={summaryData.totalRevenue.isPositive ? 'text-green-500' : 'text-red-500'}>
-            {summaryData.totalRevenue.change}%
-          </span>
+          <ArrowUpRight className="h-3 w-3 text-green-500 mr-1" />
+          <span className="text-green-500">{changePercentages.totalRevenue}%</span>
           <span className="text-gray-500 ml-1">from last month</span>
         </div>
       </div>
@@ -62,16 +54,10 @@ const SummaryCards = () => {
             <CreditCard className="h-4 w-4 text-red-500" />
           </div>
         </div>
-        <p className="text-2xl font-bold mt-2">${summaryData.totalExpenses.toLocaleString()}</p>
+        <p className="text-2xl font-bold mt-2">${summary.totalExpenses.toLocaleString()}</p>
         <div className="flex items-center mt-2 text-xs">
-          {!summaryData.totalExpenses.isPositive ? (
-            <ArrowDownRight className="h-3 w-3 text-green-500 mr-1" />
-          ) : (
-            <ArrowUpRight className="h-3 w-3 text-red-500 mr-1" />
-          )}
-          <span className={!summaryData.totalExpenses.isPositive ? 'text-green-500' : 'text-red-500'}>
-            {summaryData.totalExpenses.change}%
-          </span>
+          <ArrowDownRight className="h-3 w-3 text-green-500 mr-1" />
+          <span className="text-green-500">{changePercentages.totalExpenses}%</span>
           <span className="text-gray-500 ml-1">from last month</span>
         </div>
       </div>
@@ -83,16 +69,10 @@ const SummaryCards = () => {
             <TrendingUp className="h-4 w-4 text-purple-500" />
           </div>
         </div>
-        <p className="text-2xl font-bold mt-2">${summaryData.netProfit.toLocaleString()}</p>
+        <p className="text-2xl font-bold mt-2">${summary.netProfit.toLocaleString()}</p>
         <div className="flex items-center mt-2 text-xs">
-          {summaryData.netProfit.isPositive ? (
-            <ArrowUpRight className="h-3 w-3 text-green-500 mr-1" />
-          ) : (
-            <ArrowDownRight className="h-3 w-3 text-red-500 mr-1" />
-          )}
-          <span className={summaryData.netProfit.isPositive ? 'text-green-500' : 'text-red-500'}>
-            {summaryData.netProfit.change}%
-          </span>
+          <ArrowUpRight className="h-3 w-3 text-green-500 mr-1" />
+          <span className="text-green-500">{changePercentages.netProfit}%</span>
           <span className="text-gray-500 ml-1">from last month</span>
         </div>
       </div>

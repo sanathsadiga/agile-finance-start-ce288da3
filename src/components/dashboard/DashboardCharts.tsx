@@ -3,16 +3,11 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useFinancialData } from '@/hooks/useFinancialData';
 
 const DashboardCharts = () => {
-  const financialData = [
-    { month: 'Jan', revenue: 5000, expenses: 3200, profit: 1800 },
-    { month: 'Feb', revenue: 6200, expenses: 3800, profit: 2400 },
-    { month: 'Mar', revenue: 8400, expenses: 4600, profit: 3800 },
-    { month: 'Apr', revenue: 9200, expenses: 5100, profit: 4100 },
-    { month: 'May', revenue: 8700, expenses: 4900, profit: 3800 },
-    { month: 'Jun', revenue: 10500, expenses: 5400, profit: 5100 }
-  ];
+  const { calculateFinancialMetrics } = useFinancialData();
+  const { monthlyData } = calculateFinancialMetrics();
 
   return (
     <Card className="col-span-4">
@@ -33,7 +28,7 @@ const DashboardCharts = () => {
       <CardContent className="pl-2">
         <ResponsiveContainer width="100%" height={350}>
           <BarChart
-            data={financialData}
+            data={monthlyData}
             margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
