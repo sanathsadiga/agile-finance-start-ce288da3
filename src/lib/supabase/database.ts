@@ -2,23 +2,27 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './database.types';
 
-// Initialize the Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Initialize the Supabase client with default values for development
+// These will be replaced with actual values in production
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-supabase-url.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-  global: {
-    fetch: (...args) => fetch(...args),
-  },
-});
+// Create the Supabase client with proper TypeScript types
+export const supabase = createClient<Database>(
+  supabaseUrl, 
+  supabaseAnonKey, 
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+    global: {
+      headers: {
+        'x-application-name': 'financeflow',
+      },
+    },
+  }
+);
 
 // Helper function to initialize the database schema
 export const initializeDatabase = async () => {
@@ -29,4 +33,23 @@ export const initializeDatabase = async () => {
   // in the Supabase dashboard for production applications
   
   return true;
+};
+
+// Function to check if Supabase connection is working
+export const checkSupabaseConnection = async () => {
+  try {
+    // Simple query to check connection
+    const { data, error } = await supabase.from('profiles').select('count').limit(1);
+    
+    if (error) {
+      console.error('Supabase connection check failed:', error.message);
+      return false;
+    }
+    
+    console.log('Supabase connection successful!');
+    return true;
+  } catch (err) {
+    console.error('Error checking Supabase connection:', err);
+    return false;
+  }
 };
