@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,7 +35,6 @@ const Invoices = () => {
   };
 
   const handleSaveInvoice = (invoiceData: any) => {
-    // Format the invoice data
     const formattedInvoice = {
       customer: invoiceData.customer,
       email: invoiceData.email,
@@ -94,7 +92,6 @@ const Invoices = () => {
     }
   };
 
-  // Filter invoices based on search and status
   const filteredInvoices = invoices.filter(invoice => {
     const matchesSearch = (invoice.customer && invoice.customer.toLowerCase().includes(searchTerm.toLowerCase())) || 
                          invoice.id.toLowerCase().includes(searchTerm.toLowerCase());
@@ -192,7 +189,7 @@ const Invoices = () => {
                           className={`${getStatusColor(invoice.status)} cursor-pointer transition-colors`}
                           onClick={() => {
                             if (invoice.status === 'unpaid') {
-                              const updatedInvoice = {...invoice, status: 'paid'};
+                              const updatedInvoice = {...invoice, status: 'paid' as 'paid'};
                               updateInvoice(updatedInvoice);
                               toast({ 
                                 title: "Invoice marked as paid", 
