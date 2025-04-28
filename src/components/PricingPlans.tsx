@@ -172,13 +172,14 @@ const PricingPlans = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
+        {/* Updated grid layout with better responsive behavior */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 max-w-7xl mx-auto">
           {plans.map((plan, index) => (
             <div 
               key={index} 
-              className={`bg-white rounded-lg overflow-hidden shadow-lg border transition-all duration-500 hover:shadow-xl ${
+              className={`bg-white rounded-lg overflow-hidden shadow-lg border transition-all duration-500 hover:shadow-xl flex flex-col ${
                 plan.highlight 
-                  ? 'border-brand-purple scale-105 shadow-xl' 
+                  ? 'border-brand-purple md:scale-102 shadow-xl' 
                   : 'border-gray-100 hover:-translate-y-1'
               }`}
             >
@@ -188,13 +189,13 @@ const PricingPlans = () => {
                 </div>
               )}
               
-              <div className="p-6">
+              <div className="p-6 flex-grow">
                 <h3 className="text-xl font-bold mb-1">{plan.name}</h3>
                 <div className="mb-4 flex items-end">
                   <span className="text-3xl font-bold">{plan.price}</span>
                   {plan.period && <span className="text-gray-600 ml-1">{plan.period}</span>}
                 </div>
-                <p className="text-gray-600 mb-6 h-12">{plan.description}</p>
+                <p className="text-gray-600 mb-6 min-h-[3rem]">{plan.description}</p>
                 
                 <Link to="/signup" className="w-full">
                   <Button 
@@ -210,10 +211,10 @@ const PricingPlans = () => {
                 <ul className="space-y-3">
                   {plan.features.map((feature, featureIndex) => (
                     <li key={featureIndex} className="flex items-start">
-                      <div className="mr-2 mt-1">
+                      <div className="mr-2 mt-1 flex-shrink-0">
                         <Check className="h-4 w-4 text-brand-purple" />
                       </div>
-                      <span className="text-gray-600">{feature}</span>
+                      <span className="text-gray-600 text-sm">{feature}</span>
                     </li>
                   ))}
                 </ul>
