@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import DashboardHeader from '@/components/layout/DashboardHeader';
 import InvoiceForm from '@/components/invoices/InvoiceForm';
 import { useFinancialData, Invoice } from '@/hooks/useFinancialData';
+import { Helmet } from 'react-helmet-async';
 
 const Invoices = () => {
   const { toast } = useToast();
@@ -18,14 +19,14 @@ const Invoices = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showInvoiceForm, setShowInvoiceForm] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   
   const handleCreateInvoice = () => {
     setSelectedInvoice(null);
     setShowInvoiceForm(true);
   };
   
-  const handleEditInvoice = (invoice: any) => {
+  const handleEditInvoice = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
     setShowInvoiceForm(true);
   };
@@ -44,7 +45,8 @@ const Invoices = () => {
       items: invoiceData.items,
       amount: invoiceData.total,
       status: invoiceData.status as 'paid' | 'pending' | 'overdue' | 'draft' | 'unpaid',
-      notes: invoiceData.notes
+      notes: invoiceData.notes,
+      description: invoiceData.description || ''
     };
     
     if (selectedInvoice) {
@@ -102,6 +104,10 @@ const Invoices = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Helmet>
+        <title>Invoices | FinanceFlow</title>
+        <meta name="description" content="Manage your invoices with FinanceFlow's simple invoice management system." />
+      </Helmet>
       <DashboardHeader />
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
