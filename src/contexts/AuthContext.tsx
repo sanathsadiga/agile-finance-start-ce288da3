@@ -46,8 +46,11 @@ const mapSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> => {
     .eq('id', supabaseUser.id)
     .single();
 
+  console.log('Profile data:', data, 'error:', error);
+
   if (error || !data) {
     // If no profile exists, return a default user object
+    console.log('No profile found, using default user object');
     return {
       id: supabaseUser.id,
       email: supabaseUser.email || '',
@@ -75,16 +78,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const checkSession = async () => {
       try {
+        console.log('Checking for existing session...');
         // Get current session
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
+          console.error('Session error:', error);
           throw error;
         }
 
         if (session) {
+          console.log('Session found:', session);
           const mappedUser = await mapSupabaseUser(session.user);
+          console.log('Mapped user:', mappedUser);
           setUser(mappedUser);
+        } else {
+          console.log('No session found');
         }
       } catch (error) {
         console.error('Error checking auth session:', error);
@@ -99,6 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up listener for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session);
         if (event === 'SIGNED_IN' && session) {
           const mappedUser = await mapSupabaseUser(session.user);
           setUser(mappedUser);
@@ -118,6 +128,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
+      console.log('Attempting login with email:', email);
       // Basic validation
       if (!email || !password) {
         throw new Error('Email and password are required');
@@ -128,6 +139,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         password,
       });
+
+      console.log('Login response:', data, 'error:', error);
 
       if (error) {
         throw error;
@@ -150,6 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Navigate to dashboard
       navigate('/dashboard');
     } catch (error: any) {
+      console.error('Login error:', error);
       toast({
         title: "Login failed",
         description: error?.message || "An unknown error occurred",
@@ -165,6 +179,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signup = async (userData: Omit<User, 'id'> & { password: string }) => {
     setLoading(true);
     try {
+      console.log('Attempting signup with email:', userData.email);
       // Basic validation
       if (!userData.email || !userData.password) {
         throw new Error('Email and password are required');
@@ -180,6 +195,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password: userData.password,
       });
 
+      console.log('Signup response:', data, 'error:', error);
+
       if (error) {
         throw error;
       }
@@ -189,6 +206,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Create a profile in the profiles table
+      console.log('Creating user profile...');
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -199,8 +217,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           company_name: userData.companyName || null,
         });
 
+      console.log('Profile creation result:', profileError ? `Error: ${profileError.message}` : 'Success');
+
       if (profileError) {
         // If profile creation fails, try to delete the user to maintain consistency
+        console.error('Error creating profile:', profileError);
         await supabase.auth.admin.deleteUser(data.user.id);
         throw profileError;
       }
@@ -225,6 +246,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Navigate to dashboard
       navigate('/dashboard');
     } catch (error: any) {
+      console.error('Signup error:', error);
       toast({
         title: "Signup failed",
         description: error?.message || "An unknown error occurred",
@@ -239,9 +261,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Logout with Supabase
   const logout = async () => {
     try {
+      console.log('Attempting to log out');
       const { error } = await supabase.auth.signOut();
       
       if (error) {
+        console.error('Logout error:', error);
         throw error;
       }
       
@@ -254,6 +278,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       navigate('/');
     } catch (error: any) {
+      console.error('Error during logout:', error);
       toast({
         title: "Logout failed",
         description: error?.message || "An unknown error occurred",

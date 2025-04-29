@@ -2,10 +2,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './database.types';
 
-// Initialize the Supabase client with default values for development
-// These will be replaced with actual values in production
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-supabase-url.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+// Initialize the Supabase client with proper environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Create the Supabase client with proper TypeScript types
 export const supabase = createClient<Database>(
