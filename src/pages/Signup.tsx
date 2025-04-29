@@ -1,12 +1,14 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
 
 const Signup = () => {
   const [firstName, setFirstName] = useState('');
@@ -15,20 +17,19 @@ const Signup = () => {
   const [password, setPassword] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { signup } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
     try {
       if (password.length < 6) {
-        toast({
-          title: "Password too short",
-          description: "Password must be at least 6 characters long",
-          variant: "destructive",
-        });
+        setError("Password must be at least 6 characters long");
         setIsLoading(false);
         return;
       }
@@ -44,11 +45,7 @@ const Signup = () => {
       // Navigation is handled in the signup function
     } catch (error: any) {
       console.error('Signup error:', error);
-      toast({
-        title: "Signup failed",
-        description: error?.message || "An unknown error occurred",
-        variant: "destructive",
-      });
+      setError(error?.message || "An unknown error occurred during signup");
     } finally {
       setIsLoading(false);
     }
@@ -82,6 +79,12 @@ const Signup = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -126,7 +129,7 @@ const Signup = () => {
                   onChange={(e) => setPassword(e.target.value)}
                 />
                 <p className="text-xs text-gray-500">
-                  Must be at least 8 characters long
+                  Must be at least 6 characters long
                 </p>
               </div>
               <div className="space-y-2">
@@ -139,7 +142,12 @@ const Signup = () => {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Creating account...' : 'Create account'}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating account...
+                  </>
+                ) : 'Create account'}
               </Button>
             </form>
           </CardContent>

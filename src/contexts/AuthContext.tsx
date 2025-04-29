@@ -38,34 +38,40 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 // Helper function to map Supabase user to our User interface
-const mapSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User> => {
-  // Get user profile from the profiles table
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', supabaseUser.id)
-    .single();
+const mapSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User | null> => {
+  try {
+    console.log('Fetching profile data for user:', supabaseUser.id);
+    
+    // Get user profile from the profiles table
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', supabaseUser.id)
+      .single();
 
-  console.log('Profile data:', data, 'error:', error);
+    console.log('Profile data fetch result:', { data, error });
 
-  if (error || !data) {
-    // If no profile exists, return a default user object
-    console.log('No profile found, using default user object');
+    if (error) {
+      console.error('Error fetching profile:', error);
+      return null;
+    }
+
+    if (!data) {
+      console.log('No profile found for user:', supabaseUser.id);
+      return null;
+    }
+
     return {
-      id: supabaseUser.id,
-      email: supabaseUser.email || '',
-      firstName: 'New',
-      lastName: 'User',
+      id: data.id,
+      email: data.email,
+      firstName: data.first_name,
+      lastName: data.last_name,
+      companyName: data.company_name || undefined,
     };
+  } catch (err) {
+    console.error('Error in mapSupabaseUser:', err);
+    return null;
   }
-
-  return {
-    id: data.id,
-    email: data.email,
-    firstName: data.first_name,
-    lastName: data.last_name,
-    companyName: data.company_name || undefined,
-  };
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -90,8 +96,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session) {
           console.log('Session found:', session);
           const mappedUser = await mapSupabaseUser(session.user);
-          console.log('Mapped user:', mappedUser);
-          setUser(mappedUser);
+          if (mappedUser) {
+            console.log('Mapped user from session:', mappedUser);
+            setUser(mappedUser);
+          } else {
+            console.warn('Could not map user from session');
+          }
         } else {
           console.log('No session found');
         }
@@ -111,7 +121,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('Auth state changed:', event, session);
         if (event === 'SIGNED_IN' && session) {
           const mappedUser = await mapSupabaseUser(session.user);
-          setUser(mappedUser);
+          if (mappedUser) {
+            setUser(mappedUser);
+          } else {
+            console.warn('Could not map user from auth change');
+          }
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
         }
@@ -152,6 +166,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Map the user
       const mappedUser = await mapSupabaseUser(data.user);
+      if (!mappedUser) {
+        throw new Error('Could not retrieve user profile');
+      }
+      
       setUser(mappedUser);
       
       // Show success message
@@ -193,9 +211,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
+        options: {
+          data: {
+            first_name: userData.firstName,
+            last_name: userData.lastName,
+            company_name: userData.companyName || null
+          }
+        }
       });
 
-      console.log('Signup response:', data, 'error:', error);
+      console.log('Signup auth response:', data, 'error:', error);
 
       if (error) {
         throw error;
@@ -205,11 +230,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('No user returned from registration');
       }
 
-      // Create a profile in the profiles table - using the auth user's id
+      // Create a profile in the profiles table
       console.log('Creating user profile with ID:', data.user.id);
       
-      // IMPORTANT: We need to use the service role client OR modify RLS policies
-      // For simplicity, we'll use RLS bypass by making the insert as the authenticated user
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -224,15 +247,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (profileError) {
         console.error('Error creating profile:', profileError);
-        // Don't delete the user as before - just show error and continue
         toast({
           title: "Profile creation issue",
-          description: "Account created but profile setup had an issue. Please update your profile later.",
+          description: "Account created but profile setup had an issue. Please try logging in again.",
           variant: "destructive",
         });
+        // Try to get the profile anyway in case it was created despite the error
       }
 
-      // Create the mapped user
+      // Fetch the profile to confirm it exists
+      const { data: profileData, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+        
+      console.log('Profile fetch after creation:', { profileData, fetchError });
+
+      // Create the mapped user even if we couldn't fetch the profile
       const newUser: User = {
         id: data.user.id,
         email: userData.email,

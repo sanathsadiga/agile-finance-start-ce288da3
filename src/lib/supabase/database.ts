@@ -3,9 +3,14 @@ import { createClient } from '@supabase/supabase-js';
 import { Database } from './database.types';
 
 // Initialize the Supabase client with proper environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ulegmjoxsjibkqdydetf.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsZWdtam94c2ppYmtxZHlkZXRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU4MjIyNzYsImV4cCI6MjA2MTM5ODI3Nn0.3t9ps9TdTnlzK-zjhA2as4nfklJ9FlzGOb6_0trebHU';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase environment variables. Using fallback values.');
+}
+
+// Log environment variable status
 console.log('Initializing Supabase with:', { 
   url: supabaseUrl ? 'URL defined' : 'URL missing', 
   key: supabaseAnonKey ? 'Key defined' : 'Key missing' 
@@ -13,8 +18,8 @@ console.log('Initializing Supabase with:', {
 
 // Create the Supabase client with proper TypeScript types
 export const supabase = createClient<Database>(
-  supabaseUrl, 
-  supabaseAnonKey, 
+  supabaseUrl || 'https://ulegmjoxsjibkqdydetf.supabase.co', 
+  supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVsZWdtam94c2ppYmtxZHlkZXRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU4MjIyNzYsImV4cCI6MjA2MTM5ODI3Nn0.3t9ps9TdTnlzK-zjhA2as4nfklJ9FlzGOb6_0trebHU',
   {
     auth: {
       persistSession: true,
@@ -28,26 +33,70 @@ export const supabase = createClient<Database>(
   }
 );
 
+// Helper function to check Row Level Security policies
+const checkRLSPolicies = async () => {
+  try {
+    console.log('Checking RLS policies for profiles table...');
+    
+    // Check profiles table RLS policy
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('count')
+      .limit(1);
+      
+    console.log('Profiles RLS check result:', 
+      profilesError ? `Error: ${profilesError.message}` : 'Success',
+      'Data:', profilesData
+    );
+    
+    // Check if the insert policy works for profiles
+    const testId = `test-${Date.now()}`;
+    const { error: insertError } = await supabase
+      .from('profiles')
+      .insert({
+        id: testId,
+        email: `test-${Date.now()}@example.com`,
+        first_name: 'Test',
+        last_name: 'User',
+      })
+      .select();
+      
+    console.log('Profiles insert policy check:', 
+      insertError ? `Error: ${insertError.message}` : 'Success'
+    );
+    
+    if (!insertError) {
+      // Clean up test user
+      await supabase.from('profiles').delete().eq('id', testId);
+    }
+    
+    return !profilesError && !insertError;
+  } catch (err) {
+    console.error('Error checking RLS policies:', err);
+    return false;
+  }
+};
+
 // Helper function to initialize the database schema and apply necessary changes
 export const initializeDatabase = async () => {
   console.log('Checking database schema and RLS policies...');
   
-  // Check if the profiles RLS policy allows new signups to create their own profile
   try {
-    const { data: policies, error } = await supabase.rpc('get_policies');
+    // Check RLS policies
+    const rlsPoliciesWork = await checkRLSPolicies();
     
-    if (error) {
-      console.error('Error checking RLS policies:', error.message);
+    if (rlsPoliciesWork) {
+      console.log('✅ RLS policies are configured correctly');
     } else {
-      console.log('Current RLS policies:', policies);
+      console.warn('⚠️ RLS policies may not be configured correctly');
+      console.log('Manual SQL setup may be required. Please check the setup.sql file.');
     }
     
-    // This is just informational - actual policy changes should be done in the Supabase dashboard
+    return true;
   } catch (err) {
     console.error('Error during database initialization:', err);
+    return false;
   }
-  
-  return true;
 };
 
 // Function to check if Supabase connection is working
