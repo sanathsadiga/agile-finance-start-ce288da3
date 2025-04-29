@@ -56,6 +56,16 @@ CREATE POLICY "Users can update their own profile"
 ON profiles FOR UPDATE 
 USING (auth.uid() = id);
 
+-- Add a policy to allow inserting profiles
+CREATE POLICY "Users can insert their own profile" 
+ON profiles FOR INSERT 
+WITH CHECK (auth.uid() = id);
+
+-- Allow service role to insert profiles (for signup)
+CREATE POLICY "Service role can insert any profile" 
+ON profiles FOR INSERT 
+WITH CHECK (auth.role() = 'service_role' OR auth.uid() = id);
+
 -- Invoices policies
 CREATE POLICY "Users can view their own invoices" 
 ON invoices FOR SELECT 
@@ -114,3 +124,4 @@ CREATE TRIGGER update_expenses_updated_at
 BEFORE UPDATE ON expenses
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
+

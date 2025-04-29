@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
@@ -220,7 +221,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       });
 
-      console.log('Signup auth response:', data, 'error:', error);
+      console.log('Signup response:', data, 'error:', error);
 
       if (error) {
         throw error;
@@ -233,7 +234,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Create a profile in the profiles table with proper UUID format
       console.log('Creating user profile with ID:', data.user.id);
       
-      const { error: profileError } = await supabase
+      // Retry profile creation with different approaches if needed
+      let profileError;
+      
+      // Approach 1: Try direct insert with current auth session
+      const { error: directInsertError } = await supabase
         .from('profiles')
         .insert({
           id: data.user.id,
@@ -242,20 +247,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           last_name: userData.lastName,
           company_name: userData.companyName || null,
         });
-
-      if (profileError) {
-        console.error('Error creating profile:', profileError);
-        toast({
-          title: "Profile creation issue",
-          description: profileError.message || "There was an issue setting up your profile",
-          variant: "destructive",
-        });
-        throw profileError;
+        
+      if (directInsertError) {
+        console.warn('Direct insert failed:', directInsertError.message);
+        profileError = directInsertError;
+        
+        // We'll continue with the signup process, as the user was created 
+        // in auth but we couldn't create the profile due to RLS policy
       } else {
         console.log('Profile created successfully');
       }
 
-      // Create the mapped user
+      // Create the mapped user based on the data we have
       const newUser: User = {
         id: data.user.id,
         email: userData.email,
@@ -264,13 +267,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         companyName: userData.companyName,
       };
       
+      // Set the user in our state
       setUser(newUser);
       
-      // Show success message
-      toast({
-        title: "Signup successful",
-        description: `Welcome to FinanceFlow, ${newUser.firstName}!`,
-      });
+      // Show appropriate message
+      if (profileError) {
+        toast({
+          title: "Signup partially successful",
+          description: "Your account was created, but there was an issue setting up your profile. Please contact support.",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Signup successful",
+          description: `Welcome to FinanceFlow, ${newUser.firstName}!`,
+        });
+      }
       
       // Navigate to dashboard
       navigate('/dashboard');

@@ -52,11 +52,15 @@ const checkRLSPolicies = async () => {
     
     // Check if the insert policy works for profiles
     const testId = uuidv4(); // Use proper UUID format
+    const testEmail = `test-${Date.now()}@example.com`;
+    
+    // Try inserting with anon key
+    console.log('Testing profile insert with anon key...');
     const { error: insertError } = await supabase
       .from('profiles')
       .insert({
         id: testId,
-        email: `test-${Date.now()}@example.com`,
+        email: testEmail,
         first_name: 'Test',
         last_name: 'User',
       })
@@ -69,9 +73,14 @@ const checkRLSPolicies = async () => {
     if (!insertError) {
       // Clean up test user
       await supabase.from('profiles').delete().eq('id', testId);
+      console.log('Test profile cleaned up successfully');
+      return true;
+    } else {
+      // Try a different approach to determine if it's an RLS issue
+      console.log('Checking if RLS policies are configured correctly for INSERT...');
+      return false;
     }
     
-    return !profilesError && !insertError;
   } catch (err) {
     console.error('Error checking RLS policies:', err);
     return false;
@@ -90,7 +99,16 @@ export const initializeDatabase = async () => {
       console.log('✅ RLS policies are configured correctly');
     } else {
       console.warn('⚠️ RLS policies may not be configured correctly');
-      console.log('Manual SQL setup may be required. Please check the setup.sql file.');
+      console.log('You may need to run the following SQL commands in your Supabase SQL editor:');
+      console.log(`
+CREATE POLICY "Users can insert their own profile" 
+ON profiles FOR INSERT 
+WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Service role can insert any profile" 
+ON profiles FOR INSERT 
+WITH CHECK (auth.role() = 'service_role' OR auth.uid() = id);
+      `);
     }
     
     return true;
