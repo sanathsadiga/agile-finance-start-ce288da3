@@ -1,9 +1,9 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase/database";
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
+import { v4 as uuidv4 } from 'uuid';
 
 // Define user type
 export interface User {
@@ -229,8 +229,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!data.user) {
         throw new Error('No user returned from registration');
       }
-
-      // Create a profile in the profiles table
+      
+      // Create a profile in the profiles table with proper UUID format
       console.log('Creating user profile with ID:', data.user.id);
       
       const { error: profileError } = await supabase
@@ -243,28 +243,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           company_name: userData.companyName || null,
         });
 
-      console.log('Profile creation result:', profileError ? `Error: ${profileError.message}` : 'Success');
-
       if (profileError) {
         console.error('Error creating profile:', profileError);
         toast({
           title: "Profile creation issue",
-          description: "Account created but profile setup had an issue. Please try logging in again.",
+          description: profileError.message || "There was an issue setting up your profile",
           variant: "destructive",
         });
-        // Try to get the profile anyway in case it was created despite the error
+        throw profileError;
+      } else {
+        console.log('Profile created successfully');
       }
 
-      // Fetch the profile to confirm it exists
-      const { data: profileData, error: fetchError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
-        
-      console.log('Profile fetch after creation:', { profileData, fetchError });
-
-      // Create the mapped user even if we couldn't fetch the profile
+      // Create the mapped user
       const newUser: User = {
         id: data.user.id,
         email: userData.email,

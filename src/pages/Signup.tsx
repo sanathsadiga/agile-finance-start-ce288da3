@@ -42,12 +42,11 @@ const Signup = () => {
         password,
         companyName,
       });
-      // Navigation is handled in the signup function
+      // Navigation happens in the signup function
     } catch (error: any) {
       console.error('Signup error:', error);
       setError(error?.message || "An unknown error occurred during signup");
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Important: ensure loading state is reset on error
     }
   };
 
@@ -95,6 +94,7 @@ const Signup = () => {
                     required 
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
+                    disabled={isLoading}
                   />
                 </div>
                 <div className="space-y-2">
@@ -105,6 +105,7 @@ const Signup = () => {
                     required 
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -117,6 +118,7 @@ const Signup = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -127,6 +129,7 @@ const Signup = () => {
                   required 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
                 />
                 <p className="text-xs text-gray-500">
                   Must be at least 6 characters long
@@ -139,6 +142,7 @@ const Signup = () => {
                   type="text"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>

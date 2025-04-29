@@ -1,6 +1,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './database.types';
+import { v4 as uuidv4 } from 'uuid';
 
 // Initialize the Supabase client with proper environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -50,7 +51,7 @@ const checkRLSPolicies = async () => {
     );
     
     // Check if the insert policy works for profiles
-    const testId = `test-${Date.now()}`;
+    const testId = uuidv4(); // Use proper UUID format
     const { error: insertError } = await supabase
       .from('profiles')
       .insert({
