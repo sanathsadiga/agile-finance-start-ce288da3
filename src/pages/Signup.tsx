@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from "@/hooks/use-toast";
 
 const Signup = () => {
   const [firstName, setFirstName] = useState('');
@@ -15,12 +16,24 @@ const Signup = () => {
   const [companyName, setCompanyName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { signup } = useAuth();
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     
     try {
+      if (password.length < 6) {
+        toast({
+          title: "Password too short",
+          description: "Password must be at least 6 characters long",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log("Attempting signup with:", { firstName, lastName, email, companyName });
       await signup({
         firstName,
         lastName,
@@ -29,8 +42,13 @@ const Signup = () => {
         companyName,
       });
       // Navigation is handled in the signup function
-    } catch (error) {
+    } catch (error: any) {
       console.error('Signup error:', error);
+      toast({
+        title: "Signup failed",
+        description: error?.message || "An unknown error occurred",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }

@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -5,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
-import { checkSupabaseConnection, supabase } from "./lib/supabase/database";
+import { checkSupabaseConnection, supabase, initializeDatabase } from "./lib/supabase/database";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -21,7 +22,7 @@ const queryClient = new QueryClient();
 
 const App = () => {
   useEffect(() => {
-    // Check Supabase connection on app startup
+    // Check Supabase connection and initialize database on app startup
     const checkConnection = async () => {
       console.log('Supabase object:', supabase ? 'Initialized' : 'Not initialized');
       
@@ -29,6 +30,8 @@ const App = () => {
         const isConnected = await checkSupabaseConnection();
         if (isConnected) {
           console.log('✅ Supabase connection successful!');
+          // Initialize database and check RLS policies
+          await initializeDatabase();
         } else {
           console.error('❌ Supabase connection failed. Check your environment variables.');
         }

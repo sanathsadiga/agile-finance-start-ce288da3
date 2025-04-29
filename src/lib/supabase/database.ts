@@ -28,13 +28,24 @@ export const supabase = createClient<Database>(
   }
 );
 
-// Helper function to initialize the database schema
+// Helper function to initialize the database schema and apply necessary changes
 export const initializeDatabase = async () => {
-  // Check if tables exist, if not create them
-  console.log('Checking database schema...');
+  console.log('Checking database schema and RLS policies...');
   
-  // This is just a check function - actual table creation should be done via migrations
-  // in the Supabase dashboard for production applications
+  // Check if the profiles RLS policy allows new signups to create their own profile
+  try {
+    const { data: policies, error } = await supabase.rpc('get_policies');
+    
+    if (error) {
+      console.error('Error checking RLS policies:', error.message);
+    } else {
+      console.log('Current RLS policies:', policies);
+    }
+    
+    // This is just informational - actual policy changes should be done in the Supabase dashboard
+  } catch (err) {
+    console.error('Error during database initialization:', err);
+  }
   
   return true;
 };

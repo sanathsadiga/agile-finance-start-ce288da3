@@ -205,8 +205,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('No user returned from registration');
       }
 
-      // Create a profile in the profiles table
-      console.log('Creating user profile...');
+      // Create a profile in the profiles table - using the auth user's id
+      console.log('Creating user profile with ID:', data.user.id);
+      
+      // IMPORTANT: We need to use the service role client OR modify RLS policies
+      // For simplicity, we'll use RLS bypass by making the insert as the authenticated user
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -220,10 +223,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Profile creation result:', profileError ? `Error: ${profileError.message}` : 'Success');
 
       if (profileError) {
-        // If profile creation fails, try to delete the user to maintain consistency
         console.error('Error creating profile:', profileError);
-        await supabase.auth.admin.deleteUser(data.user.id);
-        throw profileError;
+        // Don't delete the user as before - just show error and continue
+        toast({
+          title: "Profile creation issue",
+          description: "Account created but profile setup had an issue. Please update your profile later.",
+          variant: "destructive",
+        });
       }
 
       // Create the mapped user
