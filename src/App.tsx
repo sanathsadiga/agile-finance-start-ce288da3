@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -6,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
-import { checkSupabaseConnection } from "./lib/supabase/database";
+import { checkSupabaseConnection, supabase } from "./lib/supabase/database";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -24,11 +23,17 @@ const App = () => {
   useEffect(() => {
     // Check Supabase connection on app startup
     const checkConnection = async () => {
-      const isConnected = await checkSupabaseConnection();
-      if (isConnected) {
-        console.log('✅ Supabase connection successful!');
-      } else {
-        console.error('❌ Supabase connection failed. Check your environment variables.');
+      console.log('Supabase object:', supabase ? 'Initialized' : 'Not initialized');
+      
+      try {
+        const isConnected = await checkSupabaseConnection();
+        if (isConnected) {
+          console.log('✅ Supabase connection successful!');
+        } else {
+          console.error('❌ Supabase connection failed. Check your environment variables.');
+        }
+      } catch (error) {
+        console.error('Error during connection check:', error);
       }
     };
     
