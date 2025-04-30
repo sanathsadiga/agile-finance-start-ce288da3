@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from "@/hooks/use-toast";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 
 const Signup = () => {
@@ -28,9 +28,12 @@ const Signup = () => {
     setError(null);
     
     try {
+      if (!firstName || !lastName) {
+        throw new Error("First name and last name are required");
+      }
+      
       if (password.length < 6) {
-        setError("Password must be at least 6 characters long");
-        setIsLoading(false);
+        throw new Error("Password must be at least 6 characters long");
         return;
       }
       
@@ -42,12 +45,22 @@ const Signup = () => {
         password,
         companyName,
       });
-      // Navigation happens in the signup function
+      
+      // Show success message - the toast is shown in AuthContext now
+      
+      // Navigation happens in the signup function in AuthContext
     } catch (error: any) {
       console.error('Signup error:', error);
       setError(error?.message || "An unknown error occurred during signup");
+      
+      // Show error toast
+      toast({
+        title: "Signup failed",
+        description: error?.message || "An unknown error occurred",
+        variant: "destructive",
+      });
     } finally {
-      setIsLoading(false); // Ensure loading state is reset regardless of outcome
+      setIsLoading(false);
     }
   };
 
@@ -81,6 +94,7 @@ const Signup = () => {
           <CardContent>
             {error && (
               <Alert variant="destructive" className="mb-4">
+                <AlertTitle>Error</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}

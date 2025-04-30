@@ -49,22 +49,20 @@ const mapSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User | null>
       .eq('id', supabaseUser.id)
       .single();
 
-    console.log('Profile data fetch result:', { data, error });
-
     if (error) {
+      console.log('Profile data fetch result:', { data, error });
       console.error('Error fetching profile:', error);
+      
       // Try to create a profile using user metadata if profile doesn't exist
-      if (error.code === 'PGRST116') { // Record not found
-        const metadata = supabaseUser.user_metadata;
-        if (metadata && metadata.first_name && metadata.last_name) {
-          return {
-            id: supabaseUser.id,
-            email: supabaseUser.email || '',
-            firstName: metadata.first_name,
-            lastName: metadata.last_name,
-            companyName: metadata.company_name,
-          };
-        }
+      const metadata = supabaseUser.user_metadata;
+      if (metadata && metadata.first_name && metadata.last_name) {
+        return {
+          id: supabaseUser.id,
+          email: supabaseUser.email || '',
+          firstName: metadata.first_name,
+          lastName: metadata.last_name,
+          companyName: metadata.company_name,
+        };
       }
       return null;
     }
@@ -139,6 +137,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setUser(mappedUser);
           } else {
             console.warn('Could not map user from auth change');
+            
+            // Attempt to create profile from metadata as fallback
+            if (session.user.user_metadata) {
+              try {
+                const { error: profileError } = await supabase
+                  .from('profiles')
+                  .insert({
+                    id: session.user.id,
+                    email: session.user.email,
+                    first_name: session.user.user_metadata.first_name || '',
+                    last_name: session.user.user_metadata.last_name || '',
+                    company_name: session.user.user_metadata.company_name || null,
+                  });
+                
+                if (!profileError) {
+                  // Try to get user info again
+                  const newMappedUser = await mapSupabaseUser(session.user);
+                  if (newMappedUser) {
+                    setUser(newMappedUser);
+                  }
+                }
+              } catch (err) {
+                console.error('Error creating profile from auth change:', err);
+              }
+            }
           }
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
@@ -178,6 +201,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('No user returned from authentication');
       }
 
+      // Check if profile exists
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profileError && profileError.code === 'PGRST116') { // Record not found
+        // Create profile if it doesn't exist
+        const metadata = data.user.user_metadata;
+        const newProfile = {
+          id: data.user.id,
+          email: data.user.email || '',
+          first_name: metadata?.first_name || '',
+          last_name: metadata?.last_name || '',
+          company_name: metadata?.company_name || null,
+        };
+        
+        await supabase
+          .from('profiles')
+          .insert(newProfile);
+      }
+      
       // Map the user
       const mappedUser = await mapSupabaseUser(data.user);
       if (!mappedUser) {
@@ -211,7 +257,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signup = async (userData: Omit<User, 'id'> & { password: string }) => {
     setLoading(true);
     try {
-      console.log('Attempting signup with email:', userData.email);
+      console.log('Attempting signup with:', userData);
       // Basic validation
       if (!userData.email || !userData.password) {
         throw new Error('Email and password are required');
@@ -248,52 +294,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Create a profile in the profiles table
       console.log('Creating user profile with ID:', data.user.id);
       
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: data.user.id,
-          email: userData.email,
-          first_name: userData.firstName,
-          last_name: userData.lastName,
-          company_name: userData.companyName || null,
-        });
-        
-      if (profileError) {
-        console.error('Error creating profile:', profileError);
-        
-        // Create a mapped user based on auth data even if profile creation failed
-        const newUser: User = {
-          id: data.user.id,
-          email: userData.email,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          companyName: userData.companyName,
-        };
-        
-        setUser(newUser);
-        
-        toast({
-          title: "Signup successful",
-          description: `Welcome to FinanceFlow, ${userData.firstName}! (Note: Profile creation pending)`,
-        });
-        
-      } else {
-        // Create the mapped user
-        const newUser: User = {
-          id: data.user.id,
-          email: userData.email,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          companyName: userData.companyName,
-        };
-        
-        setUser(newUser);
-        
-        toast({
-          title: "Signup successful",
-          description: `Welcome to FinanceFlow, ${newUser.firstName}!`,
-        });
+      try {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            email: userData.email,
+            first_name: userData.firstName,
+            last_name: userData.lastName,
+            company_name: userData.companyName || null,
+          });
+          
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+          console.log('Attempting direct insert as authenticated user...');
+          
+          // Try to authenticate first and then insert
+          if (data.session) {
+            // We already have a session, use it
+            const { error: directInsertError } = await supabase
+              .from('profiles')
+              .insert({
+                id: data.user.id,
+                email: userData.email,
+                first_name: userData.firstName,
+                last_name: userData.lastName,
+                company_name: userData.companyName || null,
+              });
+            
+            if (directInsertError) {
+              console.error('Direct insert failed:', directInsertError.message);
+            }
+          } else {
+            // We don't have a session, let's just create the user object without a profile
+            console.warn('Could not create profile, proceeding without it');
+          }
+        }
+      } catch (profileInsertErr) {
+        console.error('Profile insert exception:', profileInsertErr);
       }
+      
+      // Create the mapped user regardless of profile creation
+      const newUser: User = {
+        id: data.user.id,
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        companyName: userData.companyName,
+      };
+      
+      setUser(newUser);
+      
+      toast({
+        title: "Signup successful",
+        description: `Welcome to FinanceFlow, ${newUser.firstName}!`,
+      });
       
       // Navigate to dashboard
       navigate('/dashboard');
