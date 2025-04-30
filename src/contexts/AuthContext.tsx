@@ -143,15 +143,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               try {
                 const { error: profileError } = await supabase
                   .from('profiles')
-                  .insert({
+                  .upsert({
                     id: session.user.id,
-                    email: session.user.email,
+                    email: session.user.email || '',
                     first_name: session.user.user_metadata.first_name || '',
                     last_name: session.user.user_metadata.last_name || '',
                     company_name: session.user.user_metadata.company_name || null,
                   });
                 
-                if (!profileError) {
+                if (profileError) {
+                  console.error('Error creating profile from auth change:', profileError);
+                } else {
                   // Try to get user info again
                   const newMappedUser = await mapSupabaseUser(session.user);
                   if (newMappedUser) {
@@ -201,41 +203,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('No user returned from authentication');
       }
 
-      // Check if profile exists
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
-
-      if (profileError && profileError.code === 'PGRST116') { // Record not found
-        // Create profile if it doesn't exist
-        const metadata = data.user.user_metadata;
-        const newProfile = {
+      // Create the user object from metadata if profile doesn't exist
+      const metadata = data.user.user_metadata;
+      if (metadata) {
+        const newUser: User = {
           id: data.user.id,
           email: data.user.email || '',
-          first_name: metadata?.first_name || '',
-          last_name: metadata?.last_name || '',
-          company_name: metadata?.company_name || null,
+          firstName: metadata.first_name || '',
+          lastName: metadata.last_name || '',
+          companyName: metadata.company_name,
         };
         
-        await supabase
+        setUser(newUser);
+        
+        // Try to create/update profile
+        const { error: profileError } = await supabase
           .from('profiles')
-          .insert(newProfile);
+          .upsert({
+            id: data.user.id,
+            email: data.user.email || '',
+            first_name: metadata.first_name || '',
+            last_name: metadata.last_name || '',
+            company_name: metadata.company_name || null,
+          });
+          
+        if (profileError) {
+          console.error('Error updating profile during login:', profileError);
+        }
+      } else {
+        // Try to map the user from the database
+        const mappedUser = await mapSupabaseUser(data.user);
+        if (!mappedUser) {
+          throw new Error('Could not retrieve user profile');
+        }
+        
+        setUser(mappedUser);
       }
-      
-      // Map the user
-      const mappedUser = await mapSupabaseUser(data.user);
-      if (!mappedUser) {
-        throw new Error('Could not retrieve user profile');
-      }
-      
-      setUser(mappedUser);
       
       // Show success message
       toast({
         title: "Login successful",
-        description: `Welcome back, ${mappedUser.firstName}!`,
+        description: `Welcome back!`,
       });
       
       // Navigate to dashboard
@@ -290,51 +298,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!data.user) {
         throw new Error('No user returned from registration');
       }
-      
-      // Create a profile in the profiles table
-      console.log('Creating user profile with ID:', data.user.id);
-      
-      try {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: data.user.id,
-            email: userData.email,
-            first_name: userData.firstName,
-            last_name: userData.lastName,
-            company_name: userData.companyName || null,
-          });
-          
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
-          console.log('Attempting direct insert as authenticated user...');
-          
-          // Try to authenticate first and then insert
-          if (data.session) {
-            // We already have a session, use it
-            const { error: directInsertError } = await supabase
-              .from('profiles')
-              .insert({
-                id: data.user.id,
-                email: userData.email,
-                first_name: userData.firstName,
-                last_name: userData.lastName,
-                company_name: userData.companyName || null,
-              });
-            
-            if (directInsertError) {
-              console.error('Direct insert failed:', directInsertError.message);
-            }
-          } else {
-            // We don't have a session, let's just create the user object without a profile
-            console.warn('Could not create profile, proceeding without it');
-          }
-        }
-      } catch (profileInsertErr) {
-        console.error('Profile insert exception:', profileInsertErr);
-      }
-      
-      // Create the mapped user regardless of profile creation
+
+      // Create a user object immediately without waiting for profile
       const newUser: User = {
         id: data.user.id,
         email: userData.email,
@@ -345,6 +310,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setUser(newUser);
       
+      // Show success message
       toast({
         title: "Signup successful",
         description: `Welcome to FinanceFlow, ${newUser.firstName}!`,
@@ -353,6 +319,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Navigate to dashboard
       navigate('/dashboard');
       
+      // Try to create the profile in the background
+      if (data.session) {
+        // We already have a session, use it to create the profile
+        try {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .upsert({
+              id: data.user.id,
+              email: userData.email,
+              first_name: userData.firstName,
+              last_name: userData.lastName,
+              company_name: userData.companyName || null,
+            });
+          
+          if (profileError) {
+            console.error('Error creating profile during signup, but proceeding:', profileError);
+          }
+        } catch (profileErr) {
+          console.error('Exception creating profile during signup, but proceeding:', profileErr);
+        }
+      }
     } catch (error: any) {
       console.error('Signup error:', error);
       toast({

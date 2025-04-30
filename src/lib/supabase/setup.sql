@@ -56,12 +56,14 @@ CREATE POLICY "Users can update their own profile"
 ON profiles FOR UPDATE 
 USING (auth.uid() = id);
 
--- Important: Allow inserting profiles (with this exact policy name and syntax)
+-- CRITICAL: Allow inserting profiles with this exact policy
+DROP POLICY IF EXISTS "Users can insert their own profile" ON profiles;
 CREATE POLICY "Users can insert their own profile" 
 ON profiles FOR INSERT 
 WITH CHECK (auth.uid() = id);
 
--- Important: Allow service role to insert profiles (with this exact policy name and syntax)
+-- CRITICAL: Allow service role to insert profiles with this exact policy
+DROP POLICY IF EXISTS "Service role can insert any profile" ON profiles;
 CREATE POLICY "Service role can insert any profile" 
 ON profiles FOR INSERT 
 WITH CHECK (auth.role() = 'service_role' OR auth.uid() = id);

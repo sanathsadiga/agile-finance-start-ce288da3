@@ -49,9 +49,51 @@ const checkRLSPolicies = async () => {
       'Data:', profilesData
     );
     
-    // Check if RLS policies are configured correctly for INSERT
-    console.log('Checking if RLS policies are configured correctly for INSERT...');
-    return true;
+    // Specifically test the insert policy with a dummy profile
+    console.log('Testing profile insert with anon key...');
+    const testId = uuidv4();
+    const { data: insertData, error: insertError } = await supabase
+      .from('profiles')
+      .insert({
+        id: testId,
+        first_name: 'Test',
+        last_name: 'User',
+        email: 'test@example.com'
+      })
+      .select('*');
+    
+    if (insertError) {
+      console.log('Profiles insert policy check:', insertError);
+      
+      // Special handling for RLS policy violations
+      if (insertError.message.includes('violates row-level security policy')) {
+        console.log('RLS policies need to be updated in Supabase SQL editor. Proceeding with application.');
+        
+        // Print SQL to fix the issue
+        console.log('To fix RLS policies, run the following SQL in your Supabase SQL editor:');
+        console.log(`
+CREATE POLICY "Users can insert their own profile" 
+ON profiles FOR INSERT 
+WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Service role can insert any profile" 
+ON profiles FOR INSERT 
+WITH CHECK (auth.role() = 'service_role' OR auth.uid() = id);
+      `);
+        
+        return false;
+      }
+    }
+    
+    // Clean up test data if it was created successfully
+    if (insertData) {
+      await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', testId);
+    }
+    
+    return !insertError;
   } catch (err) {
     console.error('Error checking RLS policies:', err);
     return false;
@@ -71,16 +113,6 @@ export const initializeDatabase = async () => {
       return true;
     } else {
       console.warn('⚠️ RLS policies may not be configured correctly');
-      console.log('To fix RLS policies, run the following SQL in your Supabase SQL editor:');
-      console.log(`
-CREATE POLICY "Users can insert their own profile" 
-ON profiles FOR INSERT 
-WITH CHECK (auth.uid() = id);
-
-CREATE POLICY "Service role can insert any profile" 
-ON profiles FOR INSERT 
-WITH CHECK (auth.role() = 'service_role' OR auth.uid() = id);
-      `);
       return false;
     }
   } catch (err) {
