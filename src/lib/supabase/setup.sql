@@ -1,5 +1,10 @@
 
--- Create tables
+-- Drop existing tables if they exist
+DROP TABLE IF EXISTS expenses;
+DROP TABLE IF EXISTS invoices;
+DROP TABLE IF EXISTS profiles;
+
+-- Create profiles table with proper structure
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID REFERENCES auth.users PRIMARY KEY,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -11,43 +16,10 @@ CREATE TABLE IF NOT EXISTS profiles (
   avatar_url TEXT
 );
 
-CREATE TABLE IF NOT EXISTS invoices (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  user_id UUID REFERENCES auth.users NOT NULL,
-  date TEXT NOT NULL,
-  due_date TEXT,
-  customer TEXT,
-  email TEXT,
-  amount DECIMAL NOT NULL,
-  status TEXT NOT NULL CHECK (status IN ('paid', 'pending', 'overdue', 'draft', 'unpaid')),
-  description TEXT,
-  notes TEXT
-);
-
-CREATE TABLE IF NOT EXISTS expenses (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  user_id UUID REFERENCES auth.users NOT NULL,
-  date TEXT NOT NULL,
-  amount DECIMAL NOT NULL,
-  category TEXT NOT NULL,
-  description TEXT NOT NULL,
-  vendor TEXT,
-  receipt BOOLEAN,
-  notes TEXT
-);
-
--- Set up Row Level Security
-
--- Enable RLS on tables
+-- Enable Row Level Security
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
-ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 
--- Profiles policies
+-- Create RLS policies for profiles
 CREATE POLICY "Users can view their own profile" 
 ON profiles FOR SELECT 
 USING (auth.uid() = id);
@@ -56,51 +28,13 @@ CREATE POLICY "Users can update their own profile"
 ON profiles FOR UPDATE 
 USING (auth.uid() = id);
 
--- CRITICAL: Allow inserting profiles with this exact policy
-DROP POLICY IF EXISTS "Users can insert their own profile" ON profiles;
 CREATE POLICY "Users can insert their own profile" 
 ON profiles FOR INSERT 
 WITH CHECK (auth.uid() = id);
 
--- CRITICAL: Allow service role to insert profiles with this exact policy
-DROP POLICY IF EXISTS "Service role can insert any profile" ON profiles;
 CREATE POLICY "Service role can insert any profile" 
 ON profiles FOR INSERT 
 WITH CHECK (auth.role() = 'service_role' OR auth.uid() = id);
-
--- Invoices policies
-CREATE POLICY "Users can view their own invoices" 
-ON invoices FOR SELECT 
-USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can create their own invoices" 
-ON invoices FOR INSERT 
-WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own invoices" 
-ON invoices FOR UPDATE 
-USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own invoices" 
-ON invoices FOR DELETE 
-USING (auth.uid() = user_id);
-
--- Expenses policies
-CREATE POLICY "Users can view their own expenses" 
-ON expenses FOR SELECT 
-USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can create their own expenses" 
-ON expenses FOR INSERT 
-WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own expenses" 
-ON expenses FOR UPDATE 
-USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own expenses" 
-ON expenses FOR DELETE 
-USING (auth.uid() = user_id);
 
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -111,18 +45,30 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Triggers to automatically update the updated_at column
+-- Trigger to automatically update the updated_at column
 CREATE TRIGGER update_profiles_updated_at
 BEFORE UPDATE ON profiles
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_invoices_updated_at
-BEFORE UPDATE ON invoices
-FOR EACH ROW
-EXECUTE FUNCTION update_updated_at_column();
+-- Create a function for automatic profile creation
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, first_name, last_name, email, company_name)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
+    COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
+    COALESCE(NEW.email, ''),
+    COALESCE(NEW.raw_user_meta_data->>'company_name', NULL)
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE TRIGGER update_expenses_updated_at
-BEFORE UPDATE ON expenses
-FOR EACH ROW
-EXECUTE FUNCTION update_updated_at_column();
+-- Trigger the function every time a user is created
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
