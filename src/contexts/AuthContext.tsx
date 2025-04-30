@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase/database";
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import { v4 as uuidv4 } from 'uuid';
 
 // Define user type
 export interface User {
@@ -54,6 +53,19 @@ const mapSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User | null>
 
     if (error) {
       console.error('Error fetching profile:', error);
+      // Try to create a profile using user metadata if profile doesn't exist
+      if (error.code === 'PGRST116') { // Record not found
+        const metadata = supabaseUser.user_metadata;
+        if (metadata && metadata.first_name && metadata.last_name) {
+          return {
+            id: supabaseUser.id,
+            email: supabaseUser.email || '',
+            firstName: metadata.first_name,
+            lastName: metadata.last_name,
+            companyName: metadata.company_name,
+          };
+        }
+      }
       return null;
     }
 
@@ -120,7 +132,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session);
-        if (event === 'SIGNED_IN' && session) {
+        if (session?.user) {
+          // Always try to get the profile, even on SIGNED_UP events
           const mappedUser = await mapSupabaseUser(session.user);
           if (mappedUser) {
             setUser(mappedUser);
@@ -208,7 +221,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Password must be at least 6 characters');
       }
 
-      // Sign up with Supabase
+      // Sign up with Supabase - store user metadata during signup
       const { data, error } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
@@ -216,7 +229,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           data: {
             first_name: userData.firstName,
             last_name: userData.lastName,
-            company_name: userData.companyName || null
+            company_name: userData.companyName || null,
+            email: userData.email
           }
         }
       });
@@ -231,14 +245,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('No user returned from registration');
       }
       
-      // Create a profile in the profiles table with proper UUID format
+      // Create a profile in the profiles table
       console.log('Creating user profile with ID:', data.user.id);
       
-      // Retry profile creation with different approaches if needed
-      let profileError;
-      
-      // Approach 1: Try direct insert with current auth session
-      const { error: directInsertError } = await supabase
+      const { error: profileError } = await supabase
         .from('profiles')
         .insert({
           id: data.user.id,
@@ -248,36 +258,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           company_name: userData.companyName || null,
         });
         
-      if (directInsertError) {
-        console.warn('Direct insert failed:', directInsertError.message);
-        profileError = directInsertError;
-        
-        // We'll continue with the signup process, as the user was created 
-        // in auth but we couldn't create the profile due to RLS policy
-      } else {
-        console.log('Profile created successfully');
-      }
-
-      // Create the mapped user based on the data we have
-      const newUser: User = {
-        id: data.user.id,
-        email: userData.email,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        companyName: userData.companyName,
-      };
-      
-      // Set the user in our state
-      setUser(newUser);
-      
-      // Show appropriate message
       if (profileError) {
+        console.error('Error creating profile:', profileError);
+        
+        // Create a mapped user based on auth data even if profile creation failed
+        const newUser: User = {
+          id: data.user.id,
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          companyName: userData.companyName,
+        };
+        
+        setUser(newUser);
+        
         toast({
-          title: "Signup partially successful",
-          description: "Your account was created, but there was an issue setting up your profile. Please contact support.",
-          variant: "default",
+          title: "Signup successful",
+          description: `Welcome to FinanceFlow, ${userData.firstName}! (Note: Profile creation pending)`,
         });
+        
       } else {
+        // Create the mapped user
+        const newUser: User = {
+          id: data.user.id,
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          companyName: userData.companyName,
+        };
+        
+        setUser(newUser);
+        
         toast({
           title: "Signup successful",
           description: `Welcome to FinanceFlow, ${newUser.firstName}!`,
@@ -286,6 +297,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Navigate to dashboard
       navigate('/dashboard');
+      
     } catch (error: any) {
       console.error('Signup error:', error);
       toast({

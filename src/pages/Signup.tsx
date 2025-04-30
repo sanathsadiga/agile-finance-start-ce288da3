@@ -46,7 +46,8 @@ const Signup = () => {
     } catch (error: any) {
       console.error('Signup error:', error);
       setError(error?.message || "An unknown error occurred during signup");
-      setIsLoading(false); // Important: ensure loading state is reset on error
+    } finally {
+      setIsLoading(false); // Ensure loading state is reset regardless of outcome
     }
   };
 
