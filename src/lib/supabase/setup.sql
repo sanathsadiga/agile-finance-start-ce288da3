@@ -148,7 +148,7 @@ BEGIN
     COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
     COALESCE(NEW.email, ''),
     COALESCE(NEW.raw_user_meta_data->>'company_name', NULL),
-    COALESCE(NEW.email_confirmed, FALSE)
+    COALESCE(NEW.email_confirmed_at IS NOT NULL, FALSE)
   );
   
   -- Insert default invoice settings
@@ -173,7 +173,8 @@ CREATE TRIGGER on_auth_user_created
 CREATE OR REPLACE FUNCTION public.handle_email_confirmation()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF OLD.email_confirmed = FALSE AND NEW.email_confirmed = TRUE THEN
+  -- Check if email confirmation status changed to confirmed
+  IF OLD.email_confirmed_at IS NULL AND NEW.email_confirmed_at IS NOT NULL THEN
     UPDATE public.profiles
     SET email_confirmed = TRUE
     WHERE id = NEW.id;
@@ -185,7 +186,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Trigger the function when email confirmation changes
 DROP TRIGGER IF EXISTS on_auth_email_confirmed ON auth.users;
 CREATE TRIGGER on_auth_email_confirmed
-  AFTER UPDATE OF email_confirmed ON auth.users
+  AFTER UPDATE OF email_confirmed_at ON auth.users
   FOR EACH ROW
-  WHEN (OLD.email_confirmed = FALSE AND NEW.email_confirmed = TRUE)
+  WHEN (OLD.email_confirmed_at IS NULL AND NEW.email_confirmed_at IS NOT NULL)
   EXECUTE PROCEDURE public.handle_email_confirmation();
