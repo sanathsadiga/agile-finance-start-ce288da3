@@ -7,10 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useSettings, BusinessSettings, AccountSettings } from "@/hooks/useSettings";
+import { useSettings, BusinessSettings, AccountSettings, InvoiceSettings, TaxSettings } from "@/hooks/useSettings";
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardHeader from '@/components/layout/DashboardHeader';
+import { checkEmailConfirmation } from '@/lib/supabase/database';
 
 const currencies = [
   { value: "usd", label: "USD - US Dollar" },
@@ -24,7 +27,20 @@ const currencies = [
 const Settings = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { isLoading, updateBusinessSettings, updateAccountSettings, fetchUserSettings } = useSettings();
+  const { 
+    isLoading, 
+    isSaving,
+    updateBusinessSettings, 
+    updateAccountSettings, 
+    updateInvoiceSettings,
+    updateTaxSettings,
+    fetchUserProfile,
+    fetchInvoiceSettings,
+    fetchTaxSettings
+  } = useSettings();
+
+  const [emailConfirmed, setEmailConfirmed] = useState<boolean>(false);
+  const [lastLoadTime, setLastLoadTime] = useState<Date>(new Date());
 
   const [businessData, setBusinessData] = useState<BusinessSettings>({
     company_name: '',
@@ -43,46 +59,105 @@ const Settings = () => {
     last_name: '',
     email: ''
   });
+  
+  const [invoiceData, setInvoiceData] = useState<InvoiceSettings>({
+    invoice_prefix: 'INV-',
+    next_invoice_number: 1001,
+    default_payment_terms: 30,
+    auto_reminders: false
+  });
+  
+  const [taxData, setTaxData] = useState<TaxSettings>({
+    tax_enabled: false,
+    default_tax_rate: 10,
+    tax_name: 'Sales Tax',
+    tax_registration_number: null
+  });
 
   // Load user data when component mounts
   useEffect(() => {
     const loadUserSettings = async () => {
-      const settings = await fetchUserSettings();
+      console.log('[SETTINGS] Loading user settings');
       
-      if (settings) {
-        // Update business data
-        setBusinessData({
-          company_name: settings.company_name || '',
-          business_phone: settings.business_phone || '',
-          business_website: settings.business_website || '',
-          business_address: settings.business_address || '',
-          business_city: settings.business_city || '',
-          business_state: settings.business_state || '',
-          business_postal_code: settings.business_postal_code || '',
-          business_country: settings.business_country || '',
-          default_currency: settings.default_currency || 'usd'
-        });
+      try {
+        // Check if email is confirmed
+        if (user?.id) {
+          const isConfirmed = await checkEmailConfirmation(user.id);
+          console.log('[SETTINGS] Email confirmation status:', isConfirmed);
+          setEmailConfirmed(isConfirmed);
+        }
         
-        // Update account data
-        setAccountData({
-          first_name: settings.first_name,
-          last_name: settings.last_name,
-          email: settings.email
-        });
-      } else if (user) {
-        // Fallback to user context if we can't fetch from database
-        setAccountData({
-          first_name: user.firstName,
-          last_name: user.lastName,
-          email: user.email
-        });
+        // Load user profile data
+        const profile = await fetchUserProfile();
         
-        if (user.companyName) {
+        if (profile) {
+          // Update business data
           setBusinessData({
-            ...businessData,
-            company_name: user.companyName
+            company_name: profile.company_name || '',
+            business_phone: profile.business_phone || '',
+            business_website: profile.business_website || '',
+            business_address: profile.business_address || '',
+            business_city: profile.business_city || '',
+            business_state: profile.business_state || '',
+            business_postal_code: profile.business_postal_code || '',
+            business_country: profile.business_country || '',
+            default_currency: profile.default_currency || 'usd'
+          });
+          
+          // Update account data
+          setAccountData({
+            first_name: profile.first_name,
+            last_name: profile.last_name,
+            email: profile.email
+          });
+        } else if (user) {
+          // Fallback to user context if we can't fetch from database
+          setAccountData({
+            first_name: user.firstName,
+            last_name: user.lastName,
+            email: user.email
+          });
+          
+          if (user.companyName) {
+            setBusinessData({
+              ...businessData,
+              company_name: user.companyName
+            });
+          }
+        }
+        
+        // Load invoice settings
+        const invoiceSettings = await fetchInvoiceSettings();
+        if (invoiceSettings) {
+          setInvoiceData({
+            invoice_prefix: invoiceSettings.invoice_prefix || 'INV-',
+            next_invoice_number: invoiceSettings.next_invoice_number || 1001,
+            default_payment_terms: invoiceSettings.default_payment_terms || 30,
+            auto_reminders: invoiceSettings.auto_reminders || false,
+            notes_default: invoiceSettings.notes_default || null,
+            terms_default: invoiceSettings.terms_default || null
           });
         }
+        
+        // Load tax settings
+        const taxSettings = await fetchTaxSettings();
+        if (taxSettings) {
+          setTaxData({
+            tax_enabled: taxSettings.tax_enabled || false,
+            default_tax_rate: taxSettings.default_tax_rate || 10,
+            tax_name: taxSettings.tax_name || 'Sales Tax',
+            tax_registration_number: taxSettings.tax_registration_number || null
+          });
+        }
+        
+        setLastLoadTime(new Date());
+      } catch (error) {
+        console.error('[SETTINGS] Error loading settings:', error);
+        toast({
+          title: 'Error loading settings',
+          description: 'There was a problem loading your settings. Please try again.',
+          variant: 'destructive'
+        });
       }
     };
 
@@ -112,8 +187,55 @@ const Settings = () => {
     }));
   };
   
+  const handleInvoiceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value, type } = e.target;
+    setInvoiceData(prev => ({
+      ...prev,
+      [id]: type === 'number' ? Number(value) : value
+    }));
+  };
+  
+  const handleInvoiceSelectChange = (field: string, value: any) => {
+    setInvoiceData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+  
+  const handleInvoiceToggleChange = (field: string, checked: boolean) => {
+    setInvoiceData(prev => ({
+      ...prev,
+      [field]: checked
+    }));
+  };
+  
+  const handleTaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value, type } = e.target;
+    setTaxData(prev => ({
+      ...prev,
+      [id]: type === 'number' ? Number(value) : value
+    }));
+  };
+  
+  const handleTaxToggleChange = (checked: boolean) => {
+    setTaxData(prev => ({
+      ...prev,
+      tax_enabled: checked
+    }));
+  };
+  
   const handleSaveBusinessSettings = async () => {
-    if (isLoading) return;
+    if (isLoading || isSaving) return;
+    
+    // Check if email is confirmed
+    if (!emailConfirmed) {
+      toast({
+        title: "Email not confirmed",
+        description: "Please confirm your email before updating settings",
+        variant: "destructive"
+      });
+      return;
+    }
     
     const success = await updateBusinessSettings(businessData);
     
@@ -126,7 +248,17 @@ const Settings = () => {
   };
   
   const handleSaveAccountSettings = async () => {
-    if (isLoading) return;
+    if (isLoading || isSaving) return;
+    
+    // Check if email is confirmed
+    if (!emailConfirmed) {
+      toast({
+        title: "Email not confirmed",
+        description: "Please confirm your email before updating settings",
+        variant: "destructive"
+      });
+      return;
+    }
     
     // Basic validation
     if (!accountData.first_name || !accountData.last_name || !accountData.email) {
@@ -147,6 +279,52 @@ const Settings = () => {
       });
     }
   };
+  
+  const handleSaveInvoiceSettings = async () => {
+    if (isLoading || isSaving) return;
+    
+    // Check if email is confirmed
+    if (!emailConfirmed) {
+      toast({
+        title: "Email not confirmed",
+        description: "Please confirm your email before updating settings",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const success = await updateInvoiceSettings(invoiceData);
+    
+    if (success) {
+      toast({
+        title: "Invoice settings updated",
+        description: "Your invoice settings have been saved successfully."
+      });
+    }
+  };
+  
+  const handleSaveTaxSettings = async () => {
+    if (isLoading || isSaving) return;
+    
+    // Check if email is confirmed
+    if (!emailConfirmed) {
+      toast({
+        title: "Email not confirmed",
+        description: "Please confirm your email before updating settings",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const success = await updateTaxSettings(taxData);
+    
+    if (success) {
+      toast({
+        title: "Tax settings updated",
+        description: "Your tax settings have been saved successfully."
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -156,6 +334,16 @@ const Settings = () => {
           <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
           <p className="text-gray-600">Manage your account and application preferences</p>
         </header>
+        
+        {!emailConfirmed && user && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Email Not Confirmed</AlertTitle>
+            <AlertDescription>
+              Please confirm your email address to enable editing of settings. Check your inbox for a confirmation link.
+            </AlertDescription>
+          </Alert>
+        )}
         
         <Tabs defaultValue="business">
           <TabsList className="mb-8">
@@ -181,6 +369,7 @@ const Settings = () => {
                       id="company_name" 
                       value={businessData.company_name || ''} 
                       onChange={handleBusinessChange}
+                      disabled={!emailConfirmed}
                     />
                   </div>
                   <div className="space-y-2">
@@ -189,6 +378,7 @@ const Settings = () => {
                       id="business_phone" 
                       value={businessData.business_phone || ''} 
                       onChange={handleBusinessChange}
+                      disabled={!emailConfirmed}
                     />
                   </div>
                 </div>
@@ -200,6 +390,7 @@ const Settings = () => {
                     value={businessData.business_website || ''} 
                     onChange={handleBusinessChange}
                     placeholder="https://www.example.com"
+                    disabled={!emailConfirmed}
                   />
                 </div>
                 
@@ -209,6 +400,7 @@ const Settings = () => {
                     id="business_address" 
                     value={businessData.business_address || ''} 
                     onChange={handleBusinessChange}
+                    disabled={!emailConfirmed}
                   />
                 </div>
                 
@@ -219,6 +411,7 @@ const Settings = () => {
                       id="business_city" 
                       value={businessData.business_city || ''} 
                       onChange={handleBusinessChange}
+                      disabled={!emailConfirmed}
                     />
                   </div>
                   <div className="space-y-2">
@@ -227,6 +420,7 @@ const Settings = () => {
                       id="business_state" 
                       value={businessData.business_state || ''} 
                       onChange={handleBusinessChange}
+                      disabled={!emailConfirmed}
                     />
                   </div>
                   <div className="space-y-2">
@@ -235,6 +429,7 @@ const Settings = () => {
                       id="business_postal_code" 
                       value={businessData.business_postal_code || ''} 
                       onChange={handleBusinessChange}
+                      disabled={!emailConfirmed}
                     />
                   </div>
                   <div className="space-y-2">
@@ -243,6 +438,7 @@ const Settings = () => {
                       id="business_country" 
                       value={businessData.business_country || ''} 
                       onChange={handleBusinessChange}
+                      disabled={!emailConfirmed}
                     />
                   </div>
                 </div>
@@ -252,6 +448,7 @@ const Settings = () => {
                   <Select 
                     value={businessData.default_currency || 'usd'} 
                     onValueChange={handleCurrencyChange}
+                    disabled={!emailConfirmed}
                   >
                     <SelectTrigger id="default_currency">
                       <SelectValue placeholder="Select currency" />
@@ -267,8 +464,8 @@ const Settings = () => {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button onClick={handleSaveBusinessSettings} disabled={isLoading}>
-                  {isLoading ? 'Saving...' : 'Save Changes'}
+                <Button onClick={handleSaveBusinessSettings} disabled={isLoading || isSaving || !emailConfirmed}>
+                  {isLoading || isSaving ? 'Saving...' : 'Save Changes'}
                 </Button>
               </CardFooter>
             </Card>
@@ -284,20 +481,35 @@ const Settings = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="invoicePrefix">Invoice Number Prefix</Label>
-                  <Input id="invoicePrefix" defaultValue="INV-" />
-                  <p className="text-sm text-gray-500">Your invoice numbers will look like: INV-0001</p>
+                  <Label htmlFor="invoice_prefix">Invoice Number Prefix</Label>
+                  <Input 
+                    id="invoice_prefix" 
+                    value={invoiceData.invoice_prefix} 
+                    onChange={handleInvoiceChange}
+                    disabled={!emailConfirmed}
+                  />
+                  <p className="text-sm text-gray-500">Your invoice numbers will look like: {invoiceData.invoice_prefix}{invoiceData.next_invoice_number}</p>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="nextInvoiceNumber">Next Invoice Number</Label>
-                  <Input id="nextInvoiceNumber" type="number" defaultValue="1001" />
+                  <Label htmlFor="next_invoice_number">Next Invoice Number</Label>
+                  <Input 
+                    id="next_invoice_number" 
+                    type="number" 
+                    value={invoiceData.next_invoice_number} 
+                    onChange={handleInvoiceChange}
+                    disabled={!emailConfirmed}
+                  />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="paymentTerms">Default Payment Terms</Label>
-                  <Select defaultValue="30">
-                    <SelectTrigger id="paymentTerms">
+                  <Label htmlFor="default_payment_terms">Default Payment Terms</Label>
+                  <Select 
+                    value={String(invoiceData.default_payment_terms)}
+                    onValueChange={(value) => handleInvoiceSelectChange('default_payment_terms', Number(value))}
+                    disabled={!emailConfirmed}
+                  >
+                    <SelectTrigger id="default_payment_terms">
                       <SelectValue placeholder="Select payment terms" />
                     </SelectTrigger>
                     <SelectContent>
@@ -311,15 +523,22 @@ const Settings = () => {
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  <Switch id="autoReminders" />
-                  <Label htmlFor="autoReminders">Send automatic payment reminders</Label>
+                  <Switch 
+                    id="auto_reminders" 
+                    checked={invoiceData.auto_reminders}
+                    onCheckedChange={(checked) => handleInvoiceToggleChange('auto_reminders', checked)}
+                    disabled={!emailConfirmed}
+                  />
+                  <Label htmlFor="auto_reminders">Send automatic payment reminders</Label>
                 </div>
               </CardContent>
               <CardFooter>
-                <Button onClick={() => toast({
-                  title: "Feature coming soon",
-                  description: "Invoice settings will be available in a future update"
-                })}>Save Changes</Button>
+                <Button 
+                  onClick={handleSaveInvoiceSettings} 
+                  disabled={isLoading || isSaving || !emailConfirmed}
+                >
+                  {isLoading || isSaving ? 'Saving...' : 'Save Changes'}
+                </Button>
               </CardFooter>
             </Card>
           </TabsContent>
@@ -334,31 +553,54 @@ const Settings = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center space-x-2">
-                  <Switch id="taxEnabled" />
-                  <Label htmlFor="taxEnabled">Enable tax calculations on invoices</Label>
+                  <Switch 
+                    id="tax_enabled" 
+                    checked={taxData.tax_enabled}
+                    onCheckedChange={handleTaxToggleChange}
+                    disabled={!emailConfirmed}
+                  />
+                  <Label htmlFor="tax_enabled">Enable tax calculations on invoices</Label>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="defaultTaxRate">Default Tax Rate (%)</Label>
-                  <Input id="defaultTaxRate" type="number" defaultValue="10" />
+                  <Label htmlFor="default_tax_rate">Default Tax Rate (%)</Label>
+                  <Input 
+                    id="default_tax_rate" 
+                    type="number" 
+                    value={taxData.default_tax_rate} 
+                    onChange={handleTaxChange}
+                    disabled={!emailConfirmed || !taxData.tax_enabled}
+                  />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="taxName">Tax Name</Label>
-                  <Input id="taxName" defaultValue="Sales Tax" />
+                  <Label htmlFor="tax_name">Tax Name</Label>
+                  <Input 
+                    id="tax_name" 
+                    value={taxData.tax_name} 
+                    onChange={handleTaxChange}
+                    disabled={!emailConfirmed || !taxData.tax_enabled}
+                  />
                   <p className="text-sm text-gray-500">This name will appear on your invoices</p>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="taxID">Tax Registration Number</Label>
-                  <Input id="taxID" defaultValue="TAX-123456789" />
+                  <Label htmlFor="tax_registration_number">Tax Registration Number</Label>
+                  <Input 
+                    id="tax_registration_number" 
+                    value={taxData.tax_registration_number || ''} 
+                    onChange={handleTaxChange}
+                    disabled={!emailConfirmed || !taxData.tax_enabled}
+                  />
                 </div>
               </CardContent>
               <CardFooter>
-                <Button onClick={() => toast({
-                  title: "Feature coming soon",
-                  description: "Tax settings will be available in a future update"
-                })}>Save Changes</Button>
+                <Button 
+                  onClick={handleSaveTaxSettings} 
+                  disabled={isLoading || isSaving || !emailConfirmed}
+                >
+                  {isLoading || isSaving ? 'Saving...' : 'Save Changes'}
+                </Button>
               </CardFooter>
             </Card>
           </TabsContent>
@@ -380,6 +622,7 @@ const Settings = () => {
                       value={accountData.first_name} 
                       onChange={handleAccountChange}
                       required
+                      disabled={!emailConfirmed}
                     />
                   </div>
                   <div className="space-y-2">
@@ -389,6 +632,7 @@ const Settings = () => {
                       value={accountData.last_name} 
                       onChange={handleAccountChange}
                       required
+                      disabled={!emailConfirmed}
                     />
                   </div>
                 </div>
@@ -401,6 +645,7 @@ const Settings = () => {
                     value={accountData.email} 
                     onChange={handleAccountChange}
                     required
+                    disabled={!emailConfirmed}
                   />
                 </div>
                 
@@ -410,15 +655,25 @@ const Settings = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Button variant="outline" className="w-full" onClick={() => toast({
-                    title: "Feature coming soon",
-                    description: "Password change will be available in a future update"
-                  })}>Change Password</Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={() => toast({
+                      title: "Feature coming soon",
+                      description: "Password change will be available in a future update"
+                    })}
+                    disabled={!emailConfirmed}
+                  >
+                    Change Password
+                  </Button>
                 </div>
               </CardContent>
               <CardFooter>
-                <Button onClick={handleSaveAccountSettings} disabled={isLoading}>
-                  {isLoading ? 'Saving...' : 'Save Changes'}
+                <Button 
+                  onClick={handleSaveAccountSettings} 
+                  disabled={isLoading || isSaving || !emailConfirmed}
+                >
+                  {isLoading || isSaving ? 'Saving...' : 'Save Changes'}
                 </Button>
               </CardFooter>
             </Card>

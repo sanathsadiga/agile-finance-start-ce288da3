@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabase/database';
+import { supabase, logDatabaseOperation, checkEmailConfirmation } from '@/lib/supabase/database';
 import { useToast } from './use-toast';
 
 // Define the business settings type
@@ -24,10 +24,56 @@ export interface AccountSettings {
   email: string;
 }
 
+// Define invoice settings type
+export interface InvoiceSettings {
+  invoice_prefix: string;
+  next_invoice_number: number;
+  default_payment_terms: number;
+  auto_reminders: boolean;
+  notes_default?: string | null;
+  terms_default?: string | null;
+}
+
+// Define tax settings type
+export interface TaxSettings {
+  tax_enabled: boolean;
+  default_tax_rate: number;
+  tax_name: string;
+  tax_registration_number: string | null;
+}
+
 export const useSettings = () => {
   const { user, setUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
   const { toast } = useToast();
+
+  // Check if email is confirmed before allowing settings updates
+  const checkCanUpdateSettings = async (): Promise<boolean> => {
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to update settings",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Check if email is confirmed
+    const isConfirmed = await checkEmailConfirmation(user.id);
+    if (!isConfirmed) {
+      toast({
+        title: "Email not confirmed",
+        description: "Please confirm your email before updating settings",
+        variant: "destructive",
+      });
+      console.log("[SETTINGS] Email not confirmed for user", user.id);
+      return false;
+    }
+
+    return true;
+  };
 
   const updateBusinessSettings = async (settings: BusinessSettings) => {
     if (!user?.id) {
@@ -39,7 +85,20 @@ export const useSettings = () => {
       return false;
     }
 
+    // Prevent multiple rapid saves
+    if (isSaving) {
+      console.log('[SETTINGS] Already saving business settings, ignoring request');
+      toast({
+        title: "Please wait",
+        description: "Your previous changes are still being saved",
+      });
+      return false;
+    }
+
+    setIsSaving(true);
     setIsLoading(true);
+    console.log('[SETTINGS] Updating business settings for user:', user.id);
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -59,7 +118,7 @@ export const useSettings = () => {
         .select();
 
       if (error) {
-        console.error('Error updating business settings:', error);
+        logDatabaseOperation('updateBusinessSettings', false, { userId: user.id }, error);
         toast({
           title: "Update failed",
           description: error.message || "Failed to update business settings",
@@ -67,6 +126,8 @@ export const useSettings = () => {
         });
         return false;
       }
+
+      logDatabaseOperation('updateBusinessSettings', true, { userId: user.id, updatedFields: Object.keys(settings).length });
 
       // Update the user context with new data
       if (data && data[0]) {
@@ -76,13 +137,14 @@ export const useSettings = () => {
         });
       }
 
+      setLastSaveTime(new Date());
       toast({
         title: "Settings updated",
         description: "Your business settings have been updated successfully",
       });
       return true;
     } catch (err: any) {
-      console.error('Error in updateBusinessSettings:', err);
+      logDatabaseOperation('updateBusinessSettings', false, { userId: user.id }, err);
       toast({
         title: "Update failed",
         description: err?.message || "An unknown error occurred",
@@ -91,6 +153,10 @@ export const useSettings = () => {
       return false;
     } finally {
       setIsLoading(false);
+      // Add a small delay before allowing another save to prevent rapid multiple saves
+      setTimeout(() => {
+        setIsSaving(false);
+      }, 1000);
     }
   };
 
@@ -104,7 +170,20 @@ export const useSettings = () => {
       return false;
     }
 
+    // Prevent multiple rapid saves
+    if (isSaving) {
+      console.log('[SETTINGS] Already saving account settings, ignoring request');
+      toast({
+        title: "Please wait",
+        description: "Your previous changes are still being saved",
+      });
+      return false;
+    }
+
+    setIsSaving(true);
     setIsLoading(true);
+    console.log('[SETTINGS] Updating account settings for user:', user.id);
+
     try {
       // Update profile in database
       const { data, error } = await supabase
@@ -119,7 +198,7 @@ export const useSettings = () => {
         .select();
 
       if (error) {
-        console.error('Error updating account settings:', error);
+        logDatabaseOperation('updateAccountSettings', false, { userId: user.id }, error);
         toast({
           title: "Update failed",
           description: error.message || "Failed to update account settings",
@@ -127,6 +206,8 @@ export const useSettings = () => {
         });
         return false;
       }
+
+      logDatabaseOperation('updateAccountSettings', true, { userId: user.id });
 
       // Update the user context with new data
       if (data && data[0]) {
@@ -138,13 +219,14 @@ export const useSettings = () => {
         });
       }
 
+      setLastSaveTime(new Date());
       toast({
         title: "Settings updated",
         description: "Your account settings have been updated successfully",
       });
       return true;
     } catch (err: any) {
-      console.error('Error in updateAccountSettings:', err);
+      logDatabaseOperation('updateAccountSettings', false, { userId: user.id }, err);
       toast({
         title: "Update failed",
         description: err?.message || "An unknown error occurred",
@@ -153,10 +235,160 @@ export const useSettings = () => {
       return false;
     } finally {
       setIsLoading(false);
+      // Add a small delay before allowing another save to prevent rapid multiple saves
+      setTimeout(() => {
+        setIsSaving(false);
+      }, 1000);
     }
   };
 
-  const fetchUserSettings = async () => {
+  const updateInvoiceSettings = async (settings: InvoiceSettings) => {
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to update settings",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Prevent multiple rapid saves
+    if (isSaving) {
+      console.log('[SETTINGS] Already saving invoice settings, ignoring request');
+      toast({
+        title: "Please wait",
+        description: "Your previous changes are still being saved",
+      });
+      return false;
+    }
+
+    setIsSaving(true);
+    setIsLoading(true);
+    console.log('[SETTINGS] Updating invoice settings for user:', user.id);
+
+    try {
+      const { data, error } = await supabase
+        .from('invoice_settings')
+        .update({
+          invoice_prefix: settings.invoice_prefix,
+          next_invoice_number: settings.next_invoice_number,
+          default_payment_terms: settings.default_payment_terms,
+          auto_reminders: settings.auto_reminders,
+          notes_default: settings.notes_default,
+          terms_default: settings.terms_default,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id)
+        .select();
+
+      if (error) {
+        logDatabaseOperation('updateInvoiceSettings', false, { userId: user.id }, error);
+        toast({
+          title: "Update failed",
+          description: error.message || "Failed to update invoice settings",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      logDatabaseOperation('updateInvoiceSettings', true, { userId: user.id });
+      
+      setLastSaveTime(new Date());
+      toast({
+        title: "Settings updated",
+        description: "Your invoice settings have been updated successfully",
+      });
+      return true;
+    } catch (err: any) {
+      logDatabaseOperation('updateInvoiceSettings', false, { userId: user.id }, err);
+      toast({
+        title: "Update failed",
+        description: err?.message || "An unknown error occurred",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
+      // Add a small delay before allowing another save to prevent rapid multiple saves
+      setTimeout(() => {
+        setIsSaving(false);
+      }, 1000);
+    }
+  };
+
+  const updateTaxSettings = async (settings: TaxSettings) => {
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to update settings",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Prevent multiple rapid saves
+    if (isSaving) {
+      console.log('[SETTINGS] Already saving tax settings, ignoring request');
+      toast({
+        title: "Please wait",
+        description: "Your previous changes are still being saved",
+      });
+      return false;
+    }
+
+    setIsSaving(true);
+    setIsLoading(true);
+    console.log('[SETTINGS] Updating tax settings for user:', user.id);
+
+    try {
+      const { data, error } = await supabase
+        .from('tax_settings')
+        .update({
+          tax_enabled: settings.tax_enabled,
+          default_tax_rate: settings.default_tax_rate,
+          tax_name: settings.tax_name,
+          tax_registration_number: settings.tax_registration_number,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id)
+        .select();
+
+      if (error) {
+        logDatabaseOperation('updateTaxSettings', false, { userId: user.id }, error);
+        toast({
+          title: "Update failed",
+          description: error.message || "Failed to update tax settings",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      logDatabaseOperation('updateTaxSettings', true, { userId: user.id });
+      
+      setLastSaveTime(new Date());
+      toast({
+        title: "Settings updated",
+        description: "Your tax settings have been updated successfully",
+      });
+      return true;
+    } catch (err: any) {
+      logDatabaseOperation('updateTaxSettings', false, { userId: user.id }, err);
+      toast({
+        title: "Update failed",
+        description: err?.message || "An unknown error occurred",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
+      // Add a small delay before allowing another save to prevent rapid multiple saves
+      setTimeout(() => {
+        setIsSaving(false);
+      }, 1000);
+    }
+  };
+
+  const fetchUserProfile = async () => {
     if (!user?.id) {
       return null;
     }
@@ -170,18 +402,141 @@ export const useSettings = () => {
         .single();
 
       if (error) {
-        console.error('Error fetching user settings:', error);
+        logDatabaseOperation('fetchUserProfile', false, { userId: user.id }, error);
         toast({
           title: "Error",
-          description: "Failed to load user settings",
+          description: "Failed to load user profile",
           variant: "destructive",
         });
         return null;
       }
 
+      logDatabaseOperation('fetchUserProfile', true, { userId: user.id });
       return data;
     } catch (err) {
-      console.error('Error in fetchUserSettings:', err);
+      logDatabaseOperation('fetchUserProfile', false, { userId: user.id }, err);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchInvoiceSettings = async () => {
+    if (!user?.id) {
+      return null;
+    }
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('invoice_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        logDatabaseOperation('fetchInvoiceSettings', false, { userId: user.id }, error);
+        
+        // If no invoice settings exist, create default ones
+        if (error.code === 'PGRST116') {
+          console.log('[SETTINGS] No invoice settings found, creating defaults');
+          const defaultSettings: InvoiceSettings = {
+            invoice_prefix: 'INV-',
+            next_invoice_number: 1001,
+            default_payment_terms: 30,
+            auto_reminders: false
+          };
+          
+          const { data: newData, error: insertError } = await supabase
+            .from('invoice_settings')
+            .insert({
+              user_id: user.id,
+              ...defaultSettings
+            })
+            .select();
+            
+          if (insertError) {
+            logDatabaseOperation('createInvoiceSettings', false, { userId: user.id }, insertError);
+            return defaultSettings;
+          }
+          
+          logDatabaseOperation('createInvoiceSettings', true, { userId: user.id });
+          return newData?.[0] || defaultSettings;
+        }
+        
+        toast({
+          title: "Error",
+          description: "Failed to load invoice settings",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      logDatabaseOperation('fetchInvoiceSettings', true, { userId: user.id });
+      return data;
+    } catch (err) {
+      logDatabaseOperation('fetchInvoiceSettings', false, { userId: user.id }, err);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchTaxSettings = async () => {
+    if (!user?.id) {
+      return null;
+    }
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('tax_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        logDatabaseOperation('fetchTaxSettings', false, { userId: user.id }, error);
+        
+        // If no tax settings exist, create default ones
+        if (error.code === 'PGRST116') {
+          console.log('[SETTINGS] No tax settings found, creating defaults');
+          const defaultSettings: TaxSettings = {
+            tax_enabled: false,
+            default_tax_rate: 10,
+            tax_name: 'Sales Tax',
+            tax_registration_number: null
+          };
+          
+          const { data: newData, error: insertError } = await supabase
+            .from('tax_settings')
+            .insert({
+              user_id: user.id,
+              ...defaultSettings
+            })
+            .select();
+            
+          if (insertError) {
+            logDatabaseOperation('createTaxSettings', false, { userId: user.id }, insertError);
+            return defaultSettings;
+          }
+          
+          logDatabaseOperation('createTaxSettings', true, { userId: user.id });
+          return newData?.[0] || defaultSettings;
+        }
+        
+        toast({
+          title: "Error",
+          description: "Failed to load tax settings",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      logDatabaseOperation('fetchTaxSettings', true, { userId: user.id });
+      return data;
+    } catch (err) {
+      logDatabaseOperation('fetchTaxSettings', false, { userId: user.id }, err);
       return null;
     } finally {
       setIsLoading(false);
@@ -190,8 +545,15 @@ export const useSettings = () => {
 
   return {
     isLoading,
+    isSaving,
+    lastSaveTime,
     updateBusinessSettings,
     updateAccountSettings,
-    fetchUserSettings,
+    updateInvoiceSettings,
+    updateTaxSettings,
+    fetchUserProfile,
+    fetchInvoiceSettings,
+    fetchTaxSettings,
+    checkEmailConfirmation,
   };
 };
