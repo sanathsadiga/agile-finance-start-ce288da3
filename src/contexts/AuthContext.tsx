@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
@@ -12,11 +11,13 @@ export interface User {
   firstName: string;
   lastName: string;
   companyName?: string;
+  // Add any additional fields that might be useful from the profile
 }
 
 // Define context type
 interface AuthContextType {
   user: User | null;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (userData: Omit<User, 'id'> & { password: string }) => Promise<void>;
@@ -27,6 +28,7 @@ interface AuthContextType {
 // Create context with default values
 const AuthContext = createContext<AuthContextType>({
   user: null,
+  setUser: () => {},
   loading: true,
   login: async () => {},
   signup: async () => {},
@@ -379,6 +381,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Prepare the value object
   const value = {
     user,
+    setUser,
     loading,
     login,
     signup,

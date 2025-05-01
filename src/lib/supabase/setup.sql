@@ -13,7 +13,16 @@ CREATE TABLE IF NOT EXISTS profiles (
   last_name TEXT NOT NULL,
   company_name TEXT,
   email TEXT NOT NULL UNIQUE,
-  avatar_url TEXT
+  avatar_url TEXT,
+  -- Business related fields
+  business_phone TEXT,
+  business_website TEXT,
+  business_address TEXT,
+  business_city TEXT,
+  business_state TEXT,
+  business_postal_code TEXT,
+  business_country TEXT,
+  default_currency TEXT DEFAULT 'usd'
 );
 
 -- Enable Row Level Security
@@ -55,7 +64,13 @@ EXECUTE FUNCTION update_updated_at_column();
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, first_name, last_name, email, company_name)
+  INSERT INTO public.profiles (
+    id, 
+    first_name, 
+    last_name, 
+    email, 
+    company_name
+  )
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'first_name', ''),

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { useSettings, BusinessSettings, AccountSettings } from "@/hooks/useSettings";
+import { useAuth } from '@/contexts/AuthContext';
+import DashboardHeader from '@/components/layout/DashboardHeader';
 
 const currencies = [
   { value: "usd", label: "USD - US Dollar" },
@@ -20,16 +23,134 @@ const currencies = [
 
 const Settings = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { isLoading, updateBusinessSettings, updateAccountSettings, fetchUserSettings } = useSettings();
+
+  const [businessData, setBusinessData] = useState<BusinessSettings>({
+    company_name: '',
+    business_phone: '',
+    business_website: '',
+    business_address: '',
+    business_city: '',
+    business_state: '',
+    business_postal_code: '',
+    business_country: '',
+    default_currency: 'usd'
+  });
+
+  const [accountData, setAccountData] = useState<AccountSettings>({
+    first_name: '',
+    last_name: '',
+    email: ''
+  });
+
+  // Load user data when component mounts
+  useEffect(() => {
+    const loadUserSettings = async () => {
+      const settings = await fetchUserSettings();
+      
+      if (settings) {
+        // Update business data
+        setBusinessData({
+          company_name: settings.company_name || '',
+          business_phone: settings.business_phone || '',
+          business_website: settings.business_website || '',
+          business_address: settings.business_address || '',
+          business_city: settings.business_city || '',
+          business_state: settings.business_state || '',
+          business_postal_code: settings.business_postal_code || '',
+          business_country: settings.business_country || '',
+          default_currency: settings.default_currency || 'usd'
+        });
+        
+        // Update account data
+        setAccountData({
+          first_name: settings.first_name,
+          last_name: settings.last_name,
+          email: settings.email
+        });
+      } else if (user) {
+        // Fallback to user context if we can't fetch from database
+        setAccountData({
+          first_name: user.firstName,
+          last_name: user.lastName,
+          email: user.email
+        });
+        
+        if (user.companyName) {
+          setBusinessData({
+            ...businessData,
+            company_name: user.companyName
+          });
+        }
+      }
+    };
+
+    loadUserSettings();
+  }, [user]);
+
+  const handleBusinessChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setBusinessData(prev => ({
+      ...prev,
+      [id]: value
+    }));
+  };
+
+  const handleAccountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setAccountData(prev => ({
+      ...prev,
+      [id]: value
+    }));
+  };
+
+  const handleCurrencyChange = (value: string) => {
+    setBusinessData(prev => ({
+      ...prev,
+      default_currency: value
+    }));
+  };
   
-  const handleSave = (section: string) => {
-    toast({
-      title: "Settings updated",
-      description: `Your ${section} settings have been saved successfully.`
-    });
+  const handleSaveBusinessSettings = async () => {
+    if (isLoading) return;
+    
+    const success = await updateBusinessSettings(businessData);
+    
+    if (success) {
+      toast({
+        title: "Business settings updated",
+        description: "Your business settings have been saved successfully."
+      });
+    }
+  };
+  
+  const handleSaveAccountSettings = async () => {
+    if (isLoading) return;
+    
+    // Basic validation
+    if (!accountData.first_name || !accountData.last_name || !accountData.email) {
+      toast({
+        title: "Validation error",
+        description: "All account fields are required",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const success = await updateAccountSettings(accountData);
+    
+    if (success) {
+      toast({
+        title: "Account settings updated",
+        description: "Your account settings have been saved successfully."
+      });
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <DashboardHeader />
       <div className="container mx-auto px-4 py-8">
         <header className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
@@ -55,54 +176,84 @@ const Settings = () => {
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="businessName">Business Name</Label>
-                    <Input id="businessName" defaultValue="Acme Inc." />
+                    <Label htmlFor="company_name">Business Name</Label>
+                    <Input 
+                      id="company_name" 
+                      value={businessData.company_name || ''} 
+                      onChange={handleBusinessChange}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Business Email</Label>
-                    <Input id="email" type="email" defaultValue="contact@acmeinc.com" />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" defaultValue="+1 (555) 123-4567" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="website">Website</Label>
-                    <Input id="website" defaultValue="https://www.acmeinc.com" />
+                    <Label htmlFor="business_phone">Phone Number</Label>
+                    <Input 
+                      id="business_phone" 
+                      value={businessData.business_phone || ''} 
+                      onChange={handleBusinessChange}
+                    />
                   </div>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
-                  <Input id="address" defaultValue="123 Business St." />
+                  <Label htmlFor="business_website">Website</Label>
+                  <Input 
+                    id="business_website" 
+                    value={businessData.business_website || ''} 
+                    onChange={handleBusinessChange}
+                    placeholder="https://www.example.com"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="business_address">Address</Label>
+                  <Input 
+                    id="business_address" 
+                    value={businessData.business_address || ''} 
+                    onChange={handleBusinessChange}
+                  />
                 </div>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="city">City</Label>
-                    <Input id="city" defaultValue="San Francisco" />
+                    <Label htmlFor="business_city">City</Label>
+                    <Input 
+                      id="business_city" 
+                      value={businessData.business_city || ''} 
+                      onChange={handleBusinessChange}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="state">State/Province</Label>
-                    <Input id="state" defaultValue="CA" />
+                    <Label htmlFor="business_state">State/Province</Label>
+                    <Input 
+                      id="business_state" 
+                      value={businessData.business_state || ''} 
+                      onChange={handleBusinessChange}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="postalCode">ZIP/Postal Code</Label>
-                    <Input id="postalCode" defaultValue="94103" />
+                    <Label htmlFor="business_postal_code">ZIP/Postal Code</Label>
+                    <Input 
+                      id="business_postal_code" 
+                      value={businessData.business_postal_code || ''} 
+                      onChange={handleBusinessChange}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="country">Country</Label>
-                    <Input id="country" defaultValue="United States" />
+                    <Label htmlFor="business_country">Country</Label>
+                    <Input 
+                      id="business_country" 
+                      value={businessData.business_country || ''} 
+                      onChange={handleBusinessChange}
+                    />
                   </div>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="currency">Default Currency</Label>
-                  <Select defaultValue="usd">
-                    <SelectTrigger id="currency">
+                  <Label htmlFor="default_currency">Default Currency</Label>
+                  <Select 
+                    value={businessData.default_currency || 'usd'} 
+                    onValueChange={handleCurrencyChange}
+                  >
+                    <SelectTrigger id="default_currency">
                       <SelectValue placeholder="Select currency" />
                     </SelectTrigger>
                     <SelectContent>
@@ -116,7 +267,9 @@ const Settings = () => {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button onClick={() => handleSave("business")}>Save Changes</Button>
+                <Button onClick={handleSaveBusinessSettings} disabled={isLoading}>
+                  {isLoading ? 'Saving...' : 'Save Changes'}
+                </Button>
               </CardFooter>
             </Card>
           </TabsContent>
@@ -163,7 +316,10 @@ const Settings = () => {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button onClick={() => handleSave("invoice")}>Save Changes</Button>
+                <Button onClick={() => toast({
+                  title: "Feature coming soon",
+                  description: "Invoice settings will be available in a future update"
+                })}>Save Changes</Button>
               </CardFooter>
             </Card>
           </TabsContent>
@@ -199,7 +355,10 @@ const Settings = () => {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button onClick={() => handleSave("tax")}>Save Changes</Button>
+                <Button onClick={() => toast({
+                  title: "Feature coming soon",
+                  description: "Tax settings will be available in a future update"
+                })}>Save Changes</Button>
               </CardFooter>
             </Card>
           </TabsContent>
@@ -215,31 +374,52 @@ const Settings = () => {
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input id="firstName" defaultValue="John" />
+                    <Label htmlFor="first_name">First Name</Label>
+                    <Input 
+                      id="first_name" 
+                      value={accountData.first_name} 
+                      onChange={handleAccountChange}
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input id="lastName" defaultValue="Doe" />
+                    <Label htmlFor="last_name">Last Name</Label>
+                    <Input 
+                      id="last_name" 
+                      value={accountData.last_name} 
+                      onChange={handleAccountChange}
+                      required
+                    />
                   </div>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="accountEmail">Email Address</Label>
-                  <Input id="accountEmail" type="email" defaultValue="john.doe@example.com" />
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    value={accountData.email} 
+                    onChange={handleAccountChange}
+                    required
+                  />
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  <Switch id="twoFactor" />
-                  <Label htmlFor="twoFactor">Enable two-factor authentication</Label>
+                  <Switch id="twoFactor" disabled />
+                  <Label htmlFor="twoFactor">Enable two-factor authentication (Coming soon)</Label>
                 </div>
                 
                 <div className="space-y-2">
-                  <Button variant="outline" className="w-full">Change Password</Button>
+                  <Button variant="outline" className="w-full" onClick={() => toast({
+                    title: "Feature coming soon",
+                    description: "Password change will be available in a future update"
+                  })}>Change Password</Button>
                 </div>
               </CardContent>
               <CardFooter>
-                <Button onClick={() => handleSave("account")}>Save Changes</Button>
+                <Button onClick={handleSaveAccountSettings} disabled={isLoading}>
+                  {isLoading ? 'Saving...' : 'Save Changes'}
+                </Button>
               </CardFooter>
             </Card>
           </TabsContent>
