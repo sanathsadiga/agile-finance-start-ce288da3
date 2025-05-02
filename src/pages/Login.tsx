@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,15 +14,23 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   // Add a flag to prevent multiple submissions
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
     // Prevent multiple form submissions
-    if (isSubmitting) {
+    if (isSubmitting || isLoading) {
       return;
     }
     
@@ -32,7 +40,7 @@ const Login = () => {
     
     try {
       await login(email, password);
-      // Navigation is handled in the login function
+      // Navigation is handled in the login function and by the effect above
     } catch (error: any) {
       console.error('Login error:', error);
       setError(error?.message || "An unknown error occurred during login");

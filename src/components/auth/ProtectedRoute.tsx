@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -9,9 +9,17 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
+  const [shouldRender, setShouldRender] = useState(false);
   
-  // Show nothing while checking authentication status
-  if (loading) {
+  useEffect(() => {
+    // Only update the state when loading is complete to prevent flickering
+    if (!loading) {
+      setShouldRender(true);
+    }
+  }, [loading, isAuthenticated]);
+  
+  // Show nothing until we're sure about authentication status
+  if (loading || !shouldRender) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-purple"></div>
