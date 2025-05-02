@@ -131,11 +131,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
-  // Add a flag to prevent infinite loop during auth state changes
+  
+  // Add flags to track initialization status and prevent infinite loops
   const isHandlingAuthChange = useRef(false);
   const initialSessionChecked = useRef(false);
+  const authListenerInitialized = useRef(false);
 
-  // Check for existing session and set up auth change listener
+  // Check for existing session
   useEffect(() => {
     if (initialSessionChecked.current) {
       return;
@@ -215,14 +217,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkSession();
   }, []);
 
-  // Set up auth state change listener
+  // Set up auth state change listener - FIX: Only set up once and use stable dependencies
   useEffect(() => {
-    // Only set up the listener after the initial session check
-    if (!initialSessionChecked.current) {
+    // Only set up the listener once after the initial session check
+    if (!initialSessionChecked.current || authListenerInitialized.current) {
       return;
     }
 
     console.log('Setting up auth state change listener');
+    authListenerInitialized.current = true;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -330,7 +333,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       subscription.unsubscribe();
     };
-  }, [toast, user, initialSessionChecked.current]);
+  }, [toast, user]);
 
   // Login with Supabase
   const login = async (email: string, password: string) => {

@@ -12,11 +12,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const [shouldRender, setShouldRender] = useState(false);
   
   useEffect(() => {
-    // Only update the state when loading is complete to prevent flickering
+    // Only update the state when loading is complete and won't cause re-renders
     if (!loading) {
       setShouldRender(true);
     }
-  }, [loading, isAuthenticated]);
+  }, [loading]);
   
   // Show nothing until we're sure about authentication status
   if (loading || !shouldRender) {
