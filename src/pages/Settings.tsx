@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,7 +88,8 @@ const Settings = () => {
         }
         
         // Load user profile data
-        const profile = await fetchUserProfile();
+        // Pass user as an argument to fetchUserProfile
+        const profile = await fetchUserProfile(user);
         
         if (profile) {
           // Update business data
@@ -126,7 +128,8 @@ const Settings = () => {
         }
         
         // Load invoice settings
-        const invoiceSettings = await fetchInvoiceSettings();
+        // Pass user as an argument to fetchInvoiceSettings
+        const invoiceSettings = await fetchInvoiceSettings(user);
         if (invoiceSettings) {
           setInvoiceData({
             invoice_prefix: invoiceSettings.invoice_prefix || 'INV-',
@@ -139,7 +142,8 @@ const Settings = () => {
         }
         
         // Load tax settings
-        const taxSettings = await fetchTaxSettings();
+        // Pass user as an argument to fetchTaxSettings
+        const taxSettings = await fetchTaxSettings(user);
         if (taxSettings) {
           setTaxData({
             tax_enabled: taxSettings.tax_enabled || false,
