@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSettings, BusinessSettings, AccountSettings, InvoiceSettings, TaxSettings } from "@/hooks/useSettings";
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardHeader from '@/components/layout/DashboardHeader';
-import { checkEmailConfirmation } from '@/lib/supabase/database';
+import { checkEmailConfirmation, supabase, logDatabaseOperation } from '@/lib/supabase/database';
 
 const currencies = [
   { value: "usd", label: "USD - US Dollar" },

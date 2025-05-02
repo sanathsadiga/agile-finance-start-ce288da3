@@ -453,7 +453,164 @@ export const useSettings = () => {
     }
   };
 
-  // ... keep existing code for fetchUserProfile, fetchInvoiceSettings, fetchTaxSettings
+  const fetchUserProfile = async (user, supabase, logDatabaseOperation, toast, setUser) => {
+    if (!user?.id) {
+      return null;
+    }
+  
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+  
+      if (error) {
+        logDatabaseOperation('fetchUserProfile', false, { userId: user.id }, error);
+        toast({
+          title: "Error",
+          description: "Failed to load user profile",
+          variant: "destructive",
+        });
+        return null;
+      }
+  
+      logDatabaseOperation('fetchUserProfile', true, { userId: user.id });
+      
+      // Update user object if email confirmation status changed
+      if (data.email_confirmed && (!user.emailConfirmed)) {
+        setUser({
+          ...user,
+          emailConfirmed: data.email_confirmed
+        });
+      }
+      
+      return data;
+    } catch (err) {
+      logDatabaseOperation('fetchUserProfile', false, { userId: user.id }, err);
+      return null;
+    }
+  };
+  
+  const fetchInvoiceSettings = async (user, supabase, logDatabaseOperation, toast) => {
+    if (!user?.id) {
+      return null;
+    }
+  
+    try {
+      const { data, error } = await supabase
+        .from('invoice_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+  
+      if (error) {
+        logDatabaseOperation('fetchInvoiceSettings', false, { userId: user.id }, error);
+        
+        // If no invoice settings exist, create default ones
+        if (error.code === 'PGRST116') {
+          console.log('[SETTINGS] No invoice settings found, creating defaults');
+          const defaultSettings = {
+            invoice_prefix: 'INV-',
+            next_invoice_number: 1001,
+            default_payment_terms: 30,
+            auto_reminders: false
+          };
+          
+          const { data: newData, error: insertError } = await supabase
+            .from('invoice_settings')
+            .insert({
+              user_id: user.id,
+              user_email: user.email,
+              user_name: `${user.firstName} ${user.lastName}`,
+              ...defaultSettings
+            })
+            .select();
+            
+          if (insertError) {
+            logDatabaseOperation('createInvoiceSettings', false, { userId: user.id }, insertError);
+            return defaultSettings;
+          }
+          
+          logDatabaseOperation('createInvoiceSettings', true, { userId: user.id });
+          return newData?.[0] || defaultSettings;
+        }
+        
+        toast({
+          title: "Error",
+          description: "Failed to load invoice settings",
+          variant: "destructive",
+        });
+        return null;
+      }
+  
+      logDatabaseOperation('fetchInvoiceSettings', true, { userId: user.id });
+      return data;
+    } catch (err) {
+      logDatabaseOperation('fetchInvoiceSettings', false, { userId: user.id }, err);
+      return null;
+    }
+  };
+  
+  const fetchTaxSettings = async (user, supabase, logDatabaseOperation, toast) => {
+    if (!user?.id) {
+      return null;
+    }
+  
+    try {
+      const { data, error } = await supabase
+        .from('tax_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+  
+      if (error) {
+        logDatabaseOperation('fetchTaxSettings', false, { userId: user.id }, error);
+        
+        // If no tax settings exist, create default ones
+        if (error.code === 'PGRST116') {
+          console.log('[SETTINGS] No tax settings found, creating defaults');
+          const defaultSettings = {
+            tax_enabled: false,
+            default_tax_rate: 10,
+            tax_name: 'Sales Tax',
+            tax_registration_number: null
+          };
+          
+          const { data: newData, error: insertError } = await supabase
+            .from('tax_settings')
+            .insert({
+              user_id: user.id,
+              user_email: user.email,
+              user_name: `${user.firstName} ${user.lastName}`,
+              ...defaultSettings
+            })
+            .select();
+            
+          if (insertError) {
+            logDatabaseOperation('createTaxSettings', false, { userId: user.id }, insertError);
+            return defaultSettings;
+          }
+          
+          logDatabaseOperation('createTaxSettings', true, { userId: user.id });
+          return newData?.[0] || defaultSettings;
+        }
+        
+        toast({
+          title: "Error",
+          description: "Failed to load tax settings",
+          variant: "destructive",
+        });
+        return null;
+      }
+  
+      logDatabaseOperation('fetchTaxSettings', true, { userId: user.id });
+      return data;
+    } catch (err) {
+      logDatabaseOperation('fetchTaxSettings', false, { userId: user.id }, err);
+      return null;
+    }
+  };
 
   return {
     isLoading,
@@ -463,169 +620,10 @@ export const useSettings = () => {
     updateAccountSettings,
     updateInvoiceSettings,
     updateTaxSettings,
-    fetchUserProfile,
-    fetchInvoiceSettings,
-    fetchTaxSettings,
+    // Update these functions to use the imported supabase and logDatabaseOperation
+    fetchUserProfile: (user) => fetchUserProfile(user, supabase, logDatabaseOperation, toast, setUser),
+    fetchInvoiceSettings: (user) => fetchInvoiceSettings(user, supabase, logDatabaseOperation, toast),
+    fetchTaxSettings: (user) => fetchTaxSettings(user, supabase, logDatabaseOperation, toast),
     checkEmailConfirmation,
   };
-};
-
-// Keep these function implementations from the original file
-const fetchUserProfile = async (user, supabase, logDatabaseOperation, toast, setUser) => {
-  if (!user?.id) {
-    return null;
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    if (error) {
-      logDatabaseOperation('fetchUserProfile', false, { userId: user.id }, error);
-      toast({
-        title: "Error",
-        description: "Failed to load user profile",
-        variant: "destructive",
-      });
-      return null;
-    }
-
-    logDatabaseOperation('fetchUserProfile', true, { userId: user.id });
-    
-    // Update user object if email confirmation status changed
-    if (data.email_confirmed && (!user.emailConfirmed)) {
-      setUser({
-        ...user,
-        emailConfirmed: data.email_confirmed
-      });
-    }
-    
-    return data;
-  } catch (err) {
-    logDatabaseOperation('fetchUserProfile', false, { userId: user.id }, err);
-    return null;
-  }
-};
-
-const fetchInvoiceSettings = async (user, supabase, logDatabaseOperation, toast) => {
-  if (!user?.id) {
-    return null;
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('invoice_settings')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-
-    if (error) {
-      logDatabaseOperation('fetchInvoiceSettings', false, { userId: user.id }, error);
-      
-      // If no invoice settings exist, create default ones
-      if (error.code === 'PGRST116') {
-        console.log('[SETTINGS] No invoice settings found, creating defaults');
-        const defaultSettings = {
-          invoice_prefix: 'INV-',
-          next_invoice_number: 1001,
-          default_payment_terms: 30,
-          auto_reminders: false
-        };
-        
-        const { data: newData, error: insertError } = await supabase
-          .from('invoice_settings')
-          .insert({
-            user_id: user.id,
-            user_email: user.email,
-            user_name: `${user.firstName} ${user.lastName}`,
-            ...defaultSettings
-          })
-          .select();
-          
-        if (insertError) {
-          logDatabaseOperation('createInvoiceSettings', false, { userId: user.id }, insertError);
-          return defaultSettings;
-        }
-        
-        logDatabaseOperation('createInvoiceSettings', true, { userId: user.id });
-        return newData?.[0] || defaultSettings;
-      }
-      
-      toast({
-        title: "Error",
-        description: "Failed to load invoice settings",
-        variant: "destructive",
-      });
-      return null;
-    }
-
-    logDatabaseOperation('fetchInvoiceSettings', true, { userId: user.id });
-    return data;
-  } catch (err) {
-    logDatabaseOperation('fetchInvoiceSettings', false, { userId: user.id }, err);
-    return null;
-  }
-};
-
-const fetchTaxSettings = async (user, supabase, logDatabaseOperation, toast) => {
-  if (!user?.id) {
-    return null;
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('tax_settings')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-
-    if (error) {
-      logDatabaseOperation('fetchTaxSettings', false, { userId: user.id }, error);
-      
-      // If no tax settings exist, create default ones
-      if (error.code === 'PGRST116') {
-        console.log('[SETTINGS] No tax settings found, creating defaults');
-        const defaultSettings = {
-          tax_enabled: false,
-          default_tax_rate: 10,
-          tax_name: 'Sales Tax',
-          tax_registration_number: null
-        };
-        
-        const { data: newData, error: insertError } = await supabase
-          .from('tax_settings')
-          .insert({
-            user_id: user.id,
-            user_email: user.email,
-            user_name: `${user.firstName} ${user.lastName}`,
-            ...defaultSettings
-          })
-          .select();
-          
-        if (insertError) {
-          logDatabaseOperation('createTaxSettings', false, { userId: user.id }, insertError);
-          return defaultSettings;
-        }
-        
-        logDatabaseOperation('createTaxSettings', true, { userId: user.id });
-        return newData?.[0] || defaultSettings;
-      }
-      
-      toast({
-        title: "Error",
-        description: "Failed to load tax settings",
-        variant: "destructive",
-      });
-      return null;
-    }
-
-    logDatabaseOperation('fetchTaxSettings', true, { userId: user.id });
-    return data;
-  } catch (err) {
-    logDatabaseOperation('fetchTaxSettings', false, { userId: user.id }, err);
-    return null;
-  }
 };
