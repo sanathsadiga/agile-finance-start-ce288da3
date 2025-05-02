@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase/database";
@@ -130,6 +131,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+  // Add a flag to prevent infinite loop during auth state changes
+  const isHandlingAuthChange = useRef(false);
 
   // Check for existing session and set up auth change listener
   useEffect(() => {
@@ -210,87 +213,100 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id);
         
-        if (event === 'SIGNED_OUT') {
-          setUser(null);
+        // Prevent infinite loop with isHandlingAuthChange flag
+        if (isHandlingAuthChange.current) {
+          console.log('Already handling auth change, skipping to prevent loop');
           return;
         }
         
-        if (!session?.user) {
-          return;
-        }
-        
-        // Check if email is confirmed
-        const isEmailConfirmed = session.user.email_confirmed_at !== null;
-        console.log('Email confirmed:', isEmailConfirmed);
-        
-        // If event is USER_UPDATED, check if email was just confirmed
-        if (event === 'USER_UPDATED') {
-          console.log('User updated, checking email confirmation status');
+        try {
+          isHandlingAuthChange.current = true;
           
-          // If user is already set, just update the emailConfirmed property
-          if (user && user.id === session.user.id && isEmailConfirmed !== user.emailConfirmed) {
-            console.log('Updating email confirmed status from:', user.emailConfirmed, 'to:', isEmailConfirmed);
-            
-            // Update profile in database
-            await supabase
-              .from('profiles')
-              .update({ email_confirmed: isEmailConfirmed })
-              .eq('id', session.user.id);
-              
-            // Update user in state
-            setUser({
-              ...user,
-              emailConfirmed: isEmailConfirmed
-            });
-            
-            // Show toast notification if email was confirmed
-            if (isEmailConfirmed && !user.emailConfirmed) {
-              toast({
-                title: "Email confirmed",
-                description: "Your email has been confirmed successfully",
-              });
-            }
-            
+          if (event === 'SIGNED_OUT') {
+            setUser(null);
             return;
           }
-        }
-        
-        // Try to get user profile after sign in or sign up
-        const profile = await getUserProfile(session.user.id);
-        
-        if (profile) {
-          // Update email confirmation status if needed
-          if (profile.emailConfirmed !== isEmailConfirmed) {
-            await supabase
-              .from('profiles')
-              .update({ email_confirmed: isEmailConfirmed })
-              .eq('id', session.user.id);
-              
-            profile.emailConfirmed = isEmailConfirmed;
+          
+          if (!session?.user) {
+            return;
           }
           
-          setUser(profile);
-        } else {
-          // Create user from metadata if no profile found
-          const metadata = session.user.user_metadata;
-          const newUser = createUserFromMetadata(
-            session.user.id, 
-            session.user.email || '', 
-            metadata,
-            isEmailConfirmed // Set email confirmation status
-          );
+          // Check if email is confirmed
+          const isEmailConfirmed = session.user.email_confirmed_at !== null;
+          console.log('Email confirmed:', isEmailConfirmed);
           
-          setUser(newUser);
+          // If event is USER_UPDATED, check if email was just confirmed
+          if (event === 'USER_UPDATED') {
+            console.log('User updated, checking email confirmation status');
+            
+            // If user is already set, just update the emailConfirmed property
+            if (user && user.id === session.user.id && isEmailConfirmed !== user.emailConfirmed) {
+              console.log('Updating email confirmed status from:', user.emailConfirmed, 'to:', isEmailConfirmed);
+              
+              // Update profile in database
+              await supabase
+                .from('profiles')
+                .update({ email_confirmed: isEmailConfirmed })
+                .eq('id', session.user.id);
+                
+              // Update user in state
+              setUser({
+                ...user,
+                emailConfirmed: isEmailConfirmed
+              });
+              
+              // Show toast notification if email was confirmed
+              if (isEmailConfirmed && !user.emailConfirmed) {
+                toast({
+                  title: "Email confirmed",
+                  description: "Your email has been confirmed successfully",
+                });
+              }
+              
+              return;
+            }
+          }
           
-          // Try to create profile in background
-          await createOrUpdateProfile(
-            session.user.id,
-            session.user.email || '',
-            metadata?.first_name || '',
-            metadata?.last_name || '',
-            metadata?.company_name,
-            isEmailConfirmed // Pass email confirmation status
-          );
+          // Try to get user profile after sign in or sign up
+          const profile = await getUserProfile(session.user.id);
+          
+          if (profile) {
+            // Update email confirmation status if needed
+            if (profile.emailConfirmed !== isEmailConfirmed) {
+              await supabase
+                .from('profiles')
+                .update({ email_confirmed: isEmailConfirmed })
+                .eq('id', session.user.id);
+                
+              profile.emailConfirmed = isEmailConfirmed;
+            }
+            
+            setUser(profile);
+          } else {
+            // Create user from metadata if no profile found
+            const metadata = session.user.user_metadata;
+            const newUser = createUserFromMetadata(
+              session.user.id, 
+              session.user.email || '', 
+              metadata,
+              isEmailConfirmed // Set email confirmation status
+            );
+            
+            setUser(newUser);
+            
+            // Try to create profile in background
+            await createOrUpdateProfile(
+              session.user.id,
+              session.user.email || '',
+              metadata?.first_name || '',
+              metadata?.last_name || '',
+              metadata?.company_name,
+              isEmailConfirmed // Pass email confirmation status
+            );
+          }
+        } finally {
+          // Always reset the flag when done
+          isHandlingAuthChange.current = false;
         }
       }
     );

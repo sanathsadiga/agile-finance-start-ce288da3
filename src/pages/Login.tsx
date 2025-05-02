@@ -15,9 +15,18 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { login } = useAuth();
+  // Add a flag to prevent multiple submissions
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    // Prevent multiple form submissions
+    if (isSubmitting) {
+      return;
+    }
+    
+    setIsSubmitting(true);
     setIsLoading(true);
     setError(null);
     
@@ -29,6 +38,7 @@ const Login = () => {
       setError(error?.message || "An unknown error occurred during login");
     } finally {
       setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -96,7 +106,7 @@ const Login = () => {
                   disabled={isLoading}
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" className="w-full" disabled={isLoading || isSubmitting}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
