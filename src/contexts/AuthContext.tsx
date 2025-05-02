@@ -81,7 +81,8 @@ const createOrUpdateProfile = async (
   email: string,
   firstName: string,
   lastName: string,
-  companyName?: string
+  companyName?: string,
+  emailConfirmed: boolean = false // Add parameter for email confirmation
 ): Promise<boolean> => {
   try {
     const { error } = await supabase
@@ -92,6 +93,7 @@ const createOrUpdateProfile = async (
         first_name: firstName,
         last_name: lastName,
         company_name: companyName || null,
+        email_confirmed: emailConfirmed // Use this parameter
       });
     
     if (error) {
@@ -145,11 +147,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session?.user) {
           console.log('Session found, user ID:', session.user.id);
           
+          // Check if user has confirmed email
+          const isEmailConfirmed = session.user.email_confirmed_at !== null;
+          console.log('Email confirmed at:', session.user.email_confirmed_at, 'Status:', isEmailConfirmed);
+          
           // Try to get user profile
           const profile = await getUserProfile(session.user.id);
           
           if (profile) {
             console.log('User profile found:', profile);
+            
+            // Make sure profile has correct email confirmation status
+            if (profile.emailConfirmed !== isEmailConfirmed) {
+              console.log('Updating profile email confirmation status to:', isEmailConfirmed);
+              await supabase
+                .from('profiles')
+                .update({ email_confirmed: isEmailConfirmed })
+                .eq('id', session.user.id);
+                
+              profile.emailConfirmed = isEmailConfirmed;
+            }
+            
             setUser(profile);
           } else {
             // Create user from metadata as fallback
@@ -159,7 +177,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               session.user.id, 
               session.user.email || '', 
               metadata,
-              session.user.email_confirmed_at !== null // Set email confirmation status
+              isEmailConfirmed // Set email confirmation status
             );
             
             setUser(newUser);
@@ -170,7 +188,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               session.user.email || '',
               metadata?.first_name || '',
               metadata?.last_name || '',
-              metadata?.company_name
+              metadata?.company_name,
+              isEmailConfirmed // Pass email confirmation status
             );
           }
         } else {
@@ -200,10 +219,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
         
+        // Check if email is confirmed
+        const isEmailConfirmed = session.user.email_confirmed_at !== null;
+        console.log('Email confirmed:', isEmailConfirmed);
+        
+        // If event is USER_UPDATED, check if email was just confirmed
+        if (event === 'USER_UPDATED') {
+          console.log('User updated, checking email confirmation status');
+          
+          // If user is already set, just update the emailConfirmed property
+          if (user && user.id === session.user.id && isEmailConfirmed !== user.emailConfirmed) {
+            console.log('Updating email confirmed status from:', user.emailConfirmed, 'to:', isEmailConfirmed);
+            
+            // Update profile in database
+            await supabase
+              .from('profiles')
+              .update({ email_confirmed: isEmailConfirmed })
+              .eq('id', session.user.id);
+              
+            // Update user in state
+            setUser({
+              ...user,
+              emailConfirmed: isEmailConfirmed
+            });
+            
+            // Show toast notification if email was confirmed
+            if (isEmailConfirmed && !user.emailConfirmed) {
+              toast({
+                title: "Email confirmed",
+                description: "Your email has been confirmed successfully",
+              });
+            }
+            
+            return;
+          }
+        }
+        
         // Try to get user profile after sign in or sign up
         const profile = await getUserProfile(session.user.id);
         
         if (profile) {
+          // Update email confirmation status if needed
+          if (profile.emailConfirmed !== isEmailConfirmed) {
+            await supabase
+              .from('profiles')
+              .update({ email_confirmed: isEmailConfirmed })
+              .eq('id', session.user.id);
+              
+            profile.emailConfirmed = isEmailConfirmed;
+          }
+          
           setUser(profile);
         } else {
           // Create user from metadata if no profile found
@@ -212,7 +277,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             session.user.id, 
             session.user.email || '', 
             metadata,
-            session.user.email_confirmed_at !== null // Set email confirmation status
+            isEmailConfirmed // Set email confirmation status
           );
           
           setUser(newUser);
@@ -223,7 +288,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             session.user.email || '',
             metadata?.first_name || '',
             metadata?.last_name || '',
-            metadata?.company_name
+            metadata?.company_name,
+            isEmailConfirmed // Pass email confirmation status
           );
         }
       }
@@ -233,7 +299,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [toast, user]);
 
   // Login with Supabase
   const login = async (email: string, password: string) => {
@@ -322,6 +388,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         firstName: userData.firstName,
         lastName: userData.lastName,
         companyName: userData.companyName,
+        emailConfirmed: false // New users always start with unconfirmed email
       };
       
       setUser(newUser);
@@ -333,14 +400,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         userData.email,
         userData.firstName,
         userData.lastName,
-        userData.companyName
+        userData.companyName,
+        false // Set email confirmed to false for new users
       );
       
       console.log('Profile creation attempt result:', profileCreated ? 'Success' : 'Failed');
       
       toast({
         title: "Signup successful",
-        description: `Welcome to FinanceFlow, ${userData.firstName}!`,
+        description: `Welcome to FinanceFlow, ${userData.firstName}! Please check your email to confirm your account.`,
       });
       
       navigate('/dashboard');

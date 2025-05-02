@@ -131,22 +131,7 @@ export const checkEmailConfirmation = async (userId: string): Promise<boolean> =
   try {
     console.log('[DATABASE] Checking email confirmation for user:', userId);
     
-    // First check directly with auth API
-    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
-    
-    if (!userError && userData?.user?.email_confirmed_at) {
-      console.log('[DATABASE] Email confirmed via auth API for user:', userId);
-      
-      // Make sure the profile is updated too
-      await supabase
-        .from('profiles')
-        .update({ email_confirmed: true })
-        .eq('id', userId);
-        
-      return true;
-    }
-    
-    // Then check the profile table as fallback
+    // FIXED: Don't use the admin API as it causes 403 error, check profile directly
     const { data, error } = await supabase
       .from('profiles')
       .select('email_confirmed')
@@ -155,6 +140,7 @@ export const checkEmailConfirmation = async (userId: string): Promise<boolean> =
       
     if (error) {
       logDatabaseOperation('checkEmailConfirmation', false, { userId }, error);
+      console.error('[DATABASE] Error checking email confirmation:', error.message);
       return false;
     }
     
