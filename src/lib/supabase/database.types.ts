@@ -74,6 +74,8 @@ export interface Database {
         Row: {
           id: string
           user_id: string
+          user_email: string | null
+          user_name: string | null
           created_at: string
           updated_at: string
           invoice_prefix: string
@@ -87,6 +89,8 @@ export interface Database {
         Insert: {
           id?: string
           user_id: string
+          user_email?: string | null
+          user_name?: string | null
           created_at?: string
           updated_at?: string
           invoice_prefix?: string
@@ -100,6 +104,8 @@ export interface Database {
         Update: {
           id?: string
           user_id?: string
+          user_email?: string | null
+          user_name?: string | null
           created_at?: string
           updated_at?: string
           invoice_prefix?: string
@@ -115,6 +121,8 @@ export interface Database {
         Row: {
           id: string
           user_id: string
+          user_email: string | null
+          user_name: string | null
           created_at: string
           updated_at: string
           tax_enabled: boolean
@@ -125,6 +133,8 @@ export interface Database {
         Insert: {
           id?: string
           user_id: string
+          user_email?: string | null
+          user_name?: string | null
           created_at?: string
           updated_at?: string
           tax_enabled?: boolean
@@ -135,6 +145,8 @@ export interface Database {
         Update: {
           id?: string
           user_id?: string
+          user_email?: string | null
+          user_name?: string | null
           created_at?: string
           updated_at?: string
           tax_enabled?: boolean

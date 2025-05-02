@@ -11,6 +11,7 @@ export interface User {
   firstName: string;
   lastName: string;
   companyName?: string;
+  emailConfirmed?: boolean; // Added email confirmation status
   // Add any additional fields that might be useful from the profile
 }
 
@@ -66,6 +67,7 @@ const getUserProfile = async (userId: string): Promise<User | null> => {
       firstName: data.first_name,
       lastName: data.last_name,
       companyName: data.company_name || undefined,
+      emailConfirmed: data.email_confirmed || false, // Include email confirmation status
     };
   } catch (err) {
     console.error('Error in getUserProfile:', err);
@@ -108,7 +110,8 @@ const createOrUpdateProfile = async (
 const createUserFromMetadata = (
   userId: string,
   email: string,
-  metadata: any
+  metadata: any,
+  emailConfirmed: boolean = false // Add email confirmation parameter
 ): User => {
   return {
     id: userId,
@@ -116,6 +119,7 @@ const createUserFromMetadata = (
     firstName: metadata?.first_name || '',
     lastName: metadata?.last_name || '',
     companyName: metadata?.company_name,
+    emailConfirmed: emailConfirmed, // Set email confirmation status
   };
 };
 
@@ -154,7 +158,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const newUser = createUserFromMetadata(
               session.user.id, 
               session.user.email || '', 
-              metadata
+              metadata,
+              session.user.email_confirmed_at !== null // Set email confirmation status
             );
             
             setUser(newUser);
@@ -206,7 +211,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const newUser = createUserFromMetadata(
             session.user.id, 
             session.user.email || '', 
-            metadata
+            metadata,
+            session.user.email_confirmed_at !== null // Set email confirmation status
           );
           
           setUser(newUser);

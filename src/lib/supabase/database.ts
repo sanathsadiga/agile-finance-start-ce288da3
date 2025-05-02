@@ -129,6 +129,24 @@ export const logDatabaseOperation = (operation: string, success: boolean, detail
 // Helper to check if a user's email is confirmed
 export const checkEmailConfirmation = async (userId: string): Promise<boolean> => {
   try {
+    console.log('[DATABASE] Checking email confirmation for user:', userId);
+    
+    // First check directly with auth API
+    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
+    
+    if (!userError && userData?.user?.email_confirmed_at) {
+      console.log('[DATABASE] Email confirmed via auth API for user:', userId);
+      
+      // Make sure the profile is updated too
+      await supabase
+        .from('profiles')
+        .update({ email_confirmed: true })
+        .eq('id', userId);
+        
+      return true;
+    }
+    
+    // Then check the profile table as fallback
     const { data, error } = await supabase
       .from('profiles')
       .select('email_confirmed')
@@ -140,9 +158,11 @@ export const checkEmailConfirmation = async (userId: string): Promise<boolean> =
       return false;
     }
     
+    console.log('[DATABASE] Email confirmation status from profile:', data?.email_confirmed);
     return data?.email_confirmed || false;
   } catch (err) {
     logDatabaseOperation('checkEmailConfirmation', false, { userId }, err);
+    console.error('[DATABASE] Error checking email confirmation:', err);
     return false;
   }
 };

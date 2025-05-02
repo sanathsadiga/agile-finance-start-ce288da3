@@ -28,10 +28,12 @@ CREATE TABLE IF NOT EXISTS profiles (
   default_currency TEXT DEFAULT 'usd'
 );
 
--- Create invoice settings table
+-- Create invoice settings table with user identification fields
 CREATE TABLE IF NOT EXISTS invoice_settings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  user_email TEXT,
+  user_name TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   invoice_prefix TEXT DEFAULT 'INV-',
@@ -43,10 +45,12 @@ CREATE TABLE IF NOT EXISTS invoice_settings (
   terms_default TEXT
 );
 
--- Create tax settings table
+-- Create tax settings table with user identification fields
 CREATE TABLE IF NOT EXISTS tax_settings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  user_email TEXT,
+  user_name TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   tax_enabled BOOLEAN DEFAULT FALSE,
@@ -133,7 +137,10 @@ EXECUTE FUNCTION update_updated_at_column();
 -- Create a function for automatic profile creation
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  user_full_name TEXT;
 BEGIN
+  -- Set email confirmed based on email_confirmed_at field
   INSERT INTO public.profiles (
     id, 
     first_name, 
@@ -151,13 +158,32 @@ BEGIN
     COALESCE(NEW.email_confirmed_at IS NOT NULL, FALSE)
   );
   
-  -- Insert default invoice settings
-  INSERT INTO public.invoice_settings (user_id)
-  VALUES (NEW.id);
+  -- Calculate full name for reference in settings tables
+  user_full_name := COALESCE(NEW.raw_user_meta_data->>'first_name', '') || ' ' || COALESCE(NEW.raw_user_meta_data->>'last_name', '');
   
-  -- Insert default tax settings
-  INSERT INTO public.tax_settings (user_id)
-  VALUES (NEW.id);
+  -- Insert default invoice settings with user identification
+  INSERT INTO public.invoice_settings (
+    user_id, 
+    user_email, 
+    user_name
+  )
+  VALUES (
+    NEW.id, 
+    COALESCE(NEW.email, ''),
+    user_full_name
+  );
+  
+  -- Insert default tax settings with user identification
+  INSERT INTO public.tax_settings (
+    user_id, 
+    user_email, 
+    user_name
+  )
+  VALUES (
+    NEW.id, 
+    COALESCE(NEW.email, ''),
+    user_full_name
+  );
   
   RETURN NEW;
 END;

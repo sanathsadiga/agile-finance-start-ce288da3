@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase, logDatabaseOperation, checkEmailConfirmation } from '@/lib/supabase/database';
 import { useToast } from './use-toast';
@@ -75,7 +75,7 @@ export const useSettings = () => {
     return true;
   };
 
-  const updateBusinessSettings = async (settings: BusinessSettings) => {
+  const updateBusinessSettings = useCallback(async (settings: BusinessSettings) => {
     if (!user?.id) {
       toast({
         title: "Error",
@@ -85,6 +85,12 @@ export const useSettings = () => {
       return false;
     }
 
+    // Check if email is confirmed
+    const isConfirmed = await checkCanUpdateSettings();
+    if (!isConfirmed) {
+      return false;
+    }
+    
     // Prevent multiple rapid saves
     if (isSaving) {
       console.log('[SETTINGS] Already saving business settings, ignoring request');
@@ -95,11 +101,11 @@ export const useSettings = () => {
       return false;
     }
 
-    setIsSaving(true);
-    setIsLoading(true);
-    console.log('[SETTINGS] Updating business settings for user:', user.id);
-
     try {
+      setIsSaving(true);
+      setIsLoading(true);
+      console.log('[SETTINGS] Updating business settings for user:', user.id);
+
       const { data, error } = await supabase
         .from('profiles')
         .update({
@@ -156,17 +162,23 @@ export const useSettings = () => {
       // Add a small delay before allowing another save to prevent rapid multiple saves
       setTimeout(() => {
         setIsSaving(false);
-      }, 1000);
+      }, 500);
     }
-  };
+  }, [user, isSaving, toast, setUser]);
 
-  const updateAccountSettings = async (settings: AccountSettings) => {
+  const updateAccountSettings = useCallback(async (settings: AccountSettings) => {
     if (!user?.id) {
       toast({
         title: "Error",
         description: "You must be logged in to update settings",
         variant: "destructive",
       });
+      return false;
+    }
+
+    // Check if email is confirmed
+    const isConfirmed = await checkCanUpdateSettings();
+    if (!isConfirmed) {
       return false;
     }
 
@@ -180,11 +192,11 @@ export const useSettings = () => {
       return false;
     }
 
-    setIsSaving(true);
-    setIsLoading(true);
-    console.log('[SETTINGS] Updating account settings for user:', user.id);
-
     try {
+      setIsSaving(true);
+      setIsLoading(true);
+      console.log('[SETTINGS] Updating account settings for user:', user.id);
+
       // Update profile in database
       const { data, error } = await supabase
         .from('profiles')
@@ -208,6 +220,9 @@ export const useSettings = () => {
       }
 
       logDatabaseOperation('updateAccountSettings', true, { userId: user.id });
+
+      // Update user information in settings tables for better identification
+      await updateUserInfoInSettings(user.id, settings.email, `${settings.first_name} ${settings.last_name}`);
 
       // Update the user context with new data
       if (data && data[0]) {
@@ -238,17 +253,23 @@ export const useSettings = () => {
       // Add a small delay before allowing another save to prevent rapid multiple saves
       setTimeout(() => {
         setIsSaving(false);
-      }, 1000);
+      }, 500);
     }
-  };
+  }, [user, isSaving, toast, setUser]);
 
-  const updateInvoiceSettings = async (settings: InvoiceSettings) => {
+  const updateInvoiceSettings = useCallback(async (settings: InvoiceSettings) => {
     if (!user?.id) {
       toast({
         title: "Error",
         description: "You must be logged in to update settings",
         variant: "destructive",
       });
+      return false;
+    }
+
+    // Check if email is confirmed
+    const isConfirmed = await checkCanUpdateSettings();
+    if (!isConfirmed) {
       return false;
     }
 
@@ -262,11 +283,11 @@ export const useSettings = () => {
       return false;
     }
 
-    setIsSaving(true);
-    setIsLoading(true);
-    console.log('[SETTINGS] Updating invoice settings for user:', user.id);
-
     try {
+      setIsSaving(true);
+      setIsLoading(true);
+      console.log('[SETTINGS] Updating invoice settings for user:', user.id);
+
       const { data, error } = await supabase
         .from('invoice_settings')
         .update({
@@ -312,17 +333,23 @@ export const useSettings = () => {
       // Add a small delay before allowing another save to prevent rapid multiple saves
       setTimeout(() => {
         setIsSaving(false);
-      }, 1000);
+      }, 500);
     }
-  };
+  }, [user, isSaving, toast]);
 
-  const updateTaxSettings = async (settings: TaxSettings) => {
+  const updateTaxSettings = useCallback(async (settings: TaxSettings) => {
     if (!user?.id) {
       toast({
         title: "Error",
         description: "You must be logged in to update settings",
         variant: "destructive",
       });
+      return false;
+    }
+
+    // Check if email is confirmed
+    const isConfirmed = await checkCanUpdateSettings();
+    if (!isConfirmed) {
       return false;
     }
 
@@ -336,11 +363,11 @@ export const useSettings = () => {
       return false;
     }
 
-    setIsSaving(true);
-    setIsLoading(true);
-    console.log('[SETTINGS] Updating tax settings for user:', user.id);
-
     try {
+      setIsSaving(true);
+      setIsLoading(true);
+      console.log('[SETTINGS] Updating tax settings for user:', user.id);
+
       const { data, error } = await supabase
         .from('tax_settings')
         .update({
@@ -384,11 +411,39 @@ export const useSettings = () => {
       // Add a small delay before allowing another save to prevent rapid multiple saves
       setTimeout(() => {
         setIsSaving(false);
-      }, 1000);
+      }, 500);
+    }
+  }, [user, isSaving, toast]);
+
+  // Helper function to update user info in settings tables
+  const updateUserInfoInSettings = async (userId: string, email: string, fullName: string): Promise<void> => {
+    try {
+      // Update in invoice settings
+      await supabase
+        .from('invoice_settings')
+        .update({
+          user_email: email,
+          user_name: fullName
+        })
+        .eq('user_id', userId);
+        
+      // Update in tax settings  
+      await supabase
+        .from('tax_settings')
+        .update({
+          user_email: email,
+          user_name: fullName
+        })
+        .eq('user_id', userId);
+        
+      logDatabaseOperation('updateUserInfoInSettings', true, { userId });
+    } catch (err) {
+      logDatabaseOperation('updateUserInfoInSettings', false, { userId }, err);
+      console.error('[SETTINGS] Failed to update user info in settings tables:', err);
     }
   };
 
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = useCallback(async () => {
     if (!user?.id) {
       return null;
     }
@@ -412,6 +467,15 @@ export const useSettings = () => {
       }
 
       logDatabaseOperation('fetchUserProfile', true, { userId: user.id });
+      
+      // Update user object if email confirmation status changed
+      if (data.email_confirmed && (!user.emailConfirmed)) {
+        setUser({
+          ...user,
+          emailConfirmed: data.email_confirmed
+        });
+      }
+      
       return data;
     } catch (err) {
       logDatabaseOperation('fetchUserProfile', false, { userId: user.id }, err);
@@ -419,9 +483,9 @@ export const useSettings = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, toast, setUser]);
 
-  const fetchInvoiceSettings = async () => {
+  const fetchInvoiceSettings = useCallback(async () => {
     if (!user?.id) {
       return null;
     }
@@ -451,6 +515,8 @@ export const useSettings = () => {
             .from('invoice_settings')
             .insert({
               user_id: user.id,
+              user_email: user.email,
+              user_name: `${user.firstName} ${user.lastName}`,
               ...defaultSettings
             })
             .select();
@@ -480,9 +546,9 @@ export const useSettings = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, toast]);
 
-  const fetchTaxSettings = async () => {
+  const fetchTaxSettings = useCallback(async () => {
     if (!user?.id) {
       return null;
     }
@@ -512,6 +578,8 @@ export const useSettings = () => {
             .from('tax_settings')
             .insert({
               user_id: user.id,
+              user_email: user.email,
+              user_name: `${user.firstName} ${user.lastName}`,
               ...defaultSettings
             })
             .select();
@@ -541,7 +609,7 @@ export const useSettings = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, toast]);
 
   return {
     isLoading,
