@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/database';
@@ -25,7 +24,14 @@ export const useInvoices = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
-  const { invoiceSettings, refreshInvoiceSettings } = useSettings();
+  const { invoiceSettings, refreshInvoiceSettings, fetchInvoiceSettings } = useSettings();
+
+  // Initialize settings if needed
+  useEffect(() => {
+    if (user && !invoiceSettings) {
+      fetchInvoiceSettings();
+    }
+  }, [user, invoiceSettings, fetchInvoiceSettings]);
 
   const fetchInvoices = useCallback(async () => {
     if (!user) return;

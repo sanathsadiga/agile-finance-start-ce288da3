@@ -54,30 +54,20 @@ const InvoiceTemplatePreview: React.FC<InvoiceTemplatePreviewProps> = ({ templat
     }
   };
 
-  // Use CSS variables for styling
+  // Create CSS variables for styling
   const previewStyle = {
-    '--font-family': style.fontFamily,
-    '--font-size': style.fontSize,
-    '--primary-color': style.primaryColor,
-    '--secondary-color': style.secondaryColor,
-    '--text-color': style.textColor,
-    '--border-style': style.borderStyle,
-    '--header-alignment': style.headerAlignment,
-    '--logo-position': style.logoPosition,
-  } as React.CSSProperties;
+    fontFamily: style.fontFamily,
+    fontSize: style.fontSize,
+    color: style.textColor,
+  };
 
   return (
     <div className="overflow-auto">
       <Card className="w-full max-w-[800px] mx-auto">
         <CardContent className="p-6">
           <div
-            style={previewStyle}
             className="preview-container p-8 font-sans text-gray-800"
-            style={{
-              fontFamily: style.fontFamily,
-              fontSize: style.fontSize,
-              color: style.textColor,
-            }}
+            style={previewStyle}
           >
             {/* Header */}
             {layout.header && (

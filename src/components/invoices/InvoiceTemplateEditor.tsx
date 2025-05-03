@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +7,6 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { InvoiceTemplate, LayoutConfig, StyleConfig, ContentConfig } from "@/hooks/useInvoiceTemplates";
 
@@ -516,14 +514,14 @@ const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
                       <div className="bg-gray-50 p-4 rounded-md">
                         <p className="text-sm mb-2">You can use these tokens in your content:</p>
                         <ul className="text-sm space-y-1">
-                          <li><code>{{invoice_number}}</code> - The invoice number</li>
-                          <li><code>{{issue_date}}</code> - Date the invoice was issued</li>
-                          <li><code>{{due_date}}</code> - Due date for payment</li>
-                          <li><code>{{client_name}}</code> - Client's name</li>
-                          <li><code>{{business_name}}</code> - Your business name</li>
-                          <li><code>{{subtotal}}</code> - Subtotal amount</li>
-                          <li><code>{{tax_amount}}</code> - Tax amount</li>
-                          <li><code>{{total}}</code> - Total amount</li>
+                          <li><code>{"{{invoice_number}}"}</code> - The invoice number</li>
+                          <li><code>{"{{issue_date}}"}</code> - Date the invoice was issued</li>
+                          <li><code>{"{{due_date}}"}</code> - Due date for payment</li>
+                          <li><code>{"{{client_name}}"}</code> - Client's name</li>
+                          <li><code>{"{{business_name}}"}</code> - Your business name</li>
+                          <li><code>{"{{subtotal}}"}</code> - Subtotal amount</li>
+                          <li><code>{"{{tax_amount}}"}</code> - Tax amount</li>
+                          <li><code>{"{{total}}"}</code> - Total amount</li>
                         </ul>
                       </div>
                     </AccordionContent>

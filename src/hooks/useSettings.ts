@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef } from 'react';
+
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase, logDatabaseOperation, checkEmailConfirmation } from '@/lib/supabase/database';
 import { useToast } from './use-toast';
@@ -46,6 +47,8 @@ export const useSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
+  const [invoiceSettings, setInvoiceSettings] = useState<InvoiceSettings | null>(null);
+  const [taxSettings, setTaxSettings] = useState<TaxSettings | null>(null);
   const { toast } = useToast();
   
   // Add refs to track save operation state
@@ -326,6 +329,12 @@ export const useSettings = () => {
         title: "Settings updated",
         description: "Your invoice settings have been updated successfully",
       });
+      
+      // Update local state with new settings
+      if (data && data[0]) {
+        setInvoiceSettings(data[0] as InvoiceSettings);
+      }
+      
       return true;
     } catch (err: any) {
       logDatabaseOperation('updateInvoiceSettings', false, { userId: user.id }, err);
@@ -406,6 +415,12 @@ export const useSettings = () => {
         title: "Settings updated",
         description: "Your tax settings have been updated successfully",
       });
+      
+      // Update local state with new settings
+      if (data && data[0]) {
+        setTaxSettings(data[0] as TaxSettings);
+      }
+      
       return true;
     } catch (err: any) {
       logDatabaseOperation('updateTaxSettings', false, { userId: user.id }, err);
@@ -453,7 +468,7 @@ export const useSettings = () => {
     }
   };
 
-  const fetchUserProfile = async (user, supabase, logDatabaseOperation, toast, setUser) => {
+  const fetchUserProfile = async () => {
     if (!user?.id) {
       return null;
     }
@@ -492,7 +507,7 @@ export const useSettings = () => {
     }
   };
   
-  const fetchInvoiceSettings = async (user, supabase, logDatabaseOperation, toast) => {
+  const fetchInvoiceSettings = useCallback(async () => {
     if (!user?.id) {
       return null;
     }
@@ -533,7 +548,10 @@ export const useSettings = () => {
           }
           
           logDatabaseOperation('createInvoiceSettings', true, { userId: user.id });
-          return newData?.[0] || defaultSettings;
+          
+          const result = newData?.[0] || defaultSettings;
+          setInvoiceSettings(result as InvoiceSettings);
+          return result;
         }
         
         toast({
@@ -545,14 +563,15 @@ export const useSettings = () => {
       }
   
       logDatabaseOperation('fetchInvoiceSettings', true, { userId: user.id });
+      setInvoiceSettings(data as InvoiceSettings);
       return data;
     } catch (err) {
       logDatabaseOperation('fetchInvoiceSettings', false, { userId: user.id }, err);
       return null;
     }
-  };
+  }, [user, toast, setUser]);
   
-  const fetchTaxSettings = async (user, supabase, logDatabaseOperation, toast) => {
+  const fetchTaxSettings = useCallback(async () => {
     if (!user?.id) {
       return null;
     }
@@ -593,7 +612,10 @@ export const useSettings = () => {
           }
           
           logDatabaseOperation('createTaxSettings', true, { userId: user.id });
-          return newData?.[0] || defaultSettings;
+          
+          const result = newData?.[0] || defaultSettings;
+          setTaxSettings(result as TaxSettings);
+          return result;
         }
         
         toast({
@@ -605,25 +627,42 @@ export const useSettings = () => {
       }
   
       logDatabaseOperation('fetchTaxSettings', true, { userId: user.id });
+      setTaxSettings(data as TaxSettings);
       return data;
     } catch (err) {
       logDatabaseOperation('fetchTaxSettings', false, { userId: user.id }, err);
       return null;
     }
-  };
+  }, [user, toast, setUser]);
+
+  // Add a function to refresh invoice settings
+  const refreshInvoiceSettings = useCallback(async () => {
+    return await fetchInvoiceSettings();
+  }, [fetchInvoiceSettings]);
+
+  // Load settings on hook initialization
+  useEffect(() => {
+    if (user) {
+      fetchInvoiceSettings();
+      fetchTaxSettings();
+    }
+  }, [user, fetchInvoiceSettings, fetchTaxSettings]);
 
   return {
     isLoading,
     isSaving,
     lastSaveTime,
+    invoiceSettings,
+    taxSettings,
     updateBusinessSettings,
     updateAccountSettings,
     updateInvoiceSettings,
     updateTaxSettings,
-    // Update these functions to use the imported supabase and logDatabaseOperation
-    fetchUserProfile: (user) => fetchUserProfile(user, supabase, logDatabaseOperation, toast, setUser),
-    fetchInvoiceSettings: (user) => fetchInvoiceSettings(user, supabase, logDatabaseOperation, toast),
-    fetchTaxSettings: (user) => fetchTaxSettings(user, supabase, logDatabaseOperation, toast),
+    fetchUserProfile,
+    fetchInvoiceSettings,
+    fetchTaxSettings,
+    refreshInvoiceSettings,
     checkEmailConfirmation,
   };
 };
+
