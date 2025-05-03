@@ -17,7 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const DashboardHeader = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();  // Changed from signOut to logout
   const location = useLocation();
 
   const navLinks = [
@@ -39,7 +39,7 @@ const DashboardHeader = () => {
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      await logout();  // Changed from signOut to logout
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -79,7 +79,8 @@ const DashboardHeader = () => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.avatarUrl} alt={user?.firstName} />
+                  {/* Removed avatarUrl since it doesn't exist in the User type */}
+                  <AvatarImage alt={user?.firstName} />
                   <AvatarFallback>{getInitials()}</AvatarFallback>
                 </Avatar>
               </Button>
