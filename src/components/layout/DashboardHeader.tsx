@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, X, LogOut, Settings, User, BarChart, FileText, CreditCard, Home, ChevronDown } from "lucide-react";
+import { Menu, X, LogOut, Settings, Home, FileText, CreditCard, BarChart } from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 

@@ -70,6 +70,41 @@ export interface Database {
           default_currency?: string | null
         }
       }
+      invoice_templates: {
+        Row: {
+          id: string
+          user_id: string
+          created_at: string
+          updated_at: string
+          name: string
+          is_default: boolean
+          layout_config: Json
+          style_config: Json
+          content_config: Json
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          created_at?: string
+          updated_at?: string
+          name: string
+          is_default?: boolean
+          layout_config?: Json
+          style_config?: Json
+          content_config?: Json
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          created_at?: string
+          updated_at?: string
+          name?: string
+          is_default?: boolean
+          layout_config?: Json
+          style_config?: Json
+          content_config?: Json
+        }
+      }
       invoice_settings: {
         Row: {
           id: string
@@ -153,6 +188,59 @@ export interface Database {
           default_tax_rate?: number
           tax_name?: string
           tax_registration_number?: string | null
+        }
+      }
+      invoices: {
+        Row: {
+          id: string
+          user_id: string
+          invoice_number: string
+          invoice_template_id: string | null
+          customer: string | null
+          email: string | null
+          date: string
+          due_date: string | null
+          amount: number
+          status: string
+          description: string | null
+          notes: string | null
+          items: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          invoice_number: string
+          invoice_template_id?: string | null
+          customer?: string | null
+          email?: string | null
+          date: string
+          due_date?: string | null
+          amount: number
+          status: string
+          description?: string | null
+          notes?: string | null
+          items?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          invoice_number?: string
+          invoice_template_id?: string | null
+          customer?: string | null
+          email?: string | null
+          date?: string
+          due_date?: string | null
+          amount?: number
+          status?: string
+          description?: string | null
+          notes?: string | null
+          items?: Json | null
+          created_at?: string
+          updated_at?: string
         }
       }
       expenses: {

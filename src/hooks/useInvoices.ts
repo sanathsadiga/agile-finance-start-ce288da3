@@ -1,8 +1,9 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/database';
 import { useToast } from '@/hooks/use-toast';
+import { useSettings } from '@/hooks/useSettings';
 
 export interface Invoice {
   id: string;
@@ -15,6 +16,8 @@ export interface Invoice {
   description?: string;
   items?: any[];
   notes?: string;
+  invoice_number?: string;
+  template_id?: string;
 }
 
 export const useInvoices = () => {
@@ -22,6 +25,7 @@ export const useInvoices = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { invoiceSettings, refreshInvoiceSettings } = useSettings();
 
   const fetchInvoices = useCallback(async () => {
     if (!user) return;
@@ -40,6 +44,8 @@ export const useInvoices = () => {
       // Format the data to match our interface
       const formattedInvoices = invoicesData.map(invoice => ({
         id: invoice.id,
+        invoice_number: invoice.invoice_number,
+        template_id: invoice.invoice_template_id,
         date: invoice.date,
         dueDate: invoice.due_date || undefined,
         customer: invoice.customer || undefined,
@@ -47,7 +53,8 @@ export const useInvoices = () => {
         amount: invoice.amount,
         status: invoice.status,
         description: invoice.description || undefined,
-        notes: invoice.notes || undefined
+        notes: invoice.notes || undefined,
+        items: invoice.items || []
       }));
 
       setInvoices(formattedInvoices);
@@ -65,11 +72,39 @@ export const useInvoices = () => {
   }, [user, toast]);
 
   // Fetch invoices on hook initialization
-  useCallback(() => {
+  useEffect(() => {
     if (user) {
       fetchInvoices();
     }
   }, [user, fetchInvoices]);
+
+  const generateInvoiceNumber = useCallback(async () => {
+    if (!invoiceSettings) {
+      await refreshInvoiceSettings();
+      return "INV-1001"; // Default fallback
+    }
+
+    const prefix = invoiceSettings.invoice_prefix || "INV-";
+    const nextNumber = invoiceSettings.next_invoice_number || 1001;
+    return `${prefix}${nextNumber}`;
+  }, [invoiceSettings, refreshInvoiceSettings]);
+
+  const incrementInvoiceNumber = useCallback(async () => {
+    if (!user || !invoiceSettings) return;
+
+    try {
+      const nextNumber = (invoiceSettings.next_invoice_number || 1001) + 1;
+      
+      await supabase
+        .from('invoice_settings')
+        .update({ next_invoice_number: nextNumber })
+        .eq('user_id', user.id);
+      
+      await refreshInvoiceSettings();
+    } catch (error) {
+      console.error('Error updating invoice number:', error);
+    }
+  }, [user, invoiceSettings, refreshInvoiceSettings]);
 
   const addInvoice = useCallback(async (invoice: Omit<Invoice, 'id'>) => {
     if (!user) {
@@ -77,9 +112,14 @@ export const useInvoices = () => {
     }
     
     try {
+      // Generate invoice number
+      const invoiceNumber = await generateInvoiceNumber();
+      
       // Format the data for Supabase
       const supabaseInvoice = {
         user_id: user.id,
+        invoice_number: invoiceNumber,
+        invoice_template_id: invoice.template_id || null,
         date: invoice.date,
         due_date: invoice.dueDate || null,
         customer: invoice.customer || null,
@@ -87,7 +127,8 @@ export const useInvoices = () => {
         amount: invoice.amount,
         status: invoice.status,
         description: invoice.description || null,
-        notes: invoice.notes || null
+        notes: invoice.notes || null,
+        items: invoice.items || []
       };
       
       // Insert into Supabase
@@ -102,6 +143,8 @@ export const useInvoices = () => {
       // Format the returned data
       const newInvoice: Invoice = {
         id: data.id,
+        invoice_number: data.invoice_number,
+        template_id: data.invoice_template_id,
         date: data.date,
         dueDate: data.due_date || undefined,
         customer: data.customer || undefined,
@@ -109,11 +152,15 @@ export const useInvoices = () => {
         amount: data.amount,
         status: data.status,
         description: data.description || undefined,
-        notes: data.notes || undefined
+        notes: data.notes || undefined,
+        items: data.items || []
       };
       
       // Update local state
       setInvoices(prev => [newInvoice, ...prev]);
+      
+      // Increment invoice number for next invoice
+      await incrementInvoiceNumber();
       
       return newInvoice;
     } catch (error) {
@@ -125,7 +172,7 @@ export const useInvoices = () => {
       });
       throw error;
     }
-  }, [user, toast]);
+  }, [user, toast, generateInvoiceNumber, incrementInvoiceNumber]);
 
   const updateInvoice = useCallback(async (updatedInvoice: Invoice) => {
     if (!user) {
@@ -142,7 +189,9 @@ export const useInvoices = () => {
         amount: updatedInvoice.amount,
         status: updatedInvoice.status,
         description: updatedInvoice.description || null,
-        notes: updatedInvoice.notes || null
+        notes: updatedInvoice.notes || null,
+        items: updatedInvoice.items || [],
+        invoice_template_id: updatedInvoice.template_id || null
       };
       
       // Update in Supabase
@@ -215,6 +264,7 @@ export const useInvoices = () => {
     fetchInvoices,
     addInvoice,
     updateInvoice,
-    deleteInvoice
+    deleteInvoice,
+    generateInvoiceNumber
   };
 };

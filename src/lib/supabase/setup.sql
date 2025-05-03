@@ -2,6 +2,7 @@
 -- Drop existing tables if they exist
 DROP TABLE IF EXISTS tax_settings;
 DROP TABLE IF EXISTS invoice_settings;
+DROP TABLE IF EXISTS invoice_templates;
 DROP TABLE IF EXISTS expenses;
 DROP TABLE IF EXISTS invoices;
 DROP TABLE IF EXISTS profiles;
@@ -45,6 +46,43 @@ CREATE TABLE IF NOT EXISTS invoice_settings (
   terms_default TEXT
 );
 
+-- Create invoice templates table
+CREATE TABLE IF NOT EXISTS invoice_templates (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  name TEXT NOT NULL,
+  is_default BOOLEAN DEFAULT FALSE,
+  layout_config JSONB NOT NULL DEFAULT '{
+    "header": true,
+    "businessInfo": true,
+    "clientInfo": true,
+    "invoiceInfo": true,
+    "itemTable": true,
+    "summary": true,
+    "notes": true,
+    "footer": true
+  }',
+  style_config JSONB NOT NULL DEFAULT '{
+    "fontFamily": "Inter, sans-serif",
+    "fontSize": "16px",
+    "primaryColor": "#6366f1",
+    "secondaryColor": "#f3f4f6",
+    "textColor": "#111827",
+    "borderStyle": "1px solid #e5e7eb",
+    "headerAlignment": "left",
+    "logoPosition": "left",
+    "tableStyle": "bordered"
+  }',
+  content_config JSONB NOT NULL DEFAULT '{
+    "headerText": "INVOICE",
+    "footerText": "Thank you for your business",
+    "notesLabel": "Notes",
+    "termsLabel": "Terms & Conditions"
+  }'
+);
+
 -- Create tax settings table with user identification fields
 CREATE TABLE IF NOT EXISTS tax_settings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -83,11 +121,32 @@ CREATE TABLE IF NOT EXISTS expenses (
   currency TEXT DEFAULT 'usd'
 );
 
+-- Create invoices table
+CREATE TABLE IF NOT EXISTS invoices (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  invoice_number TEXT NOT NULL,
+  invoice_template_id UUID REFERENCES invoice_templates(id),
+  customer TEXT,
+  email TEXT,
+  date DATE NOT NULL,
+  due_date DATE,
+  amount DECIMAL(15,2) NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('draft', 'sent', 'paid', 'overdue', 'unpaid')),
+  description TEXT,
+  notes TEXT,
+  items JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Enable Row Level Security
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoice_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invoice_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tax_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies for profiles
 CREATE POLICY "Users can view their own profile" 
@@ -119,6 +178,23 @@ CREATE POLICY "Users can insert their own invoice settings"
 ON invoice_settings FOR INSERT 
 WITH CHECK (auth.uid() = user_id);
 
+-- Create RLS policies for invoice_templates
+CREATE POLICY "Users can view their own invoice templates" 
+ON invoice_templates FOR SELECT 
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own invoice templates" 
+ON invoice_templates FOR UPDATE 
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own invoice templates" 
+ON invoice_templates FOR INSERT 
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own invoice templates" 
+ON invoice_templates FOR DELETE 
+USING (auth.uid() = user_id);
+
 -- Create RLS policies for tax_settings
 CREATE POLICY "Users can view their own tax settings" 
 ON tax_settings FOR SELECT 
@@ -149,6 +225,23 @@ CREATE POLICY "Users can delete their own expenses"
 ON expenses FOR DELETE 
 USING (auth.uid() = user_id);
 
+-- Create RLS policies for invoices
+CREATE POLICY "Users can view their own invoices" 
+ON invoices FOR SELECT 
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own invoices" 
+ON invoices FOR UPDATE 
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own invoices" 
+ON invoices FOR INSERT 
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own invoices" 
+ON invoices FOR DELETE 
+USING (auth.uid() = user_id);
+
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -170,6 +263,12 @@ BEFORE UPDATE ON invoice_settings
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
+-- Trigger to automatically update the updated_at column for invoice_templates
+CREATE TRIGGER update_invoice_templates_updated_at
+BEFORE UPDATE ON invoice_templates
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
 -- Trigger to automatically update the updated_at column for tax_settings
 CREATE TRIGGER update_tax_settings_updated_at
 BEFORE UPDATE ON tax_settings
@@ -182,11 +281,18 @@ BEFORE UPDATE ON expenses
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 
+-- Trigger to automatically update the updated_at column for invoices
+CREATE TRIGGER update_invoices_updated_at
+BEFORE UPDATE ON invoices
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
 -- Create a function for automatic profile creation
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
   user_full_name TEXT;
+  new_template_id UUID;
 BEGIN
   -- Set email confirmed based on email_confirmed_at field
   INSERT INTO public.profiles (
@@ -232,6 +338,19 @@ BEGIN
     COALESCE(NEW.email, ''),
     user_full_name
   );
+  
+  -- Create a default invoice template for the user
+  INSERT INTO public.invoice_templates (
+    user_id,
+    name,
+    is_default
+  )
+  VALUES (
+    NEW.id,
+    'Default Template',
+    TRUE
+  )
+  RETURNING id INTO new_template_id;
   
   RETURN NEW;
 END;

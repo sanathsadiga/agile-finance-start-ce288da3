@@ -9,8 +9,12 @@ import { DialogFooter } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { CalendarIcon, Plus, Trash2 } from "lucide-react";
+import { CalendarIcon, Plus, Trash2, LayoutTemplate } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useInvoiceTemplates, InvoiceTemplate } from '@/hooks/useInvoiceTemplates';
+import InvoiceTemplateManager from './InvoiceTemplateManager';
+import { useSettings } from '@/hooks/useSettings';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface InvoiceItem {
   id: number;
@@ -27,6 +31,9 @@ interface InvoiceFormProps {
 }
 
 const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) => {
+  const { templates, getDefaultTemplate } = useInvoiceTemplates();
+  const { invoiceSettings, taxSettings } = useSettings();
+
   const [customer, setCustomer] = useState('');
   const [email, setEmail] = useState('');
   const [issueDate, setIssueDate] = useState<Date | undefined>(new Date());
@@ -34,10 +41,12 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState('draft');
+  const [showTemplateManager, setShowTemplateManager] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate | null>(null);
 
   // Calculate totals
   const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
-  const taxRate = 0.1; // 10%
+  const taxRate = taxSettings?.tax_enabled ? (taxSettings?.default_tax_rate / 100) : 0;
   const taxAmount = subtotal * taxRate;
   const total = subtotal + taxAmount;
 
@@ -65,8 +74,20 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
     } else {
       // Initialize with a default empty item for new invoice
       addItem();
+      // Initialize with a default template
+      if (templates.length > 0) {
+        const defaultTemplate = getDefaultTemplate();
+        if (defaultTemplate) {
+          setSelectedTemplate(defaultTemplate);
+        }
+      }
+
+      // Set default notes from invoice settings
+      if (invoiceSettings?.notes_default) {
+        setNotes(invoiceSettings.notes_default);
+      }
     }
-  }, [invoice]);
+  }, [invoice, templates, invoiceSettings, getDefaultTemplate]);
 
   const addItem = () => {
     const newItem: InvoiceItem = {
@@ -114,14 +135,40 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
       taxAmount,
       total,
       notes,
-      status
+      status,
+      template_id: selectedTemplate?.id
     };
     
     onSave(invoiceData);
   };
 
+  const handleSelectTemplate = (template: InvoiceTemplate) => {
+    setSelectedTemplate(template);
+    setShowTemplateManager(false);
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto px-1">
+      <div className="sticky top-0 z-10 bg-white pb-4">
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-medium">Invoice Details</h3>
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => setShowTemplateManager(true)}
+            size="sm"
+          >
+            <LayoutTemplate className="h-4 w-4 mr-2" />
+            {selectedTemplate ? 'Change Template' : 'Choose Template'}
+          </Button>
+        </div>
+        {selectedTemplate && (
+          <p className="text-sm text-muted-foreground">
+            Using template: <span className="font-medium">{selectedTemplate.name}</span>
+          </p>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="customer">Customer/Business Name</Label>
@@ -277,10 +324,12 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
           <span className="text-sm font-medium">Subtotal:</span>
           <span>${subtotal.toFixed(2)}</span>
         </div>
-        <div className="w-full md:w-1/3 flex justify-between">
-          <span className="text-sm font-medium">Tax (10%):</span>
-          <span>${taxAmount.toFixed(2)}</span>
-        </div>
+        {taxSettings?.tax_enabled && (
+          <div className="w-full md:w-1/3 flex justify-between">
+            <span className="text-sm font-medium">{taxSettings.tax_name} ({taxSettings.default_tax_rate}%):</span>
+            <span>${taxAmount.toFixed(2)}</span>
+          </div>
+        )}
         <div className="w-full md:w-1/3 flex justify-between text-lg font-bold">
           <span>Total:</span>
           <span>${total.toFixed(2)}</span>
@@ -313,10 +362,26 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
         />
       </div>
       
-      <DialogFooter>
+      <DialogFooter className="sticky bottom-0 pt-4 bg-white border-t -mx-6 px-6">
         <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
         <Button type="submit">Save Invoice</Button>
       </DialogFooter>
+
+      {/* Template Manager Dialog */}
+      <Dialog open={showTemplateManager} onOpenChange={setShowTemplateManager}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Invoice Templates</DialogTitle>
+            <DialogDescription>
+              Select or create invoice templates for your business
+            </DialogDescription>
+          </DialogHeader>
+          <InvoiceTemplateManager 
+            onSelectTemplate={handleSelectTemplate} 
+            onClose={() => setShowTemplateManager(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </form>
   );
 };
