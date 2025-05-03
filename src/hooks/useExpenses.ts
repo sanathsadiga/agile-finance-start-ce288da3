@@ -1,5 +1,4 @@
-
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/database';
 import { useToast } from '@/hooks/use-toast';
@@ -9,10 +8,20 @@ export interface Expense {
   date: string;
   amount: number;
   category: string;
+  payment_method: string;
   description: string;
   vendor?: string;
   receipt?: boolean;
+  receipt_url?: string;
   notes?: string;
+  is_recurring?: boolean;
+  recurrence_frequency?: string;
+  recurrence_interval?: number;
+  recurrence_end_date?: string;
+  currency?: string;
+  user_id?: string;
+  user_email?: string;
+  user_name?: string;
 }
 
 export const useExpenses = () => {
@@ -26,6 +35,8 @@ export const useExpenses = () => {
 
     setIsLoading(true);
     try {
+      console.log('Fetching expenses for user:', user.id);
+      
       // Fetch expenses
       const { data: expensesData, error: expensesError } = await supabase
         .from('expenses')
@@ -35,20 +46,8 @@ export const useExpenses = () => {
 
       if (expensesError) throw expensesError;
 
-      // Format the data to match our interface
-      const formattedExpenses = expensesData.map(expense => ({
-        id: expense.id,
-        date: expense.date,
-        amount: expense.amount,
-        category: expense.category,
-        description: expense.description,
-        vendor: expense.vendor || undefined,
-        receipt: expense.receipt || undefined,
-        notes: expense.notes || undefined
-      }));
-
-      setExpenses(formattedExpenses);
-      console.log('Expenses loaded:', formattedExpenses.length);
+      setExpenses(expensesData || []);
+      console.log('Expenses loaded:', expensesData?.length);
     } catch (error) {
       console.error('Error loading expenses from Supabase:', error);
       toast({
@@ -61,10 +60,13 @@ export const useExpenses = () => {
     }
   }, [user, toast]);
 
-  // Fetch expenses on hook initialization
-  useCallback(() => {
+  // Fetch expenses whenever the user changes
+  useEffect(() => {
     if (user) {
       fetchExpenses();
+    } else {
+      setExpenses([]);
+      setIsLoading(false);
     }
   }, [user, fetchExpenses]);
 
@@ -77,14 +79,25 @@ export const useExpenses = () => {
       // Format the data for Supabase
       const supabaseExpense = {
         user_id: user.id,
+        user_email: user.email,
+        user_name: `${user.user_metadata?.first_name || ''} ${user.user_metadata?.last_name || ''}`.trim(),
         date: expense.date,
         amount: expense.amount,
         category: expense.category,
+        payment_method: expense.payment_method || 'card',
         description: expense.description,
         vendor: expense.vendor || null,
-        receipt: expense.receipt || null,
-        notes: expense.notes || null
+        receipt: expense.receipt || false,
+        receipt_url: expense.receipt_url || null,
+        notes: expense.notes || null,
+        is_recurring: expense.is_recurring || false,
+        recurrence_frequency: expense.recurrence_frequency || null,
+        recurrence_interval: expense.recurrence_interval || null,
+        recurrence_end_date: expense.recurrence_end_date || null,
+        currency: expense.currency || 'usd'
       };
+      
+      console.log('Adding expense:', supabaseExpense);
       
       // Insert into Supabase
       const { data, error } = await supabase
@@ -95,22 +108,17 @@ export const useExpenses = () => {
       
       if (error) throw error;
       
-      // Format the returned data
-      const newExpense: Expense = {
-        id: data.id,
-        date: data.date,
-        amount: data.amount,
-        category: data.category,
-        description: data.description,
-        vendor: data.vendor || undefined,
-        receipt: data.receipt || undefined,
-        notes: data.notes || undefined
-      };
+      console.log('Expense added successfully:', data);
       
       // Update local state
-      setExpenses(prev => [newExpense, ...prev]);
+      setExpenses(prev => [data, ...prev]);
       
-      return newExpense;
+      toast({
+        title: "Expense added",
+        description: "Your expense has been successfully added.",
+      });
+      
+      return data;
     } catch (error) {
       console.error('Error adding expense:', error);
       toast({
@@ -133,25 +141,34 @@ export const useExpenses = () => {
         date: updatedExpense.date,
         amount: updatedExpense.amount,
         category: updatedExpense.category,
+        payment_method: updatedExpense.payment_method || 'card',
         description: updatedExpense.description,
         vendor: updatedExpense.vendor || null,
-        receipt: updatedExpense.receipt || null,
-        notes: updatedExpense.notes || null
+        receipt: updatedExpense.receipt || false,
+        receipt_url: updatedExpense.receipt_url || null,
+        notes: updatedExpense.notes || null,
+        is_recurring: updatedExpense.is_recurring || false,
+        recurrence_frequency: updatedExpense.recurrence_frequency || null,
+        recurrence_interval: updatedExpense.recurrence_interval || null,
+        recurrence_end_date: updatedExpense.recurrence_end_date || null,
+        currency: updatedExpense.currency || 'usd'
       };
       
       // Update in Supabase
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('expenses')
         .update(supabaseExpense)
         .eq('id', updatedExpense.id)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .select()
+        .single();
       
       if (error) throw error;
       
       // Update local state
       setExpenses(prev => 
         prev.map(expense => 
-          expense.id === updatedExpense.id ? updatedExpense : expense
+          expense.id === updatedExpense.id ? data : expense
         )
       );
       
@@ -159,6 +176,8 @@ export const useExpenses = () => {
         title: "Expense updated",
         description: "Your expense has been successfully updated.",
       });
+      
+      return data;
     } catch (error) {
       console.error('Error updating expense:', error);
       toast({

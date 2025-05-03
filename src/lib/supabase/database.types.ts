@@ -155,6 +155,74 @@ export interface Database {
           tax_registration_number?: string | null
         }
       }
+      expenses: {
+        Row: {
+          id: string
+          user_id: string
+          user_email: string | null
+          user_name: string | null
+          created_at: string
+          updated_at: string
+          date: string
+          amount: number
+          category: string
+          payment_method: string
+          description: string
+          vendor: string | null
+          receipt: boolean
+          receipt_url: string | null
+          notes: string | null
+          is_recurring: boolean
+          recurrence_frequency: string | null
+          recurrence_interval: number | null
+          recurrence_end_date: string | null
+          currency: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          user_email?: string | null
+          user_name?: string | null
+          created_at?: string
+          updated_at?: string
+          date: string
+          amount: number
+          category: string
+          payment_method?: string
+          description: string
+          vendor?: string | null
+          receipt?: boolean
+          receipt_url?: string | null
+          notes?: string | null
+          is_recurring?: boolean
+          recurrence_frequency?: string | null
+          recurrence_interval?: number | null
+          recurrence_end_date?: string | null
+          currency?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          user_email?: string | null
+          user_name?: string | null
+          created_at?: string
+          updated_at?: string
+          date?: string
+          amount?: number
+          category?: string
+          payment_method?: string
+          description?: string
+          vendor?: string | null
+          receipt?: boolean
+          receipt_url?: string | null
+          notes?: string | null
+          is_recurring?: boolean
+          recurrence_frequency?: string | null
+          recurrence_interval?: number | null
+          recurrence_end_date?: string | null
+          currency?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

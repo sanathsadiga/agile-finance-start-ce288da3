@@ -59,10 +59,35 @@ CREATE TABLE IF NOT EXISTS tax_settings (
   tax_registration_number TEXT
 );
 
+-- Create expenses table
+CREATE TABLE IF NOT EXISTS expenses (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  user_email TEXT,
+  user_name TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  date DATE NOT NULL,
+  amount DECIMAL(15,2) NOT NULL,
+  category TEXT NOT NULL,
+  payment_method TEXT NOT NULL DEFAULT 'card',
+  description TEXT NOT NULL,
+  vendor TEXT,
+  receipt BOOLEAN DEFAULT FALSE,
+  receipt_url TEXT,
+  notes TEXT,
+  is_recurring BOOLEAN DEFAULT FALSE,
+  recurrence_frequency TEXT,
+  recurrence_interval INTEGER,
+  recurrence_end_date DATE,
+  currency TEXT DEFAULT 'usd'
+);
+
 -- Enable Row Level Security
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoice_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tax_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies for profiles
 CREATE POLICY "Users can view their own profile" 
@@ -107,6 +132,23 @@ CREATE POLICY "Users can insert their own tax settings"
 ON tax_settings FOR INSERT 
 WITH CHECK (auth.uid() = user_id);
 
+-- Create RLS policies for expenses
+CREATE POLICY "Users can view their own expenses" 
+ON expenses FOR SELECT 
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own expenses" 
+ON expenses FOR UPDATE 
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own expenses" 
+ON expenses FOR INSERT 
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own expenses" 
+ON expenses FOR DELETE 
+USING (auth.uid() = user_id);
+
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -131,6 +173,12 @@ EXECUTE FUNCTION update_updated_at_column();
 -- Trigger to automatically update the updated_at column for tax_settings
 CREATE TRIGGER update_tax_settings_updated_at
 BEFORE UPDATE ON tax_settings
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+-- Trigger to automatically update the updated_at column for expenses
+CREATE TRIGGER update_expenses_updated_at
+BEFORE UPDATE ON expenses
 FOR EACH ROW
 EXECUTE FUNCTION update_updated_at_column();
 

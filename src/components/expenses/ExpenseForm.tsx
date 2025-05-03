@@ -9,36 +9,65 @@ import { DialogFooter } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { CalendarIcon, Upload } from "lucide-react";
+import { CalendarIcon, Upload, RotateCw, DollarSign, CreditCard, Wallet, Landmark } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Expense } from '@/hooks/useExpenses';
 
 interface ExpenseFormProps {
-  expense?: any;
+  expense?: Expense;
   onCancel: () => void;
   onSave: (data: any) => void;
 }
+
+const paymentMethods = [
+  { value: 'card', label: 'Credit/Debit Card', icon: CreditCard },
+  { value: 'cash', label: 'Cash', icon: Wallet },
+  { value: 'bank', label: 'Bank Transfer', icon: Landmark },
+];
 
 const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, onCancel, onSave }) => {
   const [description, setDescription] = useState('');
   const [vendor, setVendor] = useState('');
   const [category, setCategory] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('card');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [notes, setNotes] = useState('');
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [hasReceipt, setHasReceipt] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceFrequency, setRecurrenceFrequency] = useState('monthly');
+  const [currency, setCurrency] = useState('usd');
+
+  // Available categories with the option to add custom
+  const [categories, setCategories] = useState([
+    "Software", "Office", "Meals", "Travel", "Marketing", 
+    "Utilities", "Rent", "Salaries", "Other"
+  ]);
+  const [customCategory, setCustomCategory] = useState('');
+  const [showCustomCategory, setShowCustomCategory] = useState(false);
 
   useEffect(() => {
     if (expense) {
       setDescription(expense.description || '');
       setVendor(expense.vendor || '');
       setCategory(expense.category || '');
-      setAmount(expense.amount ? expense.amount.replace(/[^\d.]/g, '') : ''); // Remove $ from the amount
+      setPaymentMethod(expense.payment_method || 'card');
+      setAmount(expense.amount ? expense.amount.toString() : '');
       setNotes(expense.notes || '');
       setHasReceipt(expense.receipt || false);
+      setIsRecurring(expense.is_recurring || false);
+      setRecurrenceFrequency(expense.recurrence_frequency || 'monthly');
+      setCurrency(expense.currency || 'usd');
       
       if (expense.date) {
         setDate(new Date(expense.date));
+      }
+      
+      // Check if the expense category is in our list, if not add it
+      if (expense.category && !categories.includes(expense.category)) {
+        setCategories(prev => [...prev, expense.category]);
       }
     } else {
       resetForm();
@@ -49,17 +78,43 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, onCancel, onSave }) 
     setDescription('');
     setVendor('');
     setCategory('');
+    setPaymentMethod('card');
     setAmount('');
     setDate(new Date());
     setNotes('');
     setReceiptFile(null);
     setHasReceipt(false);
+    setIsRecurring(false);
+    setRecurrenceFrequency('monthly');
+    setCurrency('usd');
+    setCustomCategory('');
+    setShowCustomCategory(false);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setReceiptFile(e.target.files[0]);
       setHasReceipt(true);
+    }
+  };
+
+  const handleCategoryChange = (value: string) => {
+    if (value === 'custom') {
+      setShowCustomCategory(true);
+      setCategory('');
+    } else {
+      setShowCustomCategory(false);
+      setCategory(value);
+    }
+  };
+
+  const handleCustomCategoryAdd = () => {
+    if (customCategory.trim()) {
+      const newCategory = customCategory.trim();
+      setCategories(prev => [...prev, newCategory]);
+      setCategory(newCategory);
+      setShowCustomCategory(false);
+      setCustomCategory('');
     }
   };
 
@@ -70,10 +125,14 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, onCancel, onSave }) 
       description,
       vendor,
       category,
-      amount: `$${parseFloat(amount).toFixed(2)}`,
+      payment_method: paymentMethod,
+      amount: parseFloat(amount),
       date: date ? format(date, 'yyyy-MM-dd') : null,
       notes,
-      receipt: hasReceipt || !!receiptFile
+      receipt: hasReceipt || !!receiptFile,
+      is_recurring: isRecurring,
+      recurrence_frequency: isRecurring ? recurrenceFrequency : null,
+      currency
     };
     
     onSave(expenseData);
@@ -106,22 +165,31 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, onCancel, onSave }) 
         
         <div className="space-y-2">
           <Label htmlFor="category">Category</Label>
-          <Select value={category} onValueChange={setCategory} required>
+          <Select value={category} onValueChange={handleCategoryChange} required>
             <SelectTrigger>
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Software">Software</SelectItem>
-              <SelectItem value="Office">Office</SelectItem>
-              <SelectItem value="Meals">Meals</SelectItem>
-              <SelectItem value="Travel">Travel</SelectItem>
-              <SelectItem value="Marketing">Marketing</SelectItem>
-              <SelectItem value="Utilities">Utilities</SelectItem>
-              <SelectItem value="Rent">Rent</SelectItem>
-              <SelectItem value="Salaries">Salaries</SelectItem>
-              <SelectItem value="Other">Other</SelectItem>
+              {categories.map(cat => (
+                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+              ))}
+              <SelectItem value="custom">+ Add Custom Category</SelectItem>
             </SelectContent>
           </Select>
+          
+          {showCustomCategory && (
+            <div className="flex mt-2 gap-2">
+              <Input 
+                placeholder="Enter custom category" 
+                value={customCategory}
+                onChange={(e) => setCustomCategory(e.target.value)}
+                className="flex-1"
+              />
+              <Button type="button" onClick={handleCustomCategoryAdd}>
+                Add
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -129,13 +197,15 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, onCancel, onSave }) 
         <div className="space-y-2">
           <Label htmlFor="amount">Amount</Label>
           <div className="relative">
-            <span className="absolute left-3 top-2.5">$</span>
+            <span className="absolute left-3 top-2.5">
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </span>
             <Input 
               id="amount" 
               type="number" 
               step="0.01" 
               min="0" 
-              className="pl-7"
+              className="pl-9"
               placeholder="0.00"
               value={amount} 
               onChange={(e) => setAmount(e.target.value)} 
@@ -171,6 +241,60 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, onCancel, onSave }) 
           </Popover>
         </div>
       </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="payment_method">Payment Method</Label>
+        <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select payment method" />
+          </SelectTrigger>
+          <SelectContent>
+            {paymentMethods.map((method) => (
+              <SelectItem key={method.value} value={method.value}>
+                <div className="flex items-center">
+                  {React.createElement(method.icon, { className: "mr-2 h-4 w-4" })}
+                  <span>{method.label}</span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <Checkbox 
+          id="is_recurring" 
+          checked={isRecurring} 
+          onCheckedChange={(checked) => setIsRecurring(checked as boolean)}
+        />
+        <Label htmlFor="is_recurring" className="font-normal cursor-pointer">
+          This is a recurring expense
+        </Label>
+      </div>
+
+      {isRecurring && (
+        <div className="space-y-2">
+          <Label htmlFor="recurrence_frequency">Recurring Frequency</Label>
+          <Select value={recurrenceFrequency} onValueChange={setRecurrenceFrequency}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select frequency" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="daily">Daily</SelectItem>
+              <SelectItem value="weekly">Weekly</SelectItem>
+              <SelectItem value="monthly">Monthly</SelectItem>
+              <SelectItem value="quarterly">Quarterly</SelectItem>
+              <SelectItem value="yearly">Yearly</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="flex items-center">
+            <RotateCw className="h-4 w-4 mr-2 text-muted-foreground" />
+            <p className="text-xs text-muted-foreground">
+              Future recurring expenses will be created automatically
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label>Receipt</Label>
