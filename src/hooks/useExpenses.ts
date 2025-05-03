@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/database';
@@ -80,7 +81,7 @@ export const useExpenses = () => {
       const supabaseExpense = {
         user_id: user.id,
         user_email: user.email,
-        user_name: `${user.user_metadata?.first_name || ''} ${user.user_metadata?.last_name || ''}`.trim(),
+        user_name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
         date: expense.date,
         amount: expense.amount,
         category: expense.category,
