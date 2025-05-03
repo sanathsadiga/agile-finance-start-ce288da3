@@ -5,12 +5,34 @@ import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, Cart
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useFinancialData } from '@/hooks/useFinancialData';
+import { useExpenses } from '@/hooks/useExpenses';
 
 const DashboardCharts = () => {
   const [timePeriod, setTimePeriod] = useState('6months');
   const [chartType, setChartType] = useState('bar');
   const { calculateFinancialMetrics } = useFinancialData();
   const { monthlyData } = calculateFinancialMetrics();
+  const { expenses } = useExpenses();
+  
+  // Process expense data by category for the chart
+  const expensesByCategory = React.useMemo(() => {
+    if (!expenses || expenses.length === 0) return [];
+    
+    const categoryMap: Record<string, number> = {};
+    
+    expenses.forEach(expense => {
+      const category = expense.category || 'Other';
+      if (!categoryMap[category]) {
+        categoryMap[category] = 0;
+      }
+      categoryMap[category] += expense.amount;
+    });
+    
+    return Object.entries(categoryMap).map(([category, amount]) => ({
+      category,
+      amount
+    })).sort((a, b) => b.amount - a.amount).slice(0, 6);
+  }, [expenses]);
 
   // Filter data based on selected time period
   const filteredData = (() => {

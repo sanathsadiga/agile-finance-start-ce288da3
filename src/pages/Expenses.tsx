@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,6 +94,8 @@ const Expenses = () => {
         });
       }
       setShowExpenseForm(false);
+      // Refresh the page to get updated expense data
+      window.location.reload();
     } catch (error) {
       console.error('Error saving expense:', error);
       toast({
@@ -109,6 +112,8 @@ const Expenses = () => {
     try {
       await deleteExpense(confirmDeleteId);
       setConfirmDeleteId(null);
+      // Refresh the page to get updated expense data
+      window.location.reload();
     } catch (error) {
       console.error('Error deleting expense:', error);
       toast({
@@ -379,20 +384,26 @@ const Expenses = () => {
         </Card>
       </div>
 
-      {/* Add/Edit Expense Dialog */}
+      {/* Add/Edit Expense Dialog with proper styling for scrolling and sticky buttons */}
       <Dialog open={showExpenseForm} onOpenChange={setShowExpenseForm}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
+          <DialogHeader className="sticky top-0 z-10 bg-white pb-4">
             <DialogTitle>{selectedExpense ? 'Edit Expense' : 'Add Expense'}</DialogTitle>
             <DialogDescription>
               {selectedExpense ? 'Edit your expense details' : 'Fill out the form to record a new expense'}
             </DialogDescription>
           </DialogHeader>
-          <ExpenseForm 
-            expense={selectedExpense} 
-            onCancel={handleCloseForm}
-            onSave={handleSaveExpense}
-          />
+          <div className="overflow-y-auto flex-1 pr-2">
+            <ExpenseForm 
+              expense={selectedExpense} 
+              onCancel={handleCloseForm}
+              onSave={handleSaveExpense}
+            />
+          </div>
+          <DialogFooter className="sticky bottom-0 z-10 bg-white pt-4 mt-4 border-t">
+            <Button type="button" variant="outline" onClick={handleCloseForm}>Cancel</Button>
+            <Button type="submit" form="expense-form">{selectedExpense ? 'Update' : 'Add'} Expense</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
       

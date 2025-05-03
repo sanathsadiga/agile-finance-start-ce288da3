@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import SummaryCards from '@/components/dashboard/SummaryCards';
 import RecentActivities from '@/components/dashboard/RecentActivities';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
+import { useExpenses } from '@/hooks/useExpenses';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -19,6 +20,32 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(true);
+  const { expenses } = useExpenses();
+  
+  // Process expense data by category for the chart
+  const expensesByCategory = React.useMemo(() => {
+    if (!expenses || expenses.length === 0) return [];
+    
+    const categoryMap: Record<string, number> = {};
+    
+    expenses.forEach(expense => {
+      const category = expense.category || 'Other';
+      if (!categoryMap[category]) {
+        categoryMap[category] = 0;
+      }
+      categoryMap[category] += expense.amount;
+    });
+    
+    return Object.entries(categoryMap).map(([category, amount]) => ({
+      category,
+      amount
+    })).sort((a, b) => b.amount - a.amount);
+  }, [expenses]);
+
+  // Calculate total expenses
+  const totalExpenses = React.useMemo(() => {
+    return expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  }, [expenses]);
   
   // Simulate data loading
   useEffect(() => {
@@ -38,7 +65,7 @@ const Dashboard = () => {
   };
 
   const handleAddExpense = () => {
-    navigate('/expenses');
+    navigate('/dashboard/expenses');
     toast({
       title: "Add new expense",
       description: "You can now record a new expense."
@@ -259,7 +286,7 @@ const Dashboard = () => {
                 <h3 className="text-lg font-medium">Expense Overview</h3>
                 <p className="text-sm text-muted-foreground">Your expense breakdown by category</p>
               </div>
-              <Button onClick={() => navigate('/expenses')}>
+              <Button onClick={() => navigate('/dashboard/expenses')}>
                 View All Expenses
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -269,27 +296,20 @@ const Dashboard = () => {
               <CardContent className="pt-6">
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart
-                    data={[
-                      { category: "Software", amount: 2480 },
-                      { category: "Rent", amount: 3500 },
-                      { category: "Marketing", amount: 1850 },
-                      { category: "Utilities", amount: 940 },
-                      { category: "Salaries", amount: 5670 },
-                      { category: "Other", amount: 1240 }
-                    ]}
+                    data={expensesByCategory}
                     margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="category" />
                     <YAxis />
-                    <Tooltip />
+                    <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
                     <Bar dataKey="amount" fill="#7E69AB" name="Amount ($)" />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
               <CardFooter>
                 <p className="text-sm text-muted-foreground">
-                  Total expenses this month: <span className="font-medium text-red-600">$15,680</span>
+                  Total expenses: <span className="font-medium text-red-600">${totalExpenses.toFixed(2)}</span>
                 </p>
               </CardFooter>
             </Card>
