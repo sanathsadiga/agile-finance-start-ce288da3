@@ -1,27 +1,19 @@
+
 import React, { useEffect, useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings, BusinessSettings, AccountSettings, InvoiceSettings, TaxSettings } from "@/hooks/useSettings";
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardHeader from '@/components/layout/DashboardHeader';
-import { checkEmailConfirmation, supabase, logDatabaseOperation } from '@/lib/supabase/database';
+import { checkEmailConfirmation } from '@/lib/supabase/database';
 
-const currencies = [
-  { value: "usd", label: "USD - US Dollar" },
-  { value: "eur", label: "EUR - Euro" },
-  { value: "gbp", label: "GBP - British Pound" },
-  { value: "cad", label: "CAD - Canadian Dollar" },
-  { value: "aud", label: "AUD - Australian Dollar" },
-  { value: "jpy", label: "JPY - Japanese Yen" }
-];
+// Import our extracted components
+import BusinessSettingsForm from '@/components/settings/BusinessSettingsForm';
+import InvoiceSettingsForm from '@/components/settings/InvoiceSettingsForm';
+import TaxSettingsForm from '@/components/settings/TaxSettingsForm';
+import AccountSettingsForm from '@/components/settings/AccountSettingsForm';
+import EmailConfirmationAlert from '@/components/settings/EmailConfirmationAlert';
+import { currencies } from '@/components/settings/SettingsConstants';
 
 const Settings = () => {
   const { toast } = useToast();
@@ -87,7 +79,6 @@ const Settings = () => {
         }
         
         // Load user profile data
-        // Remove the user argument from fetchUserProfile
         const profile = await fetchUserProfile();
         
         if (profile) {
@@ -127,7 +118,6 @@ const Settings = () => {
         }
         
         // Load invoice settings
-        // Remove the user argument from fetchInvoiceSettings
         const invoiceSettings = await fetchInvoiceSettings();
         if (invoiceSettings) {
           setInvoiceData({
@@ -141,7 +131,6 @@ const Settings = () => {
         }
         
         // Load tax settings
-        // Remove the user argument from fetchTaxSettings
         const taxSettings = await fetchTaxSettings();
         if (taxSettings) {
           setTaxData({
@@ -164,7 +153,7 @@ const Settings = () => {
     };
 
     loadUserSettings();
-  }, [user]);
+  }, [user, toast, fetchUserProfile, fetchInvoiceSettings, fetchTaxSettings]);
 
   const handleBusinessChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -337,15 +326,7 @@ const Settings = () => {
           <p className="text-gray-600">Manage your account and application preferences</p>
         </header>
         
-        {!emailConfirmed && user && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Email Not Confirmed</AlertTitle>
-            <AlertDescription>
-              Please confirm your email address to enable editing of settings. Check your inbox for a confirmation link.
-            </AlertDescription>
-          </Alert>
-        )}
+        <EmailConfirmationAlert emailConfirmed={emailConfirmed} />
         
         <Tabs defaultValue="business">
           <TabsList className="mb-8">
@@ -356,329 +337,52 @@ const Settings = () => {
           </TabsList>
           
           <TabsContent value="business">
-            <Card>
-              <CardHeader>
-                <CardTitle>Business Details</CardTitle>
-                <CardDescription>
-                  Update your business information that will appear on your invoices and reports
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="company_name">Business Name</Label>
-                    <Input 
-                      id="company_name" 
-                      value={businessData.company_name || ''} 
-                      onChange={handleBusinessChange}
-                      disabled={!emailConfirmed}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="business_phone">Phone Number</Label>
-                    <Input 
-                      id="business_phone" 
-                      value={businessData.business_phone || ''} 
-                      onChange={handleBusinessChange}
-                      disabled={!emailConfirmed}
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="business_website">Website</Label>
-                  <Input 
-                    id="business_website" 
-                    value={businessData.business_website || ''} 
-                    onChange={handleBusinessChange}
-                    placeholder="https://www.example.com"
-                    disabled={!emailConfirmed}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="business_address">Address</Label>
-                  <Input 
-                    id="business_address" 
-                    value={businessData.business_address || ''} 
-                    onChange={handleBusinessChange}
-                    disabled={!emailConfirmed}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="business_city">City</Label>
-                    <Input 
-                      id="business_city" 
-                      value={businessData.business_city || ''} 
-                      onChange={handleBusinessChange}
-                      disabled={!emailConfirmed}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="business_state">State/Province</Label>
-                    <Input 
-                      id="business_state" 
-                      value={businessData.business_state || ''} 
-                      onChange={handleBusinessChange}
-                      disabled={!emailConfirmed}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="business_postal_code">ZIP/Postal Code</Label>
-                    <Input 
-                      id="business_postal_code" 
-                      value={businessData.business_postal_code || ''} 
-                      onChange={handleBusinessChange}
-                      disabled={!emailConfirmed}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="business_country">Country</Label>
-                    <Input 
-                      id="business_country" 
-                      value={businessData.business_country || ''} 
-                      onChange={handleBusinessChange}
-                      disabled={!emailConfirmed}
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="default_currency">Default Currency</Label>
-                  <Select 
-                    value={businessData.default_currency || 'usd'} 
-                    onValueChange={handleCurrencyChange}
-                    disabled={!emailConfirmed}
-                  >
-                    <SelectTrigger id="default_currency">
-                      <SelectValue placeholder="Select currency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {currencies.map((currency) => (
-                        <SelectItem key={currency.value} value={currency.value}>
-                          {currency.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button onClick={handleSaveBusinessSettings} disabled={isLoading || isSaving || !emailConfirmed}>
-                  {isLoading || isSaving ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </CardFooter>
-            </Card>
+            <BusinessSettingsForm 
+              businessData={businessData}
+              handleBusinessChange={handleBusinessChange}
+              handleCurrencyChange={handleCurrencyChange}
+              handleSaveBusinessSettings={handleSaveBusinessSettings}
+              isLoading={isLoading}
+              isSaving={isSaving}
+              emailConfirmed={emailConfirmed}
+              currencies={currencies}
+            />
           </TabsContent>
           
           <TabsContent value="invoices">
-            <Card>
-              <CardHeader>
-                <CardTitle>Invoice Settings</CardTitle>
-                <CardDescription>
-                  Customize how your invoices look and behave
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="invoice_prefix">Invoice Number Prefix</Label>
-                  <Input 
-                    id="invoice_prefix" 
-                    value={invoiceData.invoice_prefix} 
-                    onChange={handleInvoiceChange}
-                    disabled={!emailConfirmed}
-                  />
-                  <p className="text-sm text-gray-500">Your invoice numbers will look like: {invoiceData.invoice_prefix}{invoiceData.next_invoice_number}</p>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="next_invoice_number">Next Invoice Number</Label>
-                  <Input 
-                    id="next_invoice_number" 
-                    type="number" 
-                    value={invoiceData.next_invoice_number} 
-                    onChange={handleInvoiceChange}
-                    disabled={!emailConfirmed}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="default_payment_terms">Default Payment Terms</Label>
-                  <Select 
-                    value={String(invoiceData.default_payment_terms)}
-                    onValueChange={(value) => handleInvoiceSelectChange('default_payment_terms', Number(value))}
-                    disabled={!emailConfirmed}
-                  >
-                    <SelectTrigger id="default_payment_terms">
-                      <SelectValue placeholder="Select payment terms" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="7">Due in 7 days</SelectItem>
-                      <SelectItem value="14">Due in 14 days</SelectItem>
-                      <SelectItem value="30">Due in 30 days</SelectItem>
-                      <SelectItem value="60">Due in 60 days</SelectItem>
-                      <SelectItem value="0">Due on receipt</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id="auto_reminders" 
-                    checked={invoiceData.auto_reminders}
-                    onCheckedChange={(checked) => handleInvoiceToggleChange('auto_reminders', checked)}
-                    disabled={!emailConfirmed}
-                  />
-                  <Label htmlFor="auto_reminders">Send automatic payment reminders</Label>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button 
-                  onClick={handleSaveInvoiceSettings} 
-                  disabled={isLoading || isSaving || !emailConfirmed}
-                >
-                  {isLoading || isSaving ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </CardFooter>
-            </Card>
+            <InvoiceSettingsForm 
+              invoiceData={invoiceData}
+              handleInvoiceChange={handleInvoiceChange}
+              handleInvoiceSelectChange={handleInvoiceSelectChange}
+              handleInvoiceToggleChange={handleInvoiceToggleChange}
+              handleSaveInvoiceSettings={handleSaveInvoiceSettings}
+              isLoading={isLoading}
+              isSaving={isSaving}
+              emailConfirmed={emailConfirmed}
+            />
           </TabsContent>
           
           <TabsContent value="taxes">
-            <Card>
-              <CardHeader>
-                <CardTitle>Tax Settings</CardTitle>
-                <CardDescription>
-                  Configure tax rates and rules for your invoices
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id="tax_enabled" 
-                    checked={taxData.tax_enabled}
-                    onCheckedChange={handleTaxToggleChange}
-                    disabled={!emailConfirmed}
-                  />
-                  <Label htmlFor="tax_enabled">Enable tax calculations on invoices</Label>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="default_tax_rate">Default Tax Rate (%)</Label>
-                  <Input 
-                    id="default_tax_rate" 
-                    type="number" 
-                    value={taxData.default_tax_rate} 
-                    onChange={handleTaxChange}
-                    disabled={!emailConfirmed || !taxData.tax_enabled}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="tax_name">Tax Name</Label>
-                  <Input 
-                    id="tax_name" 
-                    value={taxData.tax_name} 
-                    onChange={handleTaxChange}
-                    disabled={!emailConfirmed || !taxData.tax_enabled}
-                  />
-                  <p className="text-sm text-gray-500">This name will appear on your invoices</p>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="tax_registration_number">Tax Registration Number</Label>
-                  <Input 
-                    id="tax_registration_number" 
-                    value={taxData.tax_registration_number || ''} 
-                    onChange={handleTaxChange}
-                    disabled={!emailConfirmed || !taxData.tax_enabled}
-                  />
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button 
-                  onClick={handleSaveTaxSettings} 
-                  disabled={isLoading || isSaving || !emailConfirmed}
-                >
-                  {isLoading || isSaving ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </CardFooter>
-            </Card>
+            <TaxSettingsForm 
+              taxData={taxData}
+              handleTaxChange={handleTaxChange}
+              handleTaxToggleChange={handleTaxToggleChange}
+              handleSaveTaxSettings={handleSaveTaxSettings}
+              isLoading={isLoading}
+              isSaving={isSaving}
+              emailConfirmed={emailConfirmed}
+            />
           </TabsContent>
           
           <TabsContent value="account">
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Settings</CardTitle>
-                <CardDescription>
-                  Manage your account details and security
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="first_name">First Name</Label>
-                    <Input 
-                      id="first_name" 
-                      value={accountData.first_name} 
-                      onChange={handleAccountChange}
-                      required
-                      disabled={!emailConfirmed}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="last_name">Last Name</Label>
-                    <Input 
-                      id="last_name" 
-                      value={accountData.last_name} 
-                      onChange={handleAccountChange}
-                      required
-                      disabled={!emailConfirmed}
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    value={accountData.email} 
-                    onChange={handleAccountChange}
-                    required
-                    disabled={!emailConfirmed}
-                  />
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch id="twoFactor" disabled />
-                  <Label htmlFor="twoFactor">Enable two-factor authentication (Coming soon)</Label>
-                </div>
-                
-                <div className="space-y-2">
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
-                    onClick={() => toast({
-                      title: "Feature coming soon",
-                      description: "Password change will be available in a future update"
-                    })}
-                    disabled={!emailConfirmed}
-                  >
-                    Change Password
-                  </Button>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button 
-                  onClick={handleSaveAccountSettings} 
-                  disabled={isLoading || isSaving || !emailConfirmed}
-                >
-                  {isLoading || isSaving ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </CardFooter>
-            </Card>
+            <AccountSettingsForm 
+              accountData={accountData}
+              handleAccountChange={handleAccountChange}
+              handleSaveAccountSettings={handleSaveAccountSettings}
+              isLoading={isLoading}
+              isSaving={isSaving}
+              emailConfirmed={emailConfirmed}
+            />
           </TabsContent>
         </Tabs>
       </div>
