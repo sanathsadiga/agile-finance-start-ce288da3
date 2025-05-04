@@ -110,25 +110,28 @@ export const initializeDatabase = async () => {
 
 // Helper function to log database operations for debugging
 export const logDatabaseOperation = (operation: string, success: boolean, details?: any, error?: any) => {
-  const timestamp = new Date().toISOString();
-  const status = success ? '✅ SUCCESS' : '❌ FAILED';
-  
-  console.log(`[DATABASE ${timestamp}] ${operation} - ${status}`);
-  
-  if (details) {
-    console.log(`[DATABASE ${timestamp}] Details:`, details);
+  // Only log if it's an error to reduce console spam
+  if (!success) {
+    const timestamp = new Date().toISOString();
+    const status = '❌ FAILED';
+    
+    console.log(`[DATABASE ${timestamp}] ${operation} - ${status}`);
+    
+    if (details) {
+      console.log(`[DATABASE ${timestamp}] Details:`, details);
+    }
+    
+    if (error) {
+      console.error(`[DATABASE ${timestamp}] Error:`, error);
+    }
   }
   
-  if (error) {
-    console.error(`[DATABASE ${timestamp}] Error:`, error);
-  }
-  
-  return { timestamp, operation, success, details, error };
+  return { timestamp: new Date().toISOString(), operation, success, details, error };
 };
 
 // Create a cache for email confirmation status with expiry
 const emailConfirmationCache: Record<string, {status: boolean, timestamp: number}> = {};
-const EMAIL_CACHE_TTL = 60000; // 1 minute cache TTL
+const EMAIL_CACHE_TTL = 60000 * 5; // 5 minute cache TTL to reduce frequent checks
 
 // Helper to check if a user's email is confirmed
 export const checkEmailConfirmation = async (userId: string): Promise<boolean> => {
@@ -142,8 +145,6 @@ export const checkEmailConfirmation = async (userId: string): Promise<boolean> =
       return cachedData.status;
     }
     
-    console.log('[DATABASE] Checking email confirmation for user:', userId);
-    
     // FIXED: Don't use the admin API as it causes 403 error, check profile directly
     const { data, error } = await supabase
       .from('profiles')
@@ -156,8 +157,6 @@ export const checkEmailConfirmation = async (userId: string): Promise<boolean> =
       console.error('[DATABASE] Error checking email confirmation:', error.message);
       return false;
     }
-    
-    console.log('[DATABASE] Email confirmation status from profile:', data?.email_confirmed);
     
     // Cache the result
     emailConfirmationCache[userId] = {

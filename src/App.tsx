@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { checkSupabaseConnection, supabase, initializeDatabase } from "./lib/supabase/database";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Invoices from "./pages/Invoices";
+import InvoiceDetail from "./pages/InvoiceDetail";
 import InvoiceTemplateEditor from "./pages/InvoiceTemplateEditor";
 import Expenses from "./pages/Expenses";
 import Reports from "./pages/Reports";
@@ -79,6 +80,14 @@ const App = () => {
                 } 
               />
               <Route 
+                path="/dashboard/invoices/:invoiceId" 
+                element={
+                  <ProtectedRoute>
+                    <InvoiceDetail />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
                 path="/dashboard/templates" 
                 element={
                   <ProtectedRoute>
@@ -105,19 +114,11 @@ const App = () => {
               {/* Redirect deprecated routes to their dashboard counterparts */}
               <Route 
                 path="/invoices" 
-                element={
-                  <ProtectedRoute>
-                    <Invoices />
-                  </ProtectedRoute>
-                } 
+                element={<Navigate to="/dashboard/invoices" replace />} 
               />
               <Route 
                 path="/expenses" 
-                element={
-                  <ProtectedRoute>
-                    <Expenses />
-                  </ProtectedRoute>
-                } 
+                element={<Navigate to="/dashboard/expenses" replace />} 
               />
               <Route 
                 path="/reports" 
