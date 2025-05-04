@@ -65,10 +65,10 @@ const Invoices = () => {
           </div>
           <div className="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-0">
             <Button asChild variant="outline">
-              <Link to="/dashboard/templates">
+              <a href="/dashboard/templates" target="_blank" rel="noopener noreferrer">
                 <FileEdit className="h-4 w-4 mr-2" />
                 Manage Templates
-              </Link>
+              </a>
             </Button>
             <Button onClick={() => setIsCreatingInvoice(true)}>
               <FileText className="h-4 w-4 mr-2" />
