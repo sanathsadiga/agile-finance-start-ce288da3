@@ -102,6 +102,7 @@ const App = () => {
                   </ProtectedRoute>
                 } 
               />
+              {/* Redirect deprecated routes to their dashboard counterparts */}
               <Route 
                 path="/invoices" 
                 element={

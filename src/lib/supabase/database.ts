@@ -126,9 +126,22 @@ export const logDatabaseOperation = (operation: string, success: boolean, detail
   return { timestamp, operation, success, details, error };
 };
 
+// Create a cache for email confirmation status with expiry
+const emailConfirmationCache: Record<string, {status: boolean, timestamp: number}> = {};
+const EMAIL_CACHE_TTL = 60000; // 1 minute cache TTL
+
 // Helper to check if a user's email is confirmed
 export const checkEmailConfirmation = async (userId: string): Promise<boolean> => {
   try {
+    // Check cache first
+    const cachedData = emailConfirmationCache[userId];
+    const now = Date.now();
+    
+    if (cachedData && (now - cachedData.timestamp < EMAIL_CACHE_TTL)) {
+      // Use cached value if valid
+      return cachedData.status;
+    }
+    
     console.log('[DATABASE] Checking email confirmation for user:', userId);
     
     // FIXED: Don't use the admin API as it causes 403 error, check profile directly
@@ -145,6 +158,13 @@ export const checkEmailConfirmation = async (userId: string): Promise<boolean> =
     }
     
     console.log('[DATABASE] Email confirmation status from profile:', data?.email_confirmed);
+    
+    // Cache the result
+    emailConfirmationCache[userId] = {
+      status: data?.email_confirmed || false,
+      timestamp: now
+    };
+    
     return data?.email_confirmed || false;
   } catch (err) {
     logDatabaseOperation('checkEmailConfirmation', false, { userId }, err);

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -65,18 +64,18 @@ const Settings = () => {
     tax_registration_number: null
   });
 
-  // Load user data when component mounts
+  // Fix infinite loop by only loading settings once or when user changes
   useEffect(() => {
     const loadUserSettings = async () => {
+      if (!user?.id) return;
+      
       console.log('[SETTINGS] Loading user settings');
       
       try {
         // Check if email is confirmed
-        if (user?.id) {
-          const isConfirmed = await checkEmailConfirmation(user.id);
-          console.log('[SETTINGS] Email confirmation status:', isConfirmed);
-          setEmailConfirmed(isConfirmed);
-        }
+        const isConfirmed = await checkEmailConfirmation(user.id);
+        console.log('[SETTINGS] Email confirmation status:', isConfirmed);
+        setEmailConfirmed(isConfirmed);
         
         // Load user profile data
         const profile = await fetchUserProfile();
@@ -153,7 +152,7 @@ const Settings = () => {
     };
 
     loadUserSettings();
-  }, [user, toast, fetchUserProfile, fetchInvoiceSettings, fetchTaxSettings]);
+  }, [user?.id]); // Only load when user ID changes
 
   const handleBusinessChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
