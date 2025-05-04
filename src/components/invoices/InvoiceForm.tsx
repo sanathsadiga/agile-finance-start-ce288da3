@@ -12,9 +12,8 @@ import { format } from "date-fns";
 import { CalendarIcon, Plus, Trash2, LayoutTemplate } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useInvoiceTemplates, InvoiceTemplate } from '@/hooks/useInvoiceTemplates';
-import InvoiceTemplateManager from './InvoiceTemplateManager';
 import { useSettings } from '@/hooks/useSettings';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useNavigate } from 'react-router-dom';
 
 interface InvoiceItem {
   id: number;
@@ -31,6 +30,7 @@ interface InvoiceFormProps {
 }
 
 const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) => {
+  const navigate = useNavigate();
   const { templates, getDefaultTemplate } = useInvoiceTemplates();
   const { invoiceSettings, taxSettings } = useSettings();
 
@@ -41,14 +41,19 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState('draft');
-  const [showTemplateManager, setShowTemplateManager] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate | null>(null);
+  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
+  const [discountValue, setDiscountValue] = useState(0);
 
   // Calculate totals
   const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
+  const discountAmount = discountType === 'percentage' 
+    ? (subtotal * (discountValue / 100)) 
+    : discountValue;
+  const subtotalAfterDiscount = subtotal - discountAmount;
   const taxRate = taxSettings?.tax_enabled ? (taxSettings?.default_tax_rate / 100) : 0;
-  const taxAmount = subtotal * taxRate;
-  const total = subtotal + taxAmount;
+  const taxAmount = subtotalAfterDiscount * taxRate;
+  const total = subtotalAfterDiscount + taxAmount;
 
   useEffect(() => {
     if (invoice) {
@@ -70,6 +75,14 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
       } else {
         // Initialize with a default empty item
         addItem();
+      }
+      
+      // Set discount if available
+      if (invoice.discount) {
+        if (typeof invoice.discount === 'object') {
+          setDiscountType(invoice.discount.type || 'percentage');
+          setDiscountValue(invoice.discount.value || 0);
+        }
       }
     } else {
       // Initialize with a default empty item for new invoice
@@ -132,6 +145,11 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
       dueDate: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
       items,
       subtotal,
+      discount: {
+        type: discountType,
+        value: discountValue,
+        amount: discountAmount
+      },
       taxAmount,
       total,
       notes,
@@ -142,9 +160,9 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
     onSave(invoiceData);
   };
 
-  const handleSelectTemplate = (template: InvoiceTemplate) => {
-    setSelectedTemplate(template);
-    setShowTemplateManager(false);
+  const handleGoToTemplateEditor = () => {
+    // Navigate to template editor
+    navigate('/dashboard/templates');
   };
 
   return (
@@ -155,7 +173,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
           <Button 
             type="button" 
             variant="outline" 
-            onClick={() => setShowTemplateManager(true)}
+            onClick={handleGoToTemplateEditor}
             size="sm"
           >
             <LayoutTemplate className="h-4 w-4 mr-2" />
@@ -324,6 +342,40 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
           <span className="text-sm font-medium">Subtotal:</span>
           <span>${subtotal.toFixed(2)}</span>
         </div>
+        
+        {/* Discount section */}
+        <div className="w-full md:w-1/3 flex flex-col gap-2">
+          <div className="flex justify-between">
+            <span className="text-sm font-medium">Discount:</span>
+            <div className="flex items-center gap-2">
+              <Select 
+                value={discountType} 
+                onValueChange={(value) => setDiscountType(value as 'percentage' | 'fixed')}
+              >
+                <SelectTrigger className="w-[100px]">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="percentage">%</SelectItem>
+                  <SelectItem value="fixed">$</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={discountValue}
+                onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)}
+                className="w-[80px] text-right"
+              />
+            </div>
+          </div>
+          <div className="flex justify-between text-sm text-gray-600">
+            <span>Discount amount:</span>
+            <span>-${discountAmount.toFixed(2)}</span>
+          </div>
+        </div>
+        
         {taxSettings?.tax_enabled && (
           <div className="w-full md:w-1/3 flex justify-between">
             <span className="text-sm font-medium">{taxSettings.tax_name} ({taxSettings.default_tax_rate}%):</span>
@@ -366,22 +418,6 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
         <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
         <Button type="submit">Save Invoice</Button>
       </DialogFooter>
-
-      {/* Template Manager Dialog */}
-      <Dialog open={showTemplateManager} onOpenChange={setShowTemplateManager}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Invoice Templates</DialogTitle>
-            <DialogDescription>
-              Select or create invoice templates for your business
-            </DialogDescription>
-          </DialogHeader>
-          <InvoiceTemplateManager 
-            onSelectTemplate={handleSelectTemplate} 
-            onClose={() => setShowTemplateManager(false)}
-          />
-        </DialogContent>
-      </Dialog>
     </form>
   );
 };

@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
+
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/database';
 import { useToast } from '@/hooks/use-toast';
@@ -17,6 +18,11 @@ export interface Invoice {
   notes?: string;
   invoice_number?: string;
   template_id?: string;
+  discount?: {
+    type: 'percentage' | 'fixed';
+    value: number;
+    amount: number;
+  };
 }
 
 export const useInvoices = () => {
@@ -25,56 +31,76 @@ export const useInvoices = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { invoiceSettings, refreshInvoiceSettings, fetchInvoiceSettings } = useSettings();
+  
+  // Debounce fetch operations
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const shouldFetchRef = useRef<boolean>(true);
 
   // Initialize settings if needed
   useEffect(() => {
-    if (user && !invoiceSettings) {
+    if (user && !invoiceSettings && shouldFetchRef.current) {
+      shouldFetchRef.current = false;
       fetchInvoiceSettings();
+      
+      // Reset the flag after a delay
+      setTimeout(() => {
+        shouldFetchRef.current = true;
+      }, 5000);
     }
   }, [user, invoiceSettings, fetchInvoiceSettings]);
 
   const fetchInvoices = useCallback(async () => {
     if (!user) return;
-
-    setIsLoading(true);
-    try {
-      // Fetch invoices
-      const { data: invoicesData, error: invoicesError } = await supabase
-        .from('invoices')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false });
-
-      if (invoicesError) throw invoicesError;
-
-      // Format the data to match our interface
-      const formattedInvoices = invoicesData.map(invoice => ({
-        id: invoice.id,
-        invoice_number: invoice.invoice_number,
-        template_id: invoice.invoice_template_id,
-        date: invoice.date,
-        dueDate: invoice.due_date || undefined,
-        customer: invoice.customer || undefined,
-        email: invoice.email || undefined,
-        amount: invoice.amount,
-        status: invoice.status,
-        description: invoice.description || undefined,
-        notes: invoice.notes || undefined,
-        items: invoice.items || []
-      }));
-
-      setInvoices(formattedInvoices);
-      console.log('Invoices loaded:', formattedInvoices.length);
-    } catch (error) {
-      console.error('Error loading invoices from Supabase:', error);
-      toast({
-        title: "Failed to load invoices",
-        description: "There was a problem loading your invoice data.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+    
+    // Clear any pending fetch operations
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
     }
+    
+    // Debounce the fetch operation to prevent multiple calls
+    fetchTimeoutRef.current = setTimeout(async () => {
+      setIsLoading(true);
+      try {
+        // Fetch invoices
+        const { data: invoicesData, error: invoicesError } = await supabase
+          .from('invoices')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('date', { ascending: false });
+
+        if (invoicesError) throw invoicesError;
+
+        // Format the data to match our interface
+        const formattedInvoices = invoicesData.map(invoice => ({
+          id: invoice.id,
+          invoice_number: invoice.invoice_number,
+          template_id: invoice.invoice_template_id,
+          date: invoice.date,
+          dueDate: invoice.due_date || undefined,
+          customer: invoice.customer || undefined,
+          email: invoice.email || undefined,
+          amount: invoice.amount,
+          status: invoice.status,
+          description: invoice.description || undefined,
+          notes: invoice.notes || undefined,
+          items: invoice.items || [],
+          discount: invoice.discount || undefined
+        }));
+
+        setInvoices(formattedInvoices);
+        console.log('Invoices loaded:', formattedInvoices.length);
+      } catch (error) {
+        console.error('Error loading invoices from Supabase:', error);
+        toast({
+          title: "Failed to load invoices",
+          description: "There was a problem loading your invoice data.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+        fetchTimeoutRef.current = null;
+      }
+    }, 300);
   }, [user, toast]);
 
   // Fetch invoices on hook initialization
@@ -82,6 +108,13 @@ export const useInvoices = () => {
     if (user) {
       fetchInvoices();
     }
+    
+    // Cleanup function
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+    };
   }, [user, fetchInvoices]);
 
   const generateInvoiceNumber = useCallback(async () => {
@@ -134,7 +167,8 @@ export const useInvoices = () => {
         status: invoice.status,
         description: invoice.description || null,
         notes: invoice.notes || null,
-        items: invoice.items || []
+        items: invoice.items || [],
+        discount: invoice.discount || null
       };
       
       // Insert into Supabase
@@ -159,7 +193,8 @@ export const useInvoices = () => {
         status: data.status,
         description: data.description || undefined,
         notes: data.notes || undefined,
-        items: data.items || []
+        items: data.items || [],
+        discount: data.discount || undefined
       };
       
       // Update local state
@@ -197,7 +232,8 @@ export const useInvoices = () => {
         description: updatedInvoice.description || null,
         notes: updatedInvoice.notes || null,
         items: updatedInvoice.items || [],
-        invoice_template_id: updatedInvoice.template_id || null
+        invoice_template_id: updatedInvoice.template_id || null,
+        discount: updatedInvoice.discount || null
       };
       
       // Update in Supabase

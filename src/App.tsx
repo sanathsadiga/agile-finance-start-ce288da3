@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -12,12 +13,20 @@ import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Invoices from "./pages/Invoices";
+import InvoiceTemplateEditor from "./pages/InvoiceTemplateEditor";
 import Expenses from "./pages/Expenses";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: 60000,
+    },
+  },
+});
 
 const App = () => {
   useEffect(() => {
@@ -62,10 +71,26 @@ const App = () => {
                 } 
               />
               <Route 
-                path="/invoices" 
+                path="/dashboard/invoices" 
                 element={
                   <ProtectedRoute>
                     <Invoices />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/dashboard/templates" 
+                element={
+                  <ProtectedRoute>
+                    <InvoiceTemplateEditor />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/dashboard/templates/:templateId" 
+                element={
+                  <ProtectedRoute>
+                    <InvoiceTemplateEditor />
                   </ProtectedRoute>
                 } 
               />
@@ -74,6 +99,14 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <Expenses />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/invoices" 
+                element={
+                  <ProtectedRoute>
+                    <Invoices />
                   </ProtectedRoute>
                 } 
               />

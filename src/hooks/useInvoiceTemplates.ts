@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/database';
 import { useToast } from '@/hooks/use-toast';
@@ -13,6 +13,8 @@ export interface LayoutConfig {
   summary: boolean;
   notes: boolean;
   footer: boolean;
+  logo?: boolean;
+  discounts?: boolean;
 }
 
 export interface StyleConfig {
@@ -32,6 +34,7 @@ export interface ContentConfig {
   footerText: string;
   notesLabel: string;
   termsLabel: string;
+  discountLabel?: string;
 }
 
 export interface InvoiceTemplate {
@@ -50,6 +53,9 @@ export const useInvoiceTemplates = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  // Debounce fetch operations
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Default template configs
   const defaultLayoutConfig: LayoutConfig = {
@@ -60,7 +66,9 @@ export const useInvoiceTemplates = () => {
     itemTable: true,
     summary: true,
     notes: true,
-    footer: true
+    footer: true,
+    logo: true,
+    discounts: true
   };
 
   const defaultStyleConfig: StyleConfig = {
@@ -79,41 +87,60 @@ export const useInvoiceTemplates = () => {
     headerText: 'INVOICE',
     footerText: 'Thank you for your business',
     notesLabel: 'Notes',
-    termsLabel: 'Terms & Conditions'
+    termsLabel: 'Terms & Conditions',
+    discountLabel: 'Discount'
   };
 
   const fetchTemplates = useCallback(async () => {
     if (!user) return;
-
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('invoice_templates')
-        .select('*')
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
-      // Ensure default configs are properly formatted
-      const formattedTemplates: InvoiceTemplate[] = data.map(template => ({
-        ...template,
-        layout_config: template.layout_config || defaultLayoutConfig,
-        style_config: template.style_config || defaultStyleConfig,
-        content_config: template.content_config || defaultContentConfig
-      }));
-
-      setTemplates(formattedTemplates);
-    } catch (error) {
-      console.error('Error fetching invoice templates:', error);
-      toast({
-        title: 'Failed to load templates',
-        description: 'Could not load your invoice templates.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
+    
+    // Clear any pending fetch operations
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
     }
-  }, [user, toast]);
+    
+    // Debounce the fetch operation
+    fetchTimeoutRef.current = setTimeout(async () => {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('invoice_templates')
+          .select('*')
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+
+        // Ensure default configs are properly formatted
+        const formattedTemplates: InvoiceTemplate[] = data.map(template => ({
+          ...template,
+          layout_config: {
+            ...defaultLayoutConfig,
+            ...template.layout_config
+          },
+          style_config: {
+            ...defaultStyleConfig,
+            ...template.style_config
+          },
+          content_config: {
+            ...defaultContentConfig,
+            ...template.content_config
+          }
+        }));
+
+        setTemplates(formattedTemplates);
+      } catch (error) {
+        console.error('Error fetching invoice templates:', error);
+        toast({
+          title: 'Failed to load templates',
+          description: 'Could not load your invoice templates.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+        fetchTimeoutRef.current = null;
+      }
+    }, 300);
+  }, [user, toast, defaultLayoutConfig, defaultStyleConfig, defaultContentConfig]);
 
   const addTemplate = useCallback(async (name: string) => {
     if (!user) {
@@ -155,7 +182,7 @@ export const useInvoiceTemplates = () => {
       });
       throw error;
     }
-  }, [user, templates, toast]);
+  }, [user, templates, toast, defaultLayoutConfig, defaultStyleConfig, defaultContentConfig]);
 
   const updateTemplate = useCallback(async (
     templateId: string, 
@@ -335,6 +362,13 @@ export const useInvoiceTemplates = () => {
       setTemplates([]);
       setIsLoading(false);
     }
+    
+    // Cleanup function
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+    };
   }, [user, fetchTemplates]);
 
   return {
