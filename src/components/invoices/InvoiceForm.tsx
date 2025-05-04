@@ -44,6 +44,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
   const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate | null>(null);
   const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
   const [discountValue, setDiscountValue] = useState(0);
+  const [initialSetupDone, setInitialSetupDone] = useState(false);
 
   // Calculate totals
   const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
@@ -56,51 +57,54 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
   const total = subtotalAfterDiscount + taxAmount;
 
   useEffect(() => {
-    if (invoice) {
-      setCustomer(invoice.customer || '');
-      setEmail(invoice.email || '');
-      setStatus(invoice.status || 'draft');
-      setNotes(invoice.notes || '');
-      
-      if (invoice.date) {
-        setIssueDate(new Date(invoice.date));
-      }
-      
-      if (invoice.dueDate) {
-        setDueDate(new Date(invoice.dueDate));
-      }
-      
-      if (invoice.items && invoice.items.length) {
-        setItems(invoice.items);
+    if (!initialSetupDone) {
+      if (invoice) {
+        setCustomer(invoice.customer || '');
+        setEmail(invoice.email || '');
+        setStatus(invoice.status || 'draft');
+        setNotes(invoice.notes || '');
+        
+        if (invoice.date) {
+          setIssueDate(new Date(invoice.date));
+        }
+        
+        if (invoice.dueDate) {
+          setDueDate(new Date(invoice.dueDate));
+        }
+        
+        if (invoice.items && invoice.items.length) {
+          setItems(invoice.items);
+        } else {
+          // Initialize with a default empty item
+          addItem();
+        }
+        
+        // Set discount if available
+        if (invoice.discount) {
+          if (typeof invoice.discount === 'object') {
+            setDiscountType(invoice.discount.type || 'percentage');
+            setDiscountValue(invoice.discount.value || 0);
+          }
+        }
       } else {
-        // Initialize with a default empty item
+        // Initialize with a default empty item for new invoice
         addItem();
-      }
-      
-      // Set discount if available
-      if (invoice.discount) {
-        if (typeof invoice.discount === 'object') {
-          setDiscountType(invoice.discount.type || 'percentage');
-          setDiscountValue(invoice.discount.value || 0);
+        // Initialize with a default template
+        if (templates.length > 0) {
+          const defaultTemplate = getDefaultTemplate();
+          if (defaultTemplate) {
+            setSelectedTemplate(defaultTemplate);
+          }
         }
-      }
-    } else {
-      // Initialize with a default empty item for new invoice
-      addItem();
-      // Initialize with a default template
-      if (templates.length > 0) {
-        const defaultTemplate = getDefaultTemplate();
-        if (defaultTemplate) {
-          setSelectedTemplate(defaultTemplate);
-        }
-      }
 
-      // Set default notes from invoice settings
-      if (invoiceSettings?.notes_default) {
-        setNotes(invoiceSettings.notes_default);
+        // Set default notes from invoice settings
+        if (invoiceSettings?.notes_default) {
+          setNotes(invoiceSettings.notes_default);
+        }
       }
+      setInitialSetupDone(true);
     }
-  }, [invoice, templates, invoiceSettings, getDefaultTemplate]);
+  }, [invoice, templates, invoiceSettings, getDefaultTemplate, initialSetupDone]);
 
   const addItem = () => {
     const newItem: InvoiceItem = {

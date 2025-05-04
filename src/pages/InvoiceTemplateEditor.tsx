@@ -98,6 +98,7 @@ const InvoiceTemplateEditor = () => {
         setLayoutConfig(defaultLayout);
         setStyleConfig(defaultStyle);
         setContentConfig(defaultContent);
+        setName('New Template');
       }
       
       setIsLoading(false);
@@ -105,6 +106,28 @@ const InvoiceTemplateEditor = () => {
 
     loadTemplate();
   }, [templateId, templates.length, fetchTemplates]);
+
+  // Create a default template if no templates exist
+  useEffect(() => {
+    const createDefaultTemplate = async () => {
+      // Only proceed if we're done loading and there are no templates
+      if (!isLoadingTemplates && templates.length === 0) {
+        try {
+          const defaultName = "Default Template";
+          console.log("Creating default template:", defaultName);
+          await addTemplate(defaultName);
+          toast({
+            title: "Default template created",
+            description: "A default template has been created for you.",
+          });
+        } catch (error) {
+          console.error("Error creating default template:", error);
+        }
+      }
+    };
+    
+    createDefaultTemplate();
+  }, [isLoadingTemplates, templates.length, addTemplate, toast]);
 
   const handleSaveTemplate = async () => {
     if (!name.trim()) {
@@ -483,8 +506,8 @@ const InvoiceTemplateEditor = () => {
                               <SelectValue placeholder="Select alignment" />
                             </SelectTrigger>
                             <SelectContent>
-                              {alignmentOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                              {alignmentOptions.map((alignment) => (
+                                <SelectItem key={alignment.value} value={alignment.value}>{alignment.label}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -500,8 +523,8 @@ const InvoiceTemplateEditor = () => {
                               <SelectValue placeholder="Select position" />
                             </SelectTrigger>
                             <SelectContent>
-                              {alignmentOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                              {alignmentOptions.map((position) => (
+                                <SelectItem key={position.value} value={position.value}>{position.label}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -529,52 +552,50 @@ const InvoiceTemplateEditor = () => {
                   
                   {/* Content Tab */}
                   <TabsContent value="content" className="space-y-4 pt-4">
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="headerText">Header Text</Label>
-                          <Input 
-                            id="headerText" 
-                            value={contentConfig.headerText || ''} 
-                            onChange={(e) => handleContentChange('headerText', e.target.value)} 
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="footerText">Footer Text</Label>
-                          <Input 
-                            id="footerText" 
-                            value={contentConfig.footerText || ''} 
-                            onChange={(e) => handleContentChange('footerText', e.target.value)} 
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="notesLabel">Notes Label</Label>
-                          <Input 
-                            id="notesLabel" 
-                            value={contentConfig.notesLabel || ''} 
-                            onChange={(e) => handleContentChange('notesLabel', e.target.value)} 
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="termsLabel">Terms Label</Label>
-                          <Input 
-                            id="termsLabel" 
-                            value={contentConfig.termsLabel || ''} 
-                            onChange={(e) => handleContentChange('termsLabel', e.target.value)} 
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="discountLabel">Discount Label</Label>
-                          <Input 
-                            id="discountLabel" 
-                            value={contentConfig.discountLabel || 'Discount'} 
-                            onChange={(e) => handleContentChange('discountLabel', e.target.value)} 
-                          />
-                        </div>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="headerText">Header Text</Label>
+                        <Input 
+                          id="headerText" 
+                          value={contentConfig.headerText || ''} 
+                          onChange={(e) => handleContentChange('headerText', e.target.value)} 
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="footerText">Footer Text</Label>
+                        <Input 
+                          id="footerText" 
+                          value={contentConfig.footerText || ''} 
+                          onChange={(e) => handleContentChange('footerText', e.target.value)} 
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="notesLabel">Notes Label</Label>
+                        <Input 
+                          id="notesLabel" 
+                          value={contentConfig.notesLabel || ''} 
+                          onChange={(e) => handleContentChange('notesLabel', e.target.value)} 
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="termsLabel">Terms Label</Label>
+                        <Input 
+                          id="termsLabel" 
+                          value={contentConfig.termsLabel || ''} 
+                          onChange={(e) => handleContentChange('termsLabel', e.target.value)} 
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="discountLabel">Discount Label</Label>
+                        <Input 
+                          id="discountLabel" 
+                          value={contentConfig.discountLabel || ''} 
+                          onChange={(e) => handleContentChange('discountLabel', e.target.value)} 
+                        />
                       </div>
                     </div>
                   </TabsContent>
@@ -585,25 +606,13 @@ const InvoiceTemplateEditor = () => {
           
           {/* Preview Panel */}
           <div className="lg:col-span-3">
-            <Card className="h-full">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Live Preview</CardTitle>
-                  <CardDescription>See how your template will look</CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" disabled>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload Logo
-                  </Button>
-                  <Button variant="outline" disabled>
-                    <Eye className="h-4 w-4 mr-2" />
-                    Preview PDF
-                  </Button>
-                </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Template Preview</CardTitle>
+                <CardDescription>This is how your invoice will look</CardDescription>
               </CardHeader>
-              <CardContent className="overflow-auto" style={{maxHeight: "calc(100vh - 350px)"}}>
-                <div className="border rounded-md p-4 bg-white">
+              <CardContent>
+                <div className="border rounded-md overflow-auto max-h-[800px] p-4">
                   <div dangerouslySetInnerHTML={{ __html: generatePreviewHtml() }} />
                 </div>
               </CardContent>

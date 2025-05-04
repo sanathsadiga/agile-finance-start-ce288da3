@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/database';
@@ -22,6 +23,7 @@ export interface Invoice {
     value: number;
     amount: number;
   };
+  currency?: string; // Added currency field
 }
 
 export const useInvoices = () => {
@@ -82,7 +84,8 @@ export const useInvoices = () => {
         description: invoice.description || undefined,
         notes: invoice.notes || undefined,
         items: invoice.items || [],
-        discount: invoice.discount || undefined
+        discount: invoice.discount || undefined,
+        currency: invoice.currency || undefined // Added currency
       }));
 
       setInvoices(formattedInvoices);
@@ -153,6 +156,15 @@ export const useInvoices = () => {
       // Generate invoice number
       const invoiceNumber = await generateInvoiceNumber();
       
+      // Get the user's currency preference
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('default_currency')
+        .eq('id', user.id)
+        .single();
+
+      const currency = profileData?.default_currency || 'USD';
+      
       // Format the data for Supabase
       const supabaseInvoice = {
         user_id: user.id,
@@ -167,7 +179,8 @@ export const useInvoices = () => {
         description: invoice.description || null,
         notes: invoice.notes || null,
         items: invoice.items || [],
-        discount: invoice.discount || null
+        discount: invoice.discount || null,
+        currency: currency // Set the currency from user preferences
       };
       
       console.log('Formatted for supabase:', supabaseInvoice);
@@ -200,7 +213,8 @@ export const useInvoices = () => {
         description: data.description || undefined,
         notes: data.notes || undefined,
         items: data.items || [],
-        discount: data.discount || undefined
+        discount: data.discount || undefined,
+        currency: data.currency || 'USD' // Default to USD if not set
       };
       
       // Update local state
@@ -311,8 +325,90 @@ export const useInvoices = () => {
     isLoading,
     fetchInvoices,
     addInvoice,
-    updateInvoice: async () => console.log('Update function placeholder'), // We'll just stub this for now as it's not being used in the current flow
-    deleteInvoice: async () => console.log('Delete function placeholder'), // We'll just stub this for now as it's not being used in the current flow
+    updateInvoice: async (updatedInvoice: Invoice) => {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
+      try {
+        // Format the data for Supabase
+        const supabaseInvoice = {
+          date: updatedInvoice.date,
+          due_date: updatedInvoice.dueDate || null,
+          customer: updatedInvoice.customer || null,
+          email: updatedInvoice.email || null,
+          amount: updatedInvoice.amount,
+          status: updatedInvoice.status,
+          description: updatedInvoice.description || null,
+          notes: updatedInvoice.notes || null,
+          items: updatedInvoice.items || [],
+          invoice_template_id: updatedInvoice.template_id || null,
+          discount: updatedInvoice.discount || null,
+          currency: updatedInvoice.currency || 'USD'
+        };
+        
+        // Update in Supabase
+        const { error } = await supabase
+          .from('invoices')
+          .update(supabaseInvoice)
+          .eq('id', updatedInvoice.id)
+          .eq('user_id', user.id);
+        
+        if (error) throw error;
+        
+        // Update local state
+        setInvoices(prev => 
+          prev.map(invoice => 
+            invoice.id === updatedInvoice.id ? updatedInvoice : invoice
+          )
+        );
+        
+        toast({
+          title: "Invoice updated",
+          description: "Your invoice has been successfully updated.",
+        });
+      } catch (error) {
+        console.error('Error updating invoice:', error);
+        toast({
+          title: "Failed to update invoice",
+          description: "There was a problem updating your invoice.",
+          variant: "destructive",
+        });
+        throw error;
+      }
+    },
+    deleteInvoice: async (id: string) => {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
+      try {
+        // Delete from Supabase with RLS protection
+        const { error } = await supabase
+          .from('invoices')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', user.id);
+        
+        if (error) throw error;
+        
+        // Update local state
+        setInvoices(prev => prev.filter(invoice => invoice.id !== id));
+        
+        toast({
+          title: "Invoice deleted",
+          description: "Your invoice has been successfully deleted.",
+        });
+      } catch (error) {
+        console.error('Error deleting invoice:', error);
+        toast({
+          title: "Failed to delete invoice",
+          description: "There was a problem deleting your invoice.",
+          variant: "destructive",
+        });
+        throw error;
+      }
+    },
     generateInvoiceNumber
   };
 };

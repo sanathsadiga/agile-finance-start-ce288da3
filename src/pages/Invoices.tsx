@@ -11,9 +11,11 @@ import { Badge } from '@/components/ui/badge';
 import InvoiceForm from '@/components/invoices/InvoiceForm';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { useSettings } from '@/hooks/useSettings';
 
 const Invoices = () => {
   const { invoices, isLoading, fetchInvoices, addInvoice } = useInvoices();
+  const { invoiceSettings } = useSettings();
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
   const { toast } = useToast();
 
@@ -52,6 +54,15 @@ const Invoices = () => {
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
+  };
+
+  // Format currency based on invoice's currency or user's default
+  const formatCurrency = (amount: number, currencyCode: string = 'USD') => {
+    const formatter = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currencyCode,
+    });
+    return formatter.format(amount);
   };
 
   return (
@@ -106,7 +117,9 @@ const Invoices = () => {
                       <div className="text-sm text-gray-500">
                         {invoice.date ? format(new Date(invoice.date), 'MMM d, yyyy') : 'No date'}
                       </div>
-                      <div className="font-bold">${invoice.amount.toFixed(2)}</div>
+                      <div className="font-bold">
+                        {formatCurrency(invoice.amount, invoice.currency)}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
