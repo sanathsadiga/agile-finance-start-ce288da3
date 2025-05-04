@@ -3,7 +3,7 @@ import React from 'react';
 import DashboardHeader from '@/components/layout/DashboardHeader';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Template, FileText, Plus } from 'lucide-react';
+import { FileEdit, FileText, Plus } from 'lucide-react';
 
 const Invoices = () => {
   return (
@@ -18,7 +18,7 @@ const Invoices = () => {
           <div className="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-0">
             <Button asChild variant="outline">
               <Link to="/dashboard/templates">
-                <Template className="h-4 w-4 mr-2" />
+                <FileEdit className="h-4 w-4 mr-2" />
                 Manage Templates
               </Link>
             </Button>
