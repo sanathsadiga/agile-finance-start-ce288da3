@@ -1,4 +1,3 @@
-
 -- Drop existing tables if they exist
 DROP TABLE IF EXISTS tax_settings;
 DROP TABLE IF EXISTS invoice_settings;
@@ -137,7 +136,9 @@ CREATE TABLE IF NOT EXISTS invoices (
   notes TEXT,
   items JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  discount JSONB,
+  currency TEXT DEFAULT 'USD'
 );
 
 -- Enable Row Level Security

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +30,7 @@ interface InvoiceFormProps {
 
 const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) => {
   const navigate = useNavigate();
-  const { templates, getDefaultTemplate } = useInvoiceTemplates();
+  const { templates, getDefaultTemplate, isLoading: templatesLoading } = useInvoiceTemplates();
   const { invoiceSettings, taxSettings } = useSettings();
 
   const [customer, setCustomer] = useState('');
@@ -46,6 +45,20 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
   const [discountValue, setDiscountValue] = useState(0);
   const [initialSetupDone, setInitialSetupDone] = useState(false);
 
+  // Debug information
+  useEffect(() => {
+    console.log('InvoiceForm: Component mounted');
+    console.log('InvoiceForm: Templates loading:', templatesLoading);
+    console.log('InvoiceForm: Templates available:', templates.length);
+    console.log('InvoiceForm: Invoice being edited:', invoice);
+  }, []);
+
+  // Debug templates updates
+  useEffect(() => {
+    console.log('InvoiceForm: Templates updated:', templates);
+    console.log('InvoiceForm: Templates loading state:', templatesLoading);
+  }, [templates, templatesLoading]);
+
   // Calculate totals
   const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
   const discountAmount = discountType === 'percentage' 
@@ -58,7 +71,9 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
 
   useEffect(() => {
     if (!initialSetupDone) {
+      console.log('InvoiceForm: Performing initial setup');
       if (invoice) {
+        console.log('InvoiceForm: Setting up from existing invoice:', invoice);
         setCustomer(invoice.customer || '');
         setEmail(invoice.email || '');
         setStatus(invoice.status || 'draft');
@@ -87,11 +102,14 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
           }
         }
       } else {
+        console.log('InvoiceForm: Setting up new invoice');
         // Initialize with a default empty item for new invoice
         addItem();
         // Initialize with a default template
         if (templates.length > 0) {
+          console.log('InvoiceForm: Finding default template');
           const defaultTemplate = getDefaultTemplate();
+          console.log('InvoiceForm: Default template:', defaultTemplate);
           if (defaultTemplate) {
             setSelectedTemplate(defaultTemplate);
           }
@@ -103,10 +121,12 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
         }
       }
       setInitialSetupDone(true);
+      console.log('InvoiceForm: Initial setup complete');
     }
   }, [invoice, templates, invoiceSettings, getDefaultTemplate, initialSetupDone]);
 
   const addItem = () => {
+    console.log('InvoiceForm: Adding new item');
     const newItem: InvoiceItem = {
       id: Date.now(),
       description: '',
@@ -114,7 +134,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
       rate: 0,
       amount: 0
     };
-    setItems([...items, newItem]);
+    setItems(prev => [...prev, newItem]);
   };
 
   const updateItem = (id: number, field: keyof InvoiceItem, value: string | number) => {
@@ -141,6 +161,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('InvoiceForm: Submitting form');
     
     const invoiceData = {
       customer,
@@ -161,16 +182,33 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
       template_id: selectedTemplate?.id
     };
     
+    console.log('InvoiceForm: Prepared invoice data:', invoiceData);
     onSave(invoiceData);
   };
 
   const handleGoToTemplateEditor = () => {
+    console.log('InvoiceForm: Navigating to template editor');
     // Navigate to template editor
     navigate('/dashboard/templates');
   };
 
+  // Debug rendering
+  console.log('InvoiceForm: Rendering with items:', items.length);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto px-1">
+      {/* Debug information */}
+      <div className="bg-gray-100 p-3 rounded-md mb-4">
+        <h4 className="font-medium mb-1">Debug Info</h4>
+        <div className="text-xs">
+          <p>Templates available: {templates.length}</p>
+          <p>Templates loading: {templatesLoading ? 'Yes' : 'No'}</p>
+          <p>Selected template: {selectedTemplate ? selectedTemplate.name : 'None'}</p>
+          <p>Items count: {items.length}</p>
+          <p>Initial setup done: {initialSetupDone ? 'Yes' : 'No'}</p>
+        </div>
+      </div>
+
       <div className="sticky top-0 z-10 bg-white pb-4">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-medium">Invoice Details</h3>

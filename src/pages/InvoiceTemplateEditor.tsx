@@ -38,70 +38,101 @@ const InvoiceTemplateEditor = () => {
   const [styleConfig, setStyleConfig] = useState<any>({});
   const [contentConfig, setContentConfig] = useState<any>({});
 
+  // Debug logs
+  useEffect(() => {
+    console.log('TemplateEditor: Component mounted');
+    console.log('TemplateEditor: templateId:', templateId);
+    console.log('TemplateEditor: templates count:', templates.length);
+    console.log('TemplateEditor: isLoadingTemplates:', isLoadingTemplates);
+  }, []);
+
+  // Additional debug for state updates
+  useEffect(() => {
+    console.log('TemplateEditor: templates updated:', templates);
+  }, [templates]);
+
   // Load template data when component mounts or templateId changes
   useEffect(() => {
     const loadTemplate = async () => {
+      console.log('TemplateEditor: Loading template data...');
       setIsLoading(true);
-      await fetchTemplates();
       
-      if (templateId) {
-        const foundTemplate = templates.find(t => t.id === templateId);
-        if (foundTemplate) {
-          setTemplate(foundTemplate);
-          setName(foundTemplate.name);
-          setLayoutConfig(foundTemplate.layout_config);
-          setStyleConfig(foundTemplate.style_config);
-          setContentConfig(foundTemplate.content_config);
+      try {
+        console.log('TemplateEditor: Fetching templates...');
+        await fetchTemplates();
+        console.log('TemplateEditor: Templates fetched successfully');
+        
+        if (templateId) {
+          console.log('TemplateEditor: Looking for template with ID:', templateId);
+          const foundTemplate = templates.find(t => t.id === templateId);
+          if (foundTemplate) {
+            console.log('TemplateEditor: Template found:', foundTemplate);
+            setTemplate(foundTemplate);
+            setName(foundTemplate.name);
+            setLayoutConfig(foundTemplate.layout_config);
+            setStyleConfig(foundTemplate.style_config);
+            setContentConfig(foundTemplate.content_config);
+          } else {
+            console.log('TemplateEditor: Template not found with ID:', templateId);
+            toast({
+              title: "Template not found",
+              description: "The requested template could not be found.",
+              variant: "destructive",
+            });
+            navigate('/dashboard/templates');
+          }
         } else {
-          toast({
-            title: "Template not found",
-            description: "The requested template could not be found.",
-            variant: "destructive",
-          });
-          navigate('/dashboard/templates');
+          console.log('TemplateEditor: No templateId, creating new template');
+          // Initialize with default values for a new template
+          const defaultLayout = {
+            header: true,
+            businessInfo: true,
+            clientInfo: true,
+            invoiceInfo: true,
+            itemTable: true,
+            summary: true,
+            notes: true,
+            footer: true,
+            discounts: true,
+            logo: true
+          };
+
+          const defaultStyle = {
+            fontFamily: 'Inter, sans-serif',
+            fontSize: '16px',
+            primaryColor: '#6366f1',
+            secondaryColor: '#f3f4f6',
+            textColor: '#111827',
+            borderStyle: '1px solid #e5e7eb',
+            headerAlignment: 'left',
+            logoPosition: 'left',
+            tableStyle: 'bordered'
+          };
+
+          const defaultContent = {
+            headerText: 'INVOICE',
+            footerText: 'Thank you for your business',
+            notesLabel: 'Notes',
+            termsLabel: 'Terms & Conditions',
+            discountLabel: 'Discount'
+          };
+
+          setLayoutConfig(defaultLayout);
+          setStyleConfig(defaultStyle);
+          setContentConfig(defaultContent);
+          setName('New Template');
         }
-      } else {
-        // Initialize with default values for a new template
-        const defaultLayout = {
-          header: true,
-          businessInfo: true,
-          clientInfo: true,
-          invoiceInfo: true,
-          itemTable: true,
-          summary: true,
-          notes: true,
-          footer: true,
-          discounts: true,
-          logo: true
-        };
-
-        const defaultStyle = {
-          fontFamily: 'Inter, sans-serif',
-          fontSize: '16px',
-          primaryColor: '#6366f1',
-          secondaryColor: '#f3f4f6',
-          textColor: '#111827',
-          borderStyle: '1px solid #e5e7eb',
-          headerAlignment: 'left',
-          logoPosition: 'left',
-          tableStyle: 'bordered'
-        };
-
-        const defaultContent = {
-          headerText: 'INVOICE',
-          footerText: 'Thank you for your business',
-          notesLabel: 'Notes',
-          termsLabel: 'Terms & Conditions',
-          discountLabel: 'Discount'
-        };
-
-        setLayoutConfig(defaultLayout);
-        setStyleConfig(defaultStyle);
-        setContentConfig(defaultContent);
-        setName('New Template');
+      } catch (error) {
+        console.error('TemplateEditor: Error loading template:', error);
+        toast({
+          title: "Failed to load template",
+          description: "There was an error loading the template data.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+        console.log('TemplateEditor: Loading complete, isLoading set to false');
       }
-      
-      setIsLoading(false);
     };
 
     loadTemplate();
@@ -114,20 +145,23 @@ const InvoiceTemplateEditor = () => {
       if (!isLoadingTemplates && templates.length === 0) {
         try {
           const defaultName = "Default Template";
-          console.log("Creating default template:", defaultName);
+          console.log("TemplateEditor: Creating default template:", defaultName);
           await addTemplate(defaultName);
           toast({
             title: "Default template created",
             description: "A default template has been created for you.",
           });
+          console.log("TemplateEditor: Default template created successfully");
+          // Fetch templates again to get the newly created template
+          await fetchTemplates();
         } catch (error) {
-          console.error("Error creating default template:", error);
+          console.error("TemplateEditor: Error creating default template:", error);
         }
       }
     };
     
     createDefaultTemplate();
-  }, [isLoadingTemplates, templates.length, addTemplate, toast]);
+  }, [isLoadingTemplates, templates.length, addTemplate, toast, fetchTemplates]);
 
   const handleSaveTemplate = async () => {
     if (!name.trim()) {
@@ -139,6 +173,7 @@ const InvoiceTemplateEditor = () => {
       return;
     }
 
+    console.log('TemplateEditor: Saving template...', { name, templateId: template?.id });
     setIsSaving(true);
     try {
       const templateData = {
@@ -148,8 +183,11 @@ const InvoiceTemplateEditor = () => {
         content_config: contentConfig
       };
 
+      console.log('TemplateEditor: Template data to save:', templateData);
+
       if (template) {
         // Update existing template
+        console.log('TemplateEditor: Updating existing template');
         await updateTemplate(template.id, templateData);
         toast({
           title: "Template updated",
@@ -157,7 +195,9 @@ const InvoiceTemplateEditor = () => {
         });
       } else {
         // Create new template
+        console.log('TemplateEditor: Creating new template');
         const newTemplate = await addTemplate(name);
+        console.log('TemplateEditor: New template created:', newTemplate);
         await updateTemplate(newTemplate.id, templateData);
         toast({
           title: "Template created",
@@ -166,7 +206,7 @@ const InvoiceTemplateEditor = () => {
         navigate(`/dashboard/templates/${newTemplate.id}`);
       }
     } catch (error) {
-      console.error('Error saving template:', error);
+      console.error('TemplateEditor: Error saving template:', error);
       toast({
         title: "Failed to save template",
         description: "There was an issue saving your template.",
@@ -174,11 +214,13 @@ const InvoiceTemplateEditor = () => {
       });
     } finally {
       setIsSaving(false);
+      console.log('TemplateEditor: Save operation completed');
     }
   };
 
   // Handle layout configuration changes
   const handleLayoutChange = (key: string, value: boolean) => {
+    console.log(`TemplateEditor: Layout change - ${key}:`, value);
     setLayoutConfig((prev: any) => ({
       ...prev,
       [key]: value
@@ -187,6 +229,7 @@ const InvoiceTemplateEditor = () => {
 
   // Handle style configuration changes
   const handleStyleChange = (key: string, value: string) => {
+    console.log(`TemplateEditor: Style change - ${key}:`, value);
     setStyleConfig((prev: any) => ({
       ...prev,
       [key]: value
@@ -195,6 +238,7 @@ const InvoiceTemplateEditor = () => {
 
   // Handle content configuration changes
   const handleContentChange = (key: string, value: string) => {
+    console.log(`TemplateEditor: Content change - ${key}:`, value);
     setContentConfig((prev: any) => ({
       ...prev,
       [key]: value
@@ -316,13 +360,19 @@ const InvoiceTemplateEditor = () => {
     `;
   };
 
+  // Render debug info when loading
   if (isLoading || isLoadingTemplates) {
     return (
       <div className="min-h-screen bg-gray-50">
         <DashboardHeader />
         <div className="container mx-auto px-4 py-8">
-          <div className="flex justify-center py-12">
+          <div className="flex flex-col items-center py-12 gap-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="text-center">
+              <p>Loading template editor...</p>
+              <p className="text-sm text-muted-foreground">Templates count: {templates.length}</p>
+              <p className="text-sm text-muted-foreground">Template ID: {templateId || 'New template'}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -354,6 +404,17 @@ const InvoiceTemplateEditor = () => {
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          {/* Debug info */}
+          <div className="lg:col-span-5 mb-4 p-4 bg-gray-100 rounded-md">
+            <h3 className="font-medium mb-2">Debug Information</h3>
+            <div className="text-sm">
+              <p>Templates loaded: {templates.length}</p>
+              <p>Current template ID: {template?.id || 'New template'}</p>
+              <p>Template name: {name}</p>
+              <p>Active tab: {activeTab}</p>
+            </div>
+          </div>
+          
           {/* Editor Panel */}
           <div className="lg:col-span-2">
             <Card>

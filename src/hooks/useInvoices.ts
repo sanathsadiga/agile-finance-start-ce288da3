@@ -61,6 +61,7 @@ export const useInvoices = () => {
     
     setIsLoading(true);
     try {
+      console.log("Fetching invoices for user:", user.id);
       // Fetch invoices
       const { data: invoicesData, error: invoicesError } = await supabase
         .from('invoices')
@@ -68,7 +69,12 @@ export const useInvoices = () => {
         .eq('user_id', user.id)
         .order('date', { ascending: false });
 
-      if (invoicesError) throw invoicesError;
+      if (invoicesError) {
+        console.error("Error fetching invoices:", invoicesError);
+        throw invoicesError;
+      }
+
+      console.log("Raw invoices data:", invoicesData);
 
       // Format the data to match our interface
       const formattedInvoices = invoicesData.map(invoice => ({
@@ -163,7 +169,10 @@ export const useInvoices = () => {
         .eq('id', user.id)
         .single();
 
+      console.log('User profile data:', profileData);
+      
       const currency = profileData?.default_currency || 'USD';
+      console.log('Using currency:', currency);
       
       // Format the data for Supabase
       const supabaseInvoice = {
@@ -184,6 +193,23 @@ export const useInvoices = () => {
       };
       
       console.log('Formatted for supabase:', supabaseInvoice);
+      
+      // Check if 'currency' column exists in the 'invoices' table
+      const { data: columnsData, error: columnsError } = await supabase
+        .from('information_schema.columns')
+        .select('column_name')
+        .eq('table_name', 'invoices')
+        .eq('column_name', 'currency');
+      
+      if (columnsError) {
+        console.error('Error checking for currency column:', columnsError);
+      } else {
+        console.log('Currency column check result:', columnsData);
+        // If column doesn't exist, handle accordingly (this is just for debugging)
+        if (!columnsData || columnsData.length === 0) {
+          console.warn('Currency column does not exist in the invoices table!');
+        }
+      }
       
       // Insert into Supabase
       const { data, error } = await supabase
