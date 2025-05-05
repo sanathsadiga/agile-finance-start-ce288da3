@@ -56,6 +56,7 @@ export const useInvoiceTemplates = () => {
   
   // Debounce fetch operations
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isFetchingRef = useRef<boolean>(false);
 
   // Default template configs
   const defaultLayoutConfig: LayoutConfig = {
@@ -94,6 +95,12 @@ export const useInvoiceTemplates = () => {
   const fetchTemplates = useCallback(async () => {
     if (!user) return;
     
+    // Prevent concurrent fetches
+    if (isFetchingRef.current) {
+      console.log('Templates: Already fetching templates, skipping duplicate request');
+      return;
+    }
+    
     // Clear any pending fetch operations
     if (fetchTimeoutRef.current) {
       clearTimeout(fetchTimeoutRef.current);
@@ -101,14 +108,19 @@ export const useInvoiceTemplates = () => {
     
     // Debounce the fetch operation
     fetchTimeoutRef.current = setTimeout(async () => {
-      setIsLoading(true);
       try {
+        console.log('Templates: Starting fetch operation');
+        isFetchingRef.current = true;
+        setIsLoading(true);
+        
         const { data, error } = await supabase
           .from('invoice_templates')
           .select('*')
           .eq('user_id', user.id);
 
         if (error) throw error;
+
+        console.log('Templates: Fetch completed successfully, found', data.length, 'templates');
 
         // Ensure default configs are properly formatted
         const formattedTemplates: InvoiceTemplate[] = data.map(template => ({
@@ -137,10 +149,12 @@ export const useInvoiceTemplates = () => {
         });
       } finally {
         setIsLoading(false);
+        isFetchingRef.current = false;
         fetchTimeoutRef.current = null;
+        console.log('Templates: Fetch operation completed');
       }
     }, 300);
-  }, [user, toast, defaultLayoutConfig, defaultStyleConfig, defaultContentConfig]);
+  }, [user, toast]);
 
   const addTemplate = useCallback(async (name: string) => {
     if (!user) {
@@ -148,6 +162,7 @@ export const useInvoiceTemplates = () => {
     }
 
     try {
+      console.log('Templates: Creating new template:', name);
       const newTemplate = {
         user_id: user.id,
         name,
@@ -165,14 +180,33 @@ export const useInvoiceTemplates = () => {
 
       if (error) throw error;
 
-      setTemplates(prev => [...prev, data as InvoiceTemplate]);
+      console.log('Templates: Template created successfully:', data);
+      
+      // Update local state
+      const createdTemplate = {
+        ...data,
+        layout_config: {
+          ...defaultLayoutConfig,
+          ...data.layout_config
+        },
+        style_config: {
+          ...defaultStyleConfig,
+          ...data.style_config
+        },
+        content_config: {
+          ...defaultContentConfig,
+          ...data.content_config
+        }
+      } as InvoiceTemplate;
+      
+      setTemplates(prev => [...prev, createdTemplate]);
       
       toast({
         title: 'Template created',
         description: `"${name}" template has been created.`,
       });
       
-      return data;
+      return createdTemplate;
     } catch (error) {
       console.error('Error creating template:', error);
       toast({
@@ -182,7 +216,7 @@ export const useInvoiceTemplates = () => {
       });
       throw error;
     }
-  }, [user, templates, toast, defaultLayoutConfig, defaultStyleConfig, defaultContentConfig]);
+  }, [user, templates, toast]);
 
   const updateTemplate = useCallback(async (
     templateId: string, 
@@ -357,8 +391,10 @@ export const useInvoiceTemplates = () => {
   // Load templates on component mount or when user changes
   useEffect(() => {
     if (user) {
+      console.log('Templates: User is authenticated, fetching templates');
       fetchTemplates();
     } else {
+      console.log('Templates: No authenticated user, clearing templates');
       setTemplates([]);
       setIsLoading(false);
     }

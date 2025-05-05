@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DashboardHeader from '@/components/layout/DashboardHeader';
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,10 @@ const InvoiceTemplateEditor = () => {
     fetchTemplates
   } = useInvoiceTemplates();
 
+  // Create refs to prevent infinite loops
+  const initialLoadComplete = useRef(false);
+  const defaultTemplateCreated = useRef(false);
+  
   const [template, setTemplate] = useState<InvoiceTemplate | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -54,6 +58,11 @@ const InvoiceTemplateEditor = () => {
   // Load template data when component mounts or templateId changes
   useEffect(() => {
     const loadTemplate = async () => {
+      if (initialLoadComplete.current) {
+        console.log('TemplateEditor: Initial load already complete, skipping duplicate load');
+        return;
+      }
+      
       console.log('TemplateEditor: Loading template data...');
       setIsLoading(true);
       
@@ -122,6 +131,8 @@ const InvoiceTemplateEditor = () => {
           setContentConfig(defaultContent);
           setName('New Template');
         }
+        
+        initialLoadComplete.current = true;
       } catch (error) {
         console.error('TemplateEditor: Error loading template:', error);
         toast({
@@ -136,32 +147,39 @@ const InvoiceTemplateEditor = () => {
     };
 
     loadTemplate();
-  }, [templateId, templates.length, fetchTemplates]);
+  }, [templateId, fetchTemplates, toast, navigate]);
 
-  // Create a default template if no templates exist
+  // Create a default template if no templates exist - with guard against infinite loops
   useEffect(() => {
     const createDefaultTemplate = async () => {
-      // Only proceed if we're done loading and there are no templates
-      if (!isLoadingTemplates && templates.length === 0) {
+      // Only proceed if we're done loading, there are no templates, and we haven't tried to create one yet
+      if (!isLoadingTemplates && templates.length === 0 && !defaultTemplateCreated.current) {
+        defaultTemplateCreated.current = true; // Set flag to prevent multiple creation attempts
+        
         try {
           const defaultName = "Default Template";
           console.log("TemplateEditor: Creating default template:", defaultName);
-          await addTemplate(defaultName);
+          const createdTemplate = await addTemplate(defaultName);
+          console.log("TemplateEditor: Default template created successfully:", createdTemplate);
+          
           toast({
             title: "Default template created",
             description: "A default template has been created for you.",
           });
-          console.log("TemplateEditor: Default template created successfully");
-          // Fetch templates again to get the newly created template
-          await fetchTemplates();
+          
+          // If we're on the new template page, redirect to the newly created template
+          if (!templateId) {
+            navigate(`/dashboard/templates/${createdTemplate.id}`);
+          }
         } catch (error) {
           console.error("TemplateEditor: Error creating default template:", error);
+          defaultTemplateCreated.current = false; // Reset flag if there was an error
         }
       }
     };
     
     createDefaultTemplate();
-  }, [isLoadingTemplates, templates.length, addTemplate, toast, fetchTemplates]);
+  }, [isLoadingTemplates, templates.length, addTemplate, toast, navigate, templateId]);
 
   const handleSaveTemplate = async () => {
     if (!name.trim()) {
@@ -372,6 +390,8 @@ const InvoiceTemplateEditor = () => {
               <p>Loading template editor...</p>
               <p className="text-sm text-muted-foreground">Templates count: {templates.length}</p>
               <p className="text-sm text-muted-foreground">Template ID: {templateId || 'New template'}</p>
+              <p className="text-sm text-muted-foreground">Creating default template: {defaultTemplateCreated.current ? 'Yes' : 'No'}</p>
+              <p className="text-sm text-muted-foreground">Initial load complete: {initialLoadComplete.current ? 'Yes' : 'No'}</p>
             </div>
           </div>
         </div>
@@ -412,6 +432,8 @@ const InvoiceTemplateEditor = () => {
               <p>Current template ID: {template?.id || 'New template'}</p>
               <p>Template name: {name}</p>
               <p>Active tab: {activeTab}</p>
+              <p>Default template created: {defaultTemplateCreated.current ? 'Yes' : 'No'}</p>
+              <p>Initial load complete: {initialLoadComplete.current ? 'Yes' : 'No'}</p>
             </div>
           </div>
           
