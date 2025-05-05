@@ -31,7 +31,7 @@ export const useInvoices = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
-  const { invoiceSettings, refreshInvoiceSettings, fetchInvoiceSettings } = useSettings();
+  const { invoiceSettings, businessSettings, refreshInvoiceSettings, fetchInvoiceSettings } = useSettings();
   
   // Debounce fetch operations
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -162,17 +162,9 @@ export const useInvoices = () => {
       // Generate invoice number
       const invoiceNumber = await generateInvoiceNumber();
       
-      // Get the user's currency preference
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('default_currency')
-        .eq('id', user.id)
-        .single();
-
-      console.log('User profile data:', profileData);
-      
-      const currency = profileData?.default_currency || 'USD';
-      console.log('Using currency:', currency);
+      // Get the user's currency preference from business settings
+      const currency = businessSettings?.default_currency || 'USD';
+      console.log('Using currency from business settings:', currency);
       
       // Format the data for Supabase
       const supabaseInvoice = {
@@ -189,29 +181,13 @@ export const useInvoices = () => {
         notes: invoice.notes || null,
         items: invoice.items || [],
         discount: invoice.discount || null,
-        currency: currency // Set the currency from user preferences
+        // Use the currency from business settings
+        currency: currency
       };
       
       console.log('Formatted for supabase:', supabaseInvoice);
       
-      // Check if 'currency' column exists in the 'invoices' table
-      const { data: columnsData, error: columnsError } = await supabase
-        .from('information_schema.columns')
-        .select('column_name')
-        .eq('table_name', 'invoices')
-        .eq('column_name', 'currency');
-      
-      if (columnsError) {
-        console.error('Error checking for currency column:', columnsError);
-      } else {
-        console.log('Currency column check result:', columnsData);
-        // If column doesn't exist, handle accordingly (this is just for debugging)
-        if (!columnsData || columnsData.length === 0) {
-          console.warn('Currency column does not exist in the invoices table!');
-        }
-      }
-      
-      // Insert into Supabase
+      // Insert into Supabase, don't try to check for the currency column anymore
       const { data, error } = await supabase
         .from('invoices')
         .insert(supabaseInvoice)
@@ -240,7 +216,7 @@ export const useInvoices = () => {
         notes: data.notes || undefined,
         items: data.items || [],
         discount: data.discount || undefined,
-        currency: data.currency || 'USD' // Default to USD if not set
+        currency: data.currency || currency // Use the currency from business settings as fallback
       };
       
       // Update local state
@@ -259,7 +235,7 @@ export const useInvoices = () => {
       });
       throw error;
     }
-  }, [user, toast, generateInvoiceNumber, incrementInvoiceNumber]);
+  }, [user, toast, generateInvoiceNumber, incrementInvoiceNumber, businessSettings]);
 
   const updateInvoice = useCallback(async (updatedInvoice: Invoice) => {
     if (!user) {
@@ -279,7 +255,8 @@ export const useInvoices = () => {
         notes: updatedInvoice.notes || null,
         items: updatedInvoice.items || [],
         invoice_template_id: updatedInvoice.template_id || null,
-        discount: updatedInvoice.discount || null
+        discount: updatedInvoice.discount || null,
+        currency: updatedInvoice.currency || businessSettings?.default_currency || 'USD'
       };
       
       // Update in Supabase
@@ -302,6 +279,8 @@ export const useInvoices = () => {
         title: "Invoice updated",
         description: "Your invoice has been successfully updated.",
       });
+      
+      return updatedInvoice;
     } catch (error) {
       console.error('Error updating invoice:', error);
       toast({
@@ -311,7 +290,7 @@ export const useInvoices = () => {
       });
       throw error;
     }
-  }, [user, toast]);
+  }, [user, toast, businessSettings]);
 
   const deleteInvoice = useCallback(async (id: string) => {
     if (!user) {
@@ -346,95 +325,113 @@ export const useInvoices = () => {
     }
   }, [user, toast]);
 
+  // Send invoice via email
+  const sendInvoice = useCallback(async (invoiceId: string) => {
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    try {
+      const invoice = invoices.find(inv => inv.id === invoiceId);
+      if (!invoice) {
+        throw new Error('Invoice not found');
+      }
+
+      if (!invoice.email) {
+        toast({
+          title: "Email missing",
+          description: "This invoice does not have a customer email address.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // In a real app, we would send an API request to a backend endpoint
+      // For now, we'll just show a toast to simulate the email sending
+      toast({
+        title: "Invoice sent",
+        description: `Invoice ${invoice.invoice_number} sent to ${invoice.email}`,
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error sending invoice:', error);
+      toast({
+        title: "Failed to send invoice",
+        description: "There was a problem sending the invoice.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  }, [user, invoices, toast]);
+
+  // Generate PDF for download (stub function for now)
+  const generatePDF = useCallback(async (invoiceId: string) => {
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    try {
+      const invoice = invoices.find(inv => inv.id === invoiceId);
+      if (!invoice) {
+        throw new Error('Invoice not found');
+      }
+
+      // In a real app, we would generate a PDF here
+      // For now, we'll just show a toast
+      toast({
+        title: "PDF Generated",
+        description: `Invoice ${invoice.invoice_number} PDF generated`,
+      });
+
+      // Simulate download by creating a window.print() call
+      window.open(`/print-invoice/${invoiceId}`, '_blank');
+      
+      return true;
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Failed to generate PDF",
+        description: "There was a problem generating the PDF.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  }, [user, invoices, toast]);
+
+  // Print invoice
+  const printInvoice = useCallback((invoiceId: string) => {
+    try {
+      const invoice = invoices.find(inv => inv.id === invoiceId);
+      if (!invoice) {
+        throw new Error('Invoice not found');
+      }
+
+      // Open a new window for printing
+      window.print();
+      
+      return true;
+    } catch (error) {
+      console.error('Error printing invoice:', error);
+      toast({
+        title: "Failed to print",
+        description: "There was a problem printing the invoice.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  }, [invoices, toast]);
+
   return {
     invoices,
     isLoading,
     fetchInvoices,
     addInvoice,
-    updateInvoice: async (updatedInvoice: Invoice) => {
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-      
-      try {
-        // Format the data for Supabase
-        const supabaseInvoice = {
-          date: updatedInvoice.date,
-          due_date: updatedInvoice.dueDate || null,
-          customer: updatedInvoice.customer || null,
-          email: updatedInvoice.email || null,
-          amount: updatedInvoice.amount,
-          status: updatedInvoice.status,
-          description: updatedInvoice.description || null,
-          notes: updatedInvoice.notes || null,
-          items: updatedInvoice.items || [],
-          invoice_template_id: updatedInvoice.template_id || null,
-          discount: updatedInvoice.discount || null,
-          currency: updatedInvoice.currency || 'USD'
-        };
-        
-        // Update in Supabase
-        const { error } = await supabase
-          .from('invoices')
-          .update(supabaseInvoice)
-          .eq('id', updatedInvoice.id)
-          .eq('user_id', user.id);
-        
-        if (error) throw error;
-        
-        // Update local state
-        setInvoices(prev => 
-          prev.map(invoice => 
-            invoice.id === updatedInvoice.id ? updatedInvoice : invoice
-          )
-        );
-        
-        toast({
-          title: "Invoice updated",
-          description: "Your invoice has been successfully updated.",
-        });
-      } catch (error) {
-        console.error('Error updating invoice:', error);
-        toast({
-          title: "Failed to update invoice",
-          description: "There was a problem updating your invoice.",
-          variant: "destructive",
-        });
-        throw error;
-      }
-    },
-    deleteInvoice: async (id: string) => {
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-      
-      try {
-        // Delete from Supabase with RLS protection
-        const { error } = await supabase
-          .from('invoices')
-          .delete()
-          .eq('id', id)
-          .eq('user_id', user.id);
-        
-        if (error) throw error;
-        
-        // Update local state
-        setInvoices(prev => prev.filter(invoice => invoice.id !== id));
-        
-        toast({
-          title: "Invoice deleted",
-          description: "Your invoice has been successfully deleted.",
-        });
-      } catch (error) {
-        console.error('Error deleting invoice:', error);
-        toast({
-          title: "Failed to delete invoice",
-          description: "There was a problem deleting your invoice.",
-          variant: "destructive",
-        });
-        throw error;
-      }
-    },
+    updateInvoice,
+    deleteInvoice,
+    sendInvoice,
+    generatePDF,
+    printInvoice,
     generateInvoiceNumber
   };
 };

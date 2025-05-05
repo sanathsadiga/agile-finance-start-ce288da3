@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import DashboardHeader from '@/components/layout/DashboardHeader';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { FileEdit, FileText, Plus } from 'lucide-react';
 import { useInvoices, Invoice } from '@/hooks/useInvoices';
@@ -14,8 +14,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/useSettings';
 
 const Invoices = () => {
+  const navigate = useNavigate();
   const { invoices, isLoading, fetchInvoices, addInvoice } = useInvoices();
-  const { invoiceSettings } = useSettings();
+  const { invoiceSettings, businessSettings } = useSettings();
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
   const { toast } = useToast();
 
@@ -25,12 +26,20 @@ const Invoices = () => {
 
   const handleCreateInvoice = async (invoiceData: any) => {
     try {
-      await addInvoice(invoiceData);
+      const newInvoice = await addInvoice({
+        ...invoiceData,
+        amount: invoiceData.total, // Use total (which includes tax) as the invoice amount
+      });
       setIsCreatingInvoice(false);
       toast({
         title: "Invoice created",
         description: "Your invoice has been created successfully.",
       });
+      
+      // Navigate to the new invoice
+      if (newInvoice) {
+        navigate(`/dashboard/invoices/${newInvoice.id}`);
+      }
     } catch (error) {
       console.error('Error creating invoice:', error);
       toast({
@@ -57,7 +66,7 @@ const Invoices = () => {
   };
 
   // Format currency based on invoice's currency or user's default
-  const formatCurrency = (amount: number, currencyCode: string = 'USD') => {
+  const formatCurrency = (amount: number, currencyCode: string = businessSettings?.default_currency || 'USD') => {
     const formatter = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currencyCode,

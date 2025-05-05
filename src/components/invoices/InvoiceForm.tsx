@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,12 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DialogFooter } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { CalendarIcon, Plus, Trash2, LayoutTemplate } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useInvoiceTemplates, InvoiceTemplate } from '@/hooks/useInvoiceTemplates';
 import { useSettings } from '@/hooks/useSettings';
 import { useNavigate } from 'react-router-dom';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import InvoiceTemplateManager from './InvoiceTemplateManager';
 
 interface InvoiceItem {
   id: number;
@@ -31,12 +34,12 @@ interface InvoiceFormProps {
 const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) => {
   const navigate = useNavigate();
   const { templates, getDefaultTemplate, isLoading: templatesLoading } = useInvoiceTemplates();
-  const { invoiceSettings, taxSettings } = useSettings();
+  const { invoiceSettings, taxSettings, businessSettings } = useSettings();
 
   const [customer, setCustomer] = useState('');
   const [email, setEmail] = useState('');
   const [issueDate, setIssueDate] = useState<Date | undefined>(new Date());
-  const [dueDate, setDueDate] = useState<Date | undefined>(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)); // 30 days from now
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState('draft');
@@ -44,6 +47,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
   const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
   const [discountValue, setDiscountValue] = useState(0);
   const [initialSetupDone, setInitialSetupDone] = useState(false);
+  const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false);
 
   // Debug information
   useEffect(() => {
@@ -51,13 +55,43 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
     console.log('InvoiceForm: Templates loading:', templatesLoading);
     console.log('InvoiceForm: Templates available:', templates.length);
     console.log('InvoiceForm: Invoice being edited:', invoice);
+    console.log('InvoiceForm: Invoice settings:', invoiceSettings);
+    console.log('InvoiceForm: Tax settings:', taxSettings);
+    console.log('InvoiceForm: Business settings:', businessSettings);
   }, []);
 
   // Debug templates updates
   useEffect(() => {
-    console.log('InvoiceForm: Templates updated:', templates);
+    console.log('InvoiceForm: Templates updated:', templates.length, 'templates available');
     console.log('InvoiceForm: Templates loading state:', templatesLoading);
-  }, [templates, templatesLoading]);
+    
+    // Set default template when templates load
+    if (templates.length > 0 && !selectedTemplate && !templatesLoading) {
+      const defaultTemplate = getDefaultTemplate();
+      console.log('InvoiceForm: Setting default template:', defaultTemplate?.name);
+      if (defaultTemplate) {
+        setSelectedTemplate(defaultTemplate);
+      }
+    }
+  }, [templates, templatesLoading, selectedTemplate, getDefaultTemplate]);
+
+  // Set due date based on invoice settings
+  useEffect(() => {
+    if (invoiceSettings && issueDate && !initialSetupDone) {
+      console.log('InvoiceForm: Setting due date based on invoice settings');
+      const paymentTerms = invoiceSettings.default_payment_terms || 30;
+      setDueDate(addDays(issueDate, paymentTerms));
+    }
+  }, [invoiceSettings, issueDate, initialSetupDone]);
+
+  // Update due date when issue date changes (only after initial setup)
+  useEffect(() => {
+    if (initialSetupDone && issueDate && invoiceSettings) {
+      console.log('InvoiceForm: Updating due date after issue date change');
+      const paymentTerms = invoiceSettings.default_payment_terms || 30;
+      setDueDate(addDays(issueDate, paymentTerms));
+    }
+  }, [issueDate, initialSetupDone, invoiceSettings]);
 
   // Calculate totals
   const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
@@ -68,6 +102,13 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
   const taxRate = taxSettings?.tax_enabled ? (taxSettings?.default_tax_rate / 100) : 0;
   const taxAmount = subtotalAfterDiscount * taxRate;
   const total = subtotalAfterDiscount + taxAmount;
+
+  // Handle template selection from the template manager
+  const handleTemplateSelect = useCallback((template: InvoiceTemplate) => {
+    console.log('InvoiceForm: Template selected:', template.name);
+    setSelectedTemplate(template);
+    setIsTemplateManagerOpen(false);
+  }, []);
 
   useEffect(() => {
     if (!initialSetupDone) {
@@ -101,19 +142,18 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
             setDiscountValue(invoice.discount.value || 0);
           }
         }
+        
+        // Set template if available
+        if (invoice.template_id && templates.length > 0) {
+          const template = templates.find(t => t.id === invoice.template_id);
+          if (template) {
+            setSelectedTemplate(template);
+          }
+        }
       } else {
         console.log('InvoiceForm: Setting up new invoice');
         // Initialize with a default empty item for new invoice
         addItem();
-        // Initialize with a default template
-        if (templates.length > 0) {
-          console.log('InvoiceForm: Finding default template');
-          const defaultTemplate = getDefaultTemplate();
-          console.log('InvoiceForm: Default template:', defaultTemplate);
-          if (defaultTemplate) {
-            setSelectedTemplate(defaultTemplate);
-          }
-        }
 
         // Set default notes from invoice settings
         if (invoiceSettings?.notes_default) {
@@ -123,7 +163,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
       setInitialSetupDone(true);
       console.log('InvoiceForm: Initial setup complete');
     }
-  }, [invoice, templates, invoiceSettings, getDefaultTemplate, initialSetupDone]);
+  }, [invoice, templates, invoiceSettings, initialSetupDone]);
 
   const addItem = () => {
     console.log('InvoiceForm: Adding new item');
@@ -179,17 +219,27 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
       total,
       notes,
       status,
-      template_id: selectedTemplate?.id
+      template_id: selectedTemplate?.id,
+      currency: businessSettings?.default_currency || 'USD'
     };
     
     console.log('InvoiceForm: Prepared invoice data:', invoiceData);
     onSave(invoiceData);
   };
 
-  const handleGoToTemplateEditor = () => {
-    console.log('InvoiceForm: Navigating to template editor');
-    // Navigate to template editor
-    navigate('/dashboard/templates');
+  const openTemplateManager = () => {
+    console.log('InvoiceForm: Opening template manager');
+    setIsTemplateManagerOpen(true);
+  };
+
+  // Format currency display based on business settings
+  const formatCurrency = (amount: number) => {
+    const currencyCode = businessSettings?.default_currency || 'USD';
+    const formatter = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currencyCode,
+    });
+    return formatter.format(amount);
   };
 
   // Debug rendering
@@ -197,25 +247,13 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto px-1">
-      {/* Debug information */}
-      <div className="bg-gray-100 p-3 rounded-md mb-4">
-        <h4 className="font-medium mb-1">Debug Info</h4>
-        <div className="text-xs">
-          <p>Templates available: {templates.length}</p>
-          <p>Templates loading: {templatesLoading ? 'Yes' : 'No'}</p>
-          <p>Selected template: {selectedTemplate ? selectedTemplate.name : 'None'}</p>
-          <p>Items count: {items.length}</p>
-          <p>Initial setup done: {initialSetupDone ? 'Yes' : 'No'}</p>
-        </div>
-      </div>
-
       <div className="sticky top-0 z-10 bg-white pb-4">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-medium">Invoice Details</h3>
           <Button 
             type="button" 
             variant="outline" 
-            onClick={handleGoToTemplateEditor}
+            onClick={openTemplateManager}
             size="sm"
           >
             <LayoutTemplate className="h-4 w-4 mr-2" />
@@ -354,7 +392,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
                     />
                   </td>
                   <td className="p-2 text-right">
-                    ${item.amount.toFixed(2)}
+                    {formatCurrency(item.amount)}
                   </td>
                   <td className="p-2">
                     <Button
@@ -382,7 +420,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
       <div className="flex flex-col items-end space-y-2">
         <div className="w-full md:w-1/3 flex justify-between">
           <span className="text-sm font-medium">Subtotal:</span>
-          <span>${subtotal.toFixed(2)}</span>
+          <span>{formatCurrency(subtotal)}</span>
         </div>
         
         {/* Discount section */}
@@ -399,7 +437,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="percentage">%</SelectItem>
-                  <SelectItem value="fixed">$</SelectItem>
+                  <SelectItem value="fixed">{businessSettings?.default_currency || '$'}</SelectItem>
                 </SelectContent>
               </Select>
               <Input
@@ -414,19 +452,19 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
           </div>
           <div className="flex justify-between text-sm text-gray-600">
             <span>Discount amount:</span>
-            <span>-${discountAmount.toFixed(2)}</span>
+            <span>-{formatCurrency(discountAmount)}</span>
           </div>
         </div>
         
         {taxSettings?.tax_enabled && (
           <div className="w-full md:w-1/3 flex justify-between">
             <span className="text-sm font-medium">{taxSettings.tax_name} ({taxSettings.default_tax_rate}%):</span>
-            <span>${taxAmount.toFixed(2)}</span>
+            <span>{formatCurrency(taxAmount)}</span>
           </div>
         )}
         <div className="w-full md:w-1/3 flex justify-between text-lg font-bold">
           <span>Total:</span>
-          <span>${total.toFixed(2)}</span>
+          <span>{formatCurrency(total)}</span>
         </div>
       </div>
 
@@ -460,6 +498,16 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
         <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
         <Button type="submit">Save Invoice</Button>
       </DialogFooter>
+
+      {/* Template Manager Dialog */}
+      <Dialog open={isTemplateManagerOpen} onOpenChange={setIsTemplateManagerOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <InvoiceTemplateManager 
+            onSelectTemplate={handleTemplateSelect}
+            onClose={() => setIsTemplateManagerOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </form>
   );
 };
