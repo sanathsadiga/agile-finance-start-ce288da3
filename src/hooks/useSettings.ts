@@ -49,6 +49,7 @@ export const useSettings = () => {
   const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
   const [invoiceSettings, setInvoiceSettings] = useState<InvoiceSettings | null>(null);
   const [taxSettings, setTaxSettings] = useState<TaxSettings | null>(null);
+  const [businessSettings, setBusinessSettings] = useState<BusinessSettings | null>(null);
   const { toast } = useToast();
   
   // Add refs to track save operation state
@@ -147,6 +148,9 @@ export const useSettings = () => {
           ...user,
           companyName: data[0].company_name,
         });
+        
+        // Update local business settings state
+        setBusinessSettings(settings);
       }
 
       setLastSaveTime(new Date());
@@ -500,6 +504,21 @@ export const useSettings = () => {
         });
       }
       
+      // Set business settings from profile data
+      const businessData: BusinessSettings = {
+        company_name: data.company_name,
+        business_phone: data.business_phone,
+        business_website: data.business_website,
+        business_address: data.business_address,
+        business_city: data.business_city,
+        business_state: data.business_state,
+        business_postal_code: data.business_postal_code,
+        business_country: data.business_country,
+        default_currency: data.default_currency || 'USD'
+      };
+      
+      setBusinessSettings(businessData);
+      
       return data;
     } catch (err) {
       logDatabaseOperation('fetchUserProfile', false, { userId: user.id }, err);
@@ -643,6 +662,7 @@ export const useSettings = () => {
   // Load settings on hook initialization
   useEffect(() => {
     if (user) {
+      fetchUserProfile();
       fetchInvoiceSettings();
       fetchTaxSettings();
     }
@@ -654,6 +674,7 @@ export const useSettings = () => {
     lastSaveTime,
     invoiceSettings,
     taxSettings,
+    businessSettings,
     updateBusinessSettings,
     updateAccountSettings,
     updateInvoiceSettings,
