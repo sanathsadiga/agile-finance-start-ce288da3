@@ -257,14 +257,9 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
             size="sm"
           >
             <LayoutTemplate className="h-4 w-4 mr-2" />
-            {selectedTemplate ? 'Change Template' : 'Choose Template'}
+            {selectedTemplate ? selectedTemplate.name : 'Choose Template'}
           </Button>
         </div>
-        {selectedTemplate && (
-          <p className="text-sm text-muted-foreground">
-            Using template: <span className="font-medium">{selectedTemplate.name}</span>
-          </p>
-        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -11,6 +11,8 @@ import { Loader2, Plus, Check, Copy, Trash, PenLine, Star, StarOff } from "lucid
 import { InvoiceTemplate, useInvoiceTemplates } from "@/hooks/useInvoiceTemplates";
 import InvoiceTemplateEditor from "./InvoiceTemplateEditor";
 import InvoiceTemplatePreview from "./InvoiceTemplatePreview";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useNavigate } from 'react-router-dom';
 
 interface InvoiceTemplateManagerProps {
   onSelectTemplate?: (template: InvoiceTemplate) => void;
@@ -21,6 +23,7 @@ const InvoiceTemplateManager: React.FC<InvoiceTemplateManagerProps> = ({
   onSelectTemplate, 
   onClose
 }) => {
+  const navigate = useNavigate();
   const {
     templates,
     isLoading,
@@ -49,6 +52,12 @@ const InvoiceTemplateManager: React.FC<InvoiceTemplateManagerProps> = ({
     } catch (error) {
       console.error('Error creating template:', error);
     }
+  };
+
+  // Handle navigating to the template editor page
+  const handleNavigateToTemplateEditor = () => {
+    navigate('/dashboard/templates');
+    onClose();
   };
 
   // Handle editing an existing template
@@ -106,129 +115,116 @@ const InvoiceTemplateManager: React.FC<InvoiceTemplateManagerProps> = ({
 
   return (
     <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="mb-4 grid w-full grid-cols-2">
-          <TabsTrigger value="gallery">Template Gallery</TabsTrigger>
-          <TabsTrigger value="create">Create Template</TabsTrigger>
-        </TabsList>
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">Choose Template</h3>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleNavigateToTemplateEditor}
+        >
+          Manage All Templates
+        </Button>
+      </div>
 
-        {/* Template Gallery */}
-        <TabsContent value="gallery" className="space-y-4">
-          {isLoading ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-            </div>
-          ) : templates.length === 0 ? (
-            <div className="text-center py-10">
-              <p className="text-gray-500 mb-4">No templates found</p>
-              <Button onClick={() => setActiveTab('create')}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Your First Template
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {templates.map((template) => (
-                <Card key={template.id} className={`overflow-hidden ${template.is_default ? 'border-primary' : ''}`}>
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-xl">{template.name}</CardTitle>
-                      {template.is_default && (
-                        <Badge variant="default">Default</Badge>
-                      )}
-                    </div>
-                    <CardDescription>
-                      Last updated: {new Date(template.updated_at).toLocaleDateString()}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-2 h-[200px] overflow-hidden">
-                    <div className="scale-[0.4] origin-top-left">
-                      <InvoiceTemplatePreview template={template} />
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex justify-between bg-gray-50 border-t">
-                    <div className="flex space-x-2">
-                      {!template.is_default && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => handleSetDefaultTemplate(template.id)} 
-                          title="Set as default"
-                        >
-                          <Star className="h-4 w-4" />
-                        </Button>
-                      )}
+      {isLoading ? (
+        <div className="flex justify-center py-10">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        </div>
+      ) : templates.length === 0 ? (
+        <div className="text-center py-10">
+          <p className="text-gray-500 mb-4">No templates found</p>
+          <Button onClick={handleCreateTemplate}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Your First Template
+          </Button>
+        </div>
+      ) : (
+        <ScrollArea className="h-[400px] pr-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {templates.map((template) => (
+              <Card key={template.id} className={`overflow-hidden ${template.is_default ? 'border-primary' : ''}`}>
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-xl">{template.name}</CardTitle>
+                    {template.is_default && (
+                      <Badge variant="default">Default</Badge>
+                    )}
+                  </div>
+                  <CardDescription>
+                    Last updated: {new Date(template.updated_at).toLocaleDateString()}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-2 h-[200px] overflow-hidden">
+                  <div className="scale-[0.4] origin-top-left">
+                    <InvoiceTemplatePreview template={template} />
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between bg-gray-50 border-t">
+                  <div className="flex space-x-2">
+                    {!template.is_default && (
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        onClick={() => handleEditTemplate(template)} 
-                        title="Edit template"
+                        onClick={() => handleSetDefaultTemplate(template.id)} 
+                        title="Set as default"
                       >
-                        <PenLine className="h-4 w-4" />
+                        <Star className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => handleDuplicateTemplate(template.id)} 
-                        title="Duplicate template"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      {!template.is_default && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => handleDeleteTemplate(template.id)}
-                          title="Delete template"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
+                    )}
                     <Button 
-                      onClick={() => handleSelectTemplate(template)} 
-                      size="sm" 
-                      variant={onSelectTemplate ? "default" : "outline"}
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => handleEditTemplate(template)} 
+                      title="Edit template"
                     >
-                      {onSelectTemplate ? "Select" : "Preview"}
-                      {template.is_default && <Check className="ml-2 h-4 w-4" />}
+                      <PenLine className="h-4 w-4" />
                     </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Create Template */}
-        <TabsContent value="create" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Create a New Template</CardTitle>
-              <CardDescription>
-                Start with a blank template or choose from the options below
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="template-name">Template Name</Label>
-                <div className="flex space-x-2">
-                  <Input 
-                    id="template-name" 
-                    value={newTemplateName} 
-                    onChange={(e) => setNewTemplateName(e.target.value)}
-                    placeholder="My Custom Template"
-                  />
-                  <Button onClick={handleCreateTemplate}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => handleDuplicateTemplate(template.id)} 
+                      title="Duplicate template"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    {!template.is_default && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleDeleteTemplate(template.id)}
+                        title="Delete template"
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <Button 
+                    onClick={() => handleSelectTemplate(template)} 
+                    size="sm" 
+                    variant={onSelectTemplate ? "default" : "outline"}
+                  >
+                    {onSelectTemplate ? "Select" : "Preview"}
+                    {template.is_default && <Check className="ml-2 h-4 w-4" />}
                   </Button>
+                </CardFooter>
+              </Card>
+            ))}
+            
+            {/* Add New Template Card */}
+            <Card onClick={handleCreateTemplate} className="flex flex-col items-center justify-center h-full cursor-pointer hover:border-primary transition-all overflow-hidden">
+              <CardContent className="flex flex-col items-center justify-center h-full p-10">
+                <div className="rounded-full bg-gray-100 p-4 mb-4">
+                  <Plus className="h-8 w-8 text-primary" />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                <h3 className="font-medium text-lg text-center">Create New Template</h3>
+                <p className="text-sm text-center text-gray-500 mt-2">
+                  Design a custom invoice template
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </ScrollArea>
+      )}
 
       {/* Template Editor Dialog */}
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>

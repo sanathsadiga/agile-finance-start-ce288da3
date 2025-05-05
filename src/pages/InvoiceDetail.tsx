@@ -19,12 +19,21 @@ const InvoiceDetail = () => {
 
   useEffect(() => {
     const loadInvoice = async () => {
+      if (!id) {
+        console.error("No invoice ID provided");
+        navigate('/dashboard/invoices');
+        return;
+      }
+
       setIsLoading(true);
       try {
+        console.log("Loading invoice with ID:", id);
+        
         // First check if we already have the invoice in state
         if (invoices.length > 0) {
           const foundInvoice = invoices.find(inv => inv.id === id);
           if (foundInvoice) {
+            console.log("Found invoice in existing state:", foundInvoice);
             setInvoice(foundInvoice);
             setIsLoading(false);
             return;
@@ -32,13 +41,16 @@ const InvoiceDetail = () => {
         }
 
         // If not found, fetch invoices
+        console.log("Fetching all invoices to find invoice with ID:", id);
         await fetchInvoices();
         
-        // Now check if we have the invoice
+        // Now check if we have the invoice after fetching
         const foundInvoice = invoices.find(inv => inv.id === id);
         if (foundInvoice) {
+          console.log("Found invoice after fetching:", foundInvoice);
           setInvoice(foundInvoice);
         } else {
+          console.error("Invoice not found after fetching");
           // Navigate back if invoice not found
           navigate('/dashboard/invoices');
         }
@@ -96,14 +108,17 @@ const InvoiceDetail = () => {
   };
 
   const handleSend = async (invoiceId: string) => {
+    console.log("Sending invoice:", invoiceId);
     await sendInvoice(invoiceId);
   };
 
   const handleDownload = async (invoiceId: string) => {
+    console.log("Downloading invoice as PDF:", invoiceId);
     await generatePDF(invoiceId);
   };
 
   const handlePrint = (invoiceId: string) => {
+    console.log("Printing invoice:", invoiceId);
     printInvoice(invoiceId);
   };
 
