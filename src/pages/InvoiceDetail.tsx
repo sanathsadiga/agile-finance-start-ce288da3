@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DashboardHeader from '@/components/layout/DashboardHeader';
@@ -7,6 +6,7 @@ import InvoiceView from '@/components/invoices/InvoiceView';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import InvoiceForm from '@/components/invoices/InvoiceForm';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 const InvoiceDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -16,11 +16,17 @@ const InvoiceDetail = () => {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const loadInvoice = async () => {
       if (!id) {
         console.error("No invoice ID provided");
+        toast({
+          title: "Error",
+          description: "Invoice ID is missing. Redirecting to invoices page.",
+          variant: "destructive",
+        });
         navigate('/dashboard/invoices');
         return;
       }
@@ -29,40 +35,39 @@ const InvoiceDetail = () => {
       try {
         console.log("Loading invoice with ID:", id);
         
-        // First check if we already have the invoice in state
-        if (invoices.length > 0) {
-          const foundInvoice = invoices.find(inv => inv.id === id);
-          if (foundInvoice) {
-            console.log("Found invoice in existing state:", foundInvoice);
-            setInvoice(foundInvoice);
-            setIsLoading(false);
-            return;
-          }
-        }
-
-        // If not found, fetch invoices
-        console.log("Fetching all invoices to find invoice with ID:", id);
+        // First fetch all invoices to ensure we have the latest data
         await fetchInvoices();
         
-        // Now check if we have the invoice after fetching
+        // Now check for the specific invoice in the updated invoices array
         const foundInvoice = invoices.find(inv => inv.id === id);
+        
         if (foundInvoice) {
-          console.log("Found invoice after fetching:", foundInvoice);
+          console.log("Found invoice:", foundInvoice);
           setInvoice(foundInvoice);
         } else {
           console.error("Invoice not found after fetching");
+          toast({
+            title: "Error",
+            description: "Invoice not found",
+            variant: "destructive",
+          });
           // Navigate back if invoice not found
           navigate('/dashboard/invoices');
         }
       } catch (error) {
         console.error('Error loading invoice:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load invoice details",
+          variant: "destructive",
+        });
       } finally {
         setIsLoading(false);
       }
     };
 
     loadInvoice();
-  }, [id, invoices, fetchInvoices, navigate]);
+  }, [id, invoices, fetchInvoices, navigate, toast]);
 
   const handleGoBack = () => {
     navigate('/dashboard/invoices');
@@ -100,26 +105,56 @@ const InvoiceDetail = () => {
       });
       
       setIsEditing(false);
+      toast({
+        title: "Success",
+        description: "Invoice updated successfully",
+      });
       // Re-fetch to get updated data
       fetchInvoices();
     } catch (error) {
       console.error('Error updating invoice:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update invoice",
+        variant: "destructive",
+      });
     }
   };
 
   const handleSend = async (invoiceId: string) => {
     console.log("Sending invoice:", invoiceId);
-    await sendInvoice(invoiceId);
+    const result = await sendInvoice(invoiceId);
+    if (!result) {
+      toast({
+        title: "Error",
+        description: "Failed to send invoice",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDownload = async (invoiceId: string) => {
     console.log("Downloading invoice as PDF:", invoiceId);
-    await generatePDF(invoiceId);
+    const result = await generatePDF(invoiceId);
+    if (!result) {
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF",
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePrint = (invoiceId: string) => {
     console.log("Printing invoice:", invoiceId);
-    printInvoice(invoiceId);
+    const result = printInvoice(invoiceId);
+    if (!result) {
+      toast({
+        title: "Error",
+        description: "Failed to print invoice",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {

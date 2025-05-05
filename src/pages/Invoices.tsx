@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import DashboardHeader from '@/components/layout/DashboardHeader';
 import { Link, useNavigate } from 'react-router-dom';
@@ -37,7 +36,7 @@ const Invoices = () => {
       });
       
       // Navigate to the new invoice
-      if (newInvoice) {
+      if (newInvoice && newInvoice.id) {
         navigate(`/dashboard/invoices/${newInvoice.id}`);
       }
     } catch (error) {
@@ -48,6 +47,10 @@ const Invoices = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleInvoiceClick = (invoiceId: string) => {
+    navigate(`/dashboard/invoices/${invoiceId}`);
   };
 
   const getStatusBadge = (status: string) => {
@@ -85,10 +88,10 @@ const Invoices = () => {
           </div>
           <div className="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-0">
             <Button asChild variant="outline">
-              <a href="/dashboard/templates" target="_blank" rel="noopener noreferrer">
+              <Link to="/dashboard/templates">
                 <FileEdit className="h-4 w-4 mr-2" />
                 Manage Templates
-              </a>
+              </Link>
             </Button>
             <Button onClick={() => setIsCreatingInvoice(true)}>
               <FileText className="h-4 w-4 mr-2" />
@@ -104,10 +107,10 @@ const Invoices = () => {
         ) : invoices.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {invoices.map((invoice: Invoice) => (
-              <Link 
-                to={`/dashboard/invoices/${invoice.id}`} 
+              <div 
                 key={invoice.id}
-                className="block hover:no-underline"
+                onClick={() => handleInvoiceClick(invoice.id)}
+                className="cursor-pointer transition-transform hover:scale-[1.02]"
               >
                 <Card className="h-full transition-shadow hover:shadow-md">
                   <CardContent className="p-6">
@@ -132,7 +135,7 @@ const Invoices = () => {
                     </div>
                   </CardContent>
                 </Card>
-              </Link>
+              </div>
             ))}
           </div>
         ) : (

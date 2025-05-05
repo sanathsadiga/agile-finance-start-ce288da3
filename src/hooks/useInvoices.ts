@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/database';
@@ -77,25 +76,29 @@ export const useInvoices = () => {
       console.log("Raw invoices data:", invoicesData);
 
       // Format the data to match our interface
-      const formattedInvoices = invoicesData.map(invoice => ({
-        id: invoice.id,
-        invoice_number: invoice.invoice_number,
-        template_id: invoice.invoice_template_id,
-        date: invoice.date,
-        dueDate: invoice.due_date || undefined,
-        customer: invoice.customer || undefined,
-        email: invoice.email || undefined,
-        amount: invoice.amount,
-        status: invoice.status,
-        description: invoice.description || undefined,
-        notes: invoice.notes || undefined,
-        items: invoice.items || [],
-        discount: invoice.discount || undefined,
-        currency: invoice.currency || undefined // Added currency
-      }));
+      const formattedInvoices = invoicesData.map(invoice => {
+        console.log("Processing invoice:", invoice.id);
+        return {
+          id: invoice.id,
+          invoice_number: invoice.invoice_number,
+          template_id: invoice.invoice_template_id,
+          date: invoice.date,
+          dueDate: invoice.due_date || undefined,
+          customer: invoice.customer || undefined,
+          email: invoice.email || undefined,
+          amount: invoice.amount,
+          status: invoice.status,
+          description: invoice.description || undefined,
+          notes: invoice.notes || undefined,
+          items: invoice.items || [],
+          discount: invoice.discount || undefined,
+          currency: invoice.currency || undefined
+        };
+      });
 
       setInvoices(formattedInvoices);
       console.log('Invoices loaded:', formattedInvoices.length);
+      console.log('Invoice IDs:', formattedInvoices.map(inv => inv.id));
     } catch (error) {
       console.error('Error loading invoices from Supabase:', error);
       toast({
