@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DashboardHeader from '@/components/layout/DashboardHeader';
@@ -193,15 +194,31 @@ const InvoiceDetail = () => {
     <div className="min-h-screen bg-gray-50">
       <DashboardHeader />
       <div className="container mx-auto px-4 py-8">
-        <InvoiceView 
-          invoice={invoice} 
-          onBack={handleGoBack} 
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onSend={handleSend}
-          onDownload={handleDownload}
-          onPrint={handlePrint}
-        />
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          </div>
+        ) : !invoice ? (
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-gray-700">Invoice not found</h2>
+            <button 
+              onClick={() => navigate('/dashboard/invoices')}
+              className="mt-4 text-primary hover:underline"
+            >
+              Go back to invoices
+            </button>
+          </div>
+        ) : (
+          <InvoiceView 
+            invoice={invoice} 
+            onBack={() => navigate('/dashboard/invoices')} 
+            onEdit={() => setIsEditing(true)}
+            onDelete={() => setIsDeleting(true)}
+            onSend={handleSend}
+            onDownload={handleDownload}
+            onPrint={handlePrint}
+          />
+        )}
       </div>
 
       {/* Edit Invoice Dialog */}
@@ -210,11 +227,13 @@ const InvoiceDetail = () => {
           <DialogHeader>
             <DialogTitle>Edit Invoice</DialogTitle>
           </DialogHeader>
-          <InvoiceForm 
-            invoice={invoice}
-            onSave={handleSaveEdit}
-            onCancel={() => setIsEditing(false)}
-          />
+          {invoice && (
+            <InvoiceForm 
+              invoice={invoice}
+              onSave={handleSaveEdit}
+              onCancel={() => setIsEditing(false)}
+            />
+          )}
         </DialogContent>
       </Dialog>
 

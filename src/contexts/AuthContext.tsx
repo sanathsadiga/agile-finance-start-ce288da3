@@ -11,7 +11,7 @@ interface AuthContextType {
   signup: (userData: SignupData, navigate?: any) => Promise<{ error: any, user: any }>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
-  setUser: (user: any) => void; // Add this line to fix useSettings.ts error
+  setUser: (user: any) => void; // Explicitly define setUser function
 }
 
 // Define the SignupData interface to fix the Signup.tsx error
@@ -186,7 +186,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signup,
       logout,
       resetPassword,
-      setUser // Export the setUser function
+      setUser // Export the setUser function explicitly
     }}>
       {children}
     </AuthContext.Provider>

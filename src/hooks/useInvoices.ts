@@ -51,7 +51,7 @@ export const useInvoices = () => {
   }, [user, invoiceSettings, fetchInvoiceSettings]);
 
   const fetchInvoices = useCallback(async () => {
-    if (!user) return;
+    if (!user) return [];
     
     // Prevent multiple simultaneous fetches
     if (fetchTimeoutRef.current) {
@@ -99,6 +99,8 @@ export const useInvoices = () => {
       setInvoices(formattedInvoices);
       console.log('Invoices loaded:', formattedInvoices.length);
       console.log('Invoice IDs:', formattedInvoices.map(inv => inv.id));
+      
+      return formattedInvoices;
     } catch (error) {
       console.error('Error loading invoices from Supabase:', error);
       toast({
@@ -106,6 +108,7 @@ export const useInvoices = () => {
         description: "There was a problem loading your invoice data.",
         variant: "destructive",
       });
+      return [];
     } finally {
       setIsLoading(false);
       initialFetchDone.current = true;
@@ -425,6 +428,53 @@ export const useInvoices = () => {
     }
   }, [invoices, toast]);
 
+  const handleSend = async (invoiceId: string) => {
+    console.log("Sending invoice:", invoiceId);
+    const result = await sendInvoice(invoiceId);
+    if (!result) {
+      toast({
+        title: "Error",
+        description: "Failed to send invoice",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDownload = async (invoiceId: string) => {
+    console.log("Downloading invoice as PDF:", invoiceId);
+    const result = await generatePDF(invoiceId);
+    if (!result) {
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePrint = (invoiceId: string) => {
+    console.log("Printing invoice:", invoiceId);
+    const result = printInvoice(invoiceId);
+    if (!result) {
+      toast({
+        title: "Error",
+        description: "Failed to print invoice",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleConfirmDelete = async (invoiceId: string) => {
+    if (!invoiceId) return;
+    
+    try {
+      await deleteInvoice(invoiceId);
+      navigate('/dashboard/invoices');
+    } catch (error) {
+      console.error('Error deleting invoice:', error);
+    }
+  };
+
   return {
     invoices,
     isLoading,
@@ -435,6 +485,10 @@ export const useInvoices = () => {
     sendInvoice,
     generatePDF,
     printInvoice,
-    generateInvoiceNumber
+    generateInvoiceNumber,
+    handleSend,
+    handleDownload,
+    handlePrint,
+    handleConfirmDelete
   };
 };
