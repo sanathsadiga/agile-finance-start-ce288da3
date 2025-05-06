@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, SignupData } from '@/contexts/AuthContext';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
@@ -37,14 +38,17 @@ const Signup = () => {
       
       console.log("Attempting signup with:", { firstName, lastName, email, companyName });
       
-      // Update the signup call to match the expected parameters
-      await signup({
+      // Create the signup data object
+      const signupData: SignupData = {
         firstName,
         lastName,
         email,
         password,
         companyName,
-      }, navigate);
+      };
+      
+      // Pass the data object to signup
+      await signup(signupData, navigate);
       
       // Navigation happens in the signup function in AuthContext
     } catch (error: any) {

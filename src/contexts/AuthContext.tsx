@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/database';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -7,9 +8,19 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   login: (email: string, password: string) => Promise<{ error: any }>;
-  signup: (email: string, password: string, username?: string) => Promise<{ error: any, user: any }>;
+  signup: (userData: SignupData, navigate?: any) => Promise<{ error: any, user: any }>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
+  setUser: (user: any) => void; // Add this line to fix useSettings.ts error
+}
+
+// Define the SignupData interface to fix the Signup.tsx error
+export interface SignupData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  companyName?: string;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -97,14 +108,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
   
-  const signup = async (email: string, password: string, username?: string) => {
+  const signup = async (userData: SignupData, navigate?: any) => {
     try {
       const { data: { user }, error } = await supabase.auth.signUp({
-        email: email,
-        password: password,
+        email: userData.email,
+        password: userData.password,
         options: {
           data: {
-            username: username,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            companyName: userData.companyName || ""
           }
         }
       });
@@ -117,7 +130,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.info('Signup successful');
       setUser(user);
       setIsAuthenticated(true);
-      navigate('/dashboard', { replace: true });
+      if (navigate) {
+        navigate('/dashboard', { replace: true });
+      }
       return { error: null, user: user };
     } catch (error) {
       console.error('Unexpected signup error:', error);
@@ -170,7 +185,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login,
       signup,
       logout,
-      resetPassword
+      resetPassword,
+      setUser // Export the setUser function
     }}>
       {children}
     </AuthContext.Provider>
