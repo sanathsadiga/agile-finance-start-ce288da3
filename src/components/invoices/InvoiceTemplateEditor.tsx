@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,233 +5,149 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { InvoiceTemplate, LayoutConfig, StyleConfig, ContentConfig } from "@/hooks/useInvoiceTemplates";
+import { Save, X } from "lucide-react";
+import { InvoiceTemplate } from "@/hooks/useInvoiceTemplates";
+import { fontFamilies, fontSizes, alignmentOptions, tableStyles } from '@/components/settings/SettingsConstants';
+import LogoUploader from './LogoUploader';
 
 interface InvoiceTemplateEditorProps {
-  template: InvoiceTemplate | null;
-  onSave: (template: Partial<InvoiceTemplate>) => void;
+  template: InvoiceTemplate;
+  onSave: (template: Partial<InvoiceTemplate>) => Promise<void>;
   onCancel: () => void;
 }
 
-const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
-  template,
-  onSave,
-  onCancel
+const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({ 
+  template, 
+  onSave, 
+  onCancel 
 }) => {
-  const [name, setName] = useState('');
   const [activeTab, setActiveTab] = useState('layout');
-  const [layoutConfig, setLayoutConfig] = useState<LayoutConfig>({
-    header: true,
-    businessInfo: true,
-    clientInfo: true,
-    invoiceInfo: true,
-    itemTable: true,
-    summary: true,
-    notes: true,
-    footer: true
-  });
-  const [styleConfig, setStyleConfig] = useState<StyleConfig>({
-    fontFamily: 'Inter, sans-serif',
-    fontSize: '16px',
-    primaryColor: '#6366f1',
-    secondaryColor: '#f3f4f6',
-    textColor: '#111827',
-    borderStyle: '1px solid #e5e7eb',
-    headerAlignment: 'left',
-    logoPosition: 'left',
-    tableStyle: 'bordered'
-  });
-  const [contentConfig, setContentConfig] = useState<ContentConfig>({
-    headerText: 'INVOICE',
-    footerText: 'Thank you for your business',
-    notesLabel: 'Notes',
-    termsLabel: 'Terms & Conditions'
-  });
+  const [name, setName] = useState(template.name);
+  const [layoutConfig, setLayoutConfig] = useState(template.layout_config);
+  const [styleConfig, setStyleConfig] = useState(template.style_config);
+  const [contentConfig, setContentConfig] = useState(template.content_config);
+  const [logo, setLogo] = useState<string | null>(template.logo || null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    if (template) {
-      setName(template.name);
-      setLayoutConfig(template.layout_config);
-      setStyleConfig(template.style_config);
-      setContentConfig(template.content_config);
+  // Handle saving the template
+  const handleSaveTemplate = async () => {
+    if (!name.trim()) {
+      return;
     }
-  }, [template]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const updatedTemplate: Partial<InvoiceTemplate> = {
-      name,
-      layout_config: layoutConfig,
-      style_config: styleConfig,
-      content_config: contentConfig
-    };
-    
-    onSave(updatedTemplate);
+    setIsSaving(true);
+    try {
+      await onSave({
+        name,
+        layout_config: layoutConfig,
+        style_config: styleConfig,
+        content_config: contentConfig,
+        logo: logo
+      });
+    } catch (error) {
+      console.error('Error saving template:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const fontOptions = [
-    { value: 'Inter, sans-serif', label: 'Inter' },
-    { value: 'Arial, sans-serif', label: 'Arial' },
-    { value: 'Georgia, serif', label: 'Georgia' },
-    { value: 'Courier New, monospace', label: 'Courier New' },
-    { value: 'Roboto, sans-serif', label: 'Roboto' },
-    { value: 'Montserrat, sans-serif', label: 'Montserrat' }
-  ];
+  // Handle layout configuration changes
+  const handleLayoutChange = (key: string, value: boolean) => {
+    setLayoutConfig((prev: any) => ({
+      ...prev,
+      [key]: value
+    }));
+  };
 
-  const fontSizeOptions = [
-    { value: '12px', label: 'Small' },
-    { value: '14px', label: 'Medium' },
-    { value: '16px', label: 'Large' },
-    { value: '18px', label: 'X-Large' }
-  ];
+  // Handle style configuration changes
+  const handleStyleChange = (key: string, value: string) => {
+    setStyleConfig((prev: any) => ({
+      ...prev,
+      [key]: value
+    }));
+  };
 
-  const alignmentOptions = [
-    { value: 'left', label: 'Left' },
-    { value: 'center', label: 'Center' },
-    { value: 'right', label: 'Right' }
-  ];
+  // Handle content configuration changes
+  const handleContentChange = (key: string, value: string) => {
+    setContentConfig((prev: any) => ({
+      ...prev,
+      [key]: value
+    }));
+  };
 
-  const tableStyleOptions = [
-    { value: 'bordered', label: 'Bordered' },
-    { value: 'borderless', label: 'Borderless' },
-    { value: 'striped', label: 'Striped' }
-  ];
+  // Handle logo changes
+  const handleLogoChange = (newLogo: string | null) => {
+    setLogo(newLogo);
+  };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-2">
-        <Label htmlFor="template-name">Template Name</Label>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
         <Input 
-          id="template-name" 
+          placeholder="Template Name" 
           value={name} 
           onChange={(e) => setName(e.target.value)} 
-          className="mb-4"
-          placeholder="My Custom Template"
-          required
+          className="max-w-sm"
         />
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onCancel}>
+            <X className="h-4 w-4 mr-1" />
+            Cancel
+          </Button>
+          <Button onClick={handleSaveTemplate} disabled={isSaving}>
+            {isSaving ? (
+              <div className="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            ) : (
+              <Save className="h-4 w-4 mr-1" />
+            )}
+            Save Template
+          </Button>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-3 mb-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="layout">Layout</TabsTrigger>
           <TabsTrigger value="style">Style</TabsTrigger>
           <TabsTrigger value="content">Content</TabsTrigger>
         </TabsList>
 
-        {/* Layout Configuration */}
-        <TabsContent value="layout" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Layout Elements</CardTitle>
-              <CardDescription>Choose which sections to display on your invoice</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="header-toggle">Header</Label>
-                  <Switch 
-                    id="header-toggle"
-                    checked={layoutConfig.header}
-                    onCheckedChange={(checked) => 
-                      setLayoutConfig(prev => ({ ...prev, header: checked }))
-                    }
-                  />
-                </div>
-                <Separator />
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="business-info-toggle">Business Information</Label>
-                  <Switch 
-                    id="business-info-toggle"
-                    checked={layoutConfig.businessInfo}
-                    onCheckedChange={(checked) => 
-                      setLayoutConfig(prev => ({ ...prev, businessInfo: checked }))
-                    }
-                  />
-                </div>
-                <Separator />
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="client-info-toggle">Client Information</Label>
-                  <Switch 
-                    id="client-info-toggle"
-                    checked={layoutConfig.clientInfo}
-                    onCheckedChange={(checked) => 
-                      setLayoutConfig(prev => ({ ...prev, clientInfo: checked }))
-                    }
-                  />
-                </div>
-                <Separator />
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="invoice-info-toggle">Invoice Information</Label>
-                  <Switch 
-                    id="invoice-info-toggle"
-                    checked={layoutConfig.invoiceInfo}
-                    onCheckedChange={(checked) => 
-                      setLayoutConfig(prev => ({ ...prev, invoiceInfo: checked }))
-                    }
-                  />
-                </div>
-                <Separator />
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="item-table-toggle">Item Table</Label>
-                  <Switch 
-                    id="item-table-toggle"
-                    checked={layoutConfig.itemTable}
-                    onCheckedChange={(checked) => 
-                      setLayoutConfig(prev => ({ ...prev, itemTable: checked }))
-                    }
-                  />
-                </div>
-                <Separator />
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="summary-toggle">Summary</Label>
-                  <Switch 
-                    id="summary-toggle"
-                    checked={layoutConfig.summary}
-                    onCheckedChange={(checked) => 
-                      setLayoutConfig(prev => ({ ...prev, summary: checked }))
-                    }
-                  />
-                </div>
-                <Separator />
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="notes-toggle">Notes</Label>
-                  <Switch 
-                    id="notes-toggle"
-                    checked={layoutConfig.notes}
-                    onCheckedChange={(checked) => 
-                      setLayoutConfig(prev => ({ ...prev, notes: checked }))
-                    }
-                  />
-                </div>
-                <Separator />
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="footer-toggle">Footer</Label>
-                  <Switch 
-                    id="footer-toggle"
-                    checked={layoutConfig.footer}
-                    onCheckedChange={(checked) => 
-                      setLayoutConfig(prev => ({ ...prev, footer: checked }))
-                    }
-                  />
-                </div>
+        {/* Layout Tab */}
+        <TabsContent value="layout" className="space-y-6 pt-4">
+          {/* Logo Uploader */}
+          <LogoUploader initialLogo={logo} onLogoChange={handleLogoChange} />
+          
+          <Separator />
+          
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium">Toggle Sections</h3>
+            {Object.entries({
+              header: "Header",
+              logo: "Logo",
+              businessInfo: "Business Information",
+              clientInfo: "Client Information",
+              invoiceInfo: "Invoice Details",
+              itemTable: "Items Table",
+              discounts: "Discounts",
+              summary: "Summary",
+              notes: "Notes & Terms",
+              footer: "Footer"
+            }).map(([key, label]) => (
+              <div key={key} className="flex items-center justify-between">
+                <Label htmlFor={key}>{label}</Label>
+                <Switch 
+                  id={key} 
+                  checked={layoutConfig[key] || false}
+                  onCheckedChange={(checked) => handleLayoutChange(key, checked)}
+                />
               </div>
-            </CardContent>
-          </Card>
+            ))}
+          </div>
         </TabsContent>
-
-        {/* Style Configuration */}
-        <TabsContent value="style" className="space-y-6">
+        
+        {/* Style Tab */}
+        <TabsContent value="style" className="space-y-4 pt-4">
           <Card>
             <CardHeader>
               <CardTitle>Typography & Colors</CardTitle>
@@ -253,7 +168,7 @@ const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
                         <SelectValue placeholder="Select font family" />
                       </SelectTrigger>
                       <SelectContent>
-                        {fontOptions.map(option => (
+                        {fontFamilies.map(option => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
                           </SelectItem>
@@ -274,7 +189,7 @@ const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
                         <SelectValue placeholder="Select font size" />
                       </SelectTrigger>
                       <SelectContent>
-                        {fontSizeOptions.map(option => (
+                        {fontSizes.map(option => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
                           </SelectItem>
@@ -414,7 +329,7 @@ const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
                         <SelectValue placeholder="Select table style" />
                       </SelectTrigger>
                       <SelectContent>
-                        {tableStyleOptions.map(option => (
+                        {tableStyles.map(option => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
                           </SelectItem>
@@ -444,9 +359,9 @@ const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
             </CardContent>
           </Card>
         </TabsContent>
-
-        {/* Content Configuration */}
-        <TabsContent value="content" className="space-y-6">
+        
+        {/* Content Tab */}
+        <TabsContent value="content" className="space-y-4 pt-4">
           <Card>
             <CardHeader>
               <CardTitle>Custom Text & Labels</CardTitle>
@@ -533,12 +448,7 @@ const InvoiceTemplateEditor: React.FC<InvoiceTemplateEditorProps> = ({
           </Card>
         </TabsContent>
       </Tabs>
-
-      <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end space-x-2 -mx-6 -mb-6 pt-4 shadow-md">
-        <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
-        <Button type="submit">Save Template</Button>
-      </div>
-    </form>
+    </div>
   );
 };
 

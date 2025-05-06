@@ -67,7 +67,7 @@ const InvoiceDetail = () => {
     };
 
     loadInvoice();
-  }, [id, invoices, fetchInvoices, navigate, toast]);
+  }, [id, fetchInvoices, invoices, navigate, toast]);
 
   const handleGoBack = () => {
     navigate('/dashboard/invoices');

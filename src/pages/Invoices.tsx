@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import DashboardHeader from '@/components/layout/DashboardHeader';
 import { Link, useNavigate } from 'react-router-dom';
@@ -50,7 +51,17 @@ const Invoices = () => {
   };
 
   const handleInvoiceClick = (invoiceId: string) => {
-    navigate(`/dashboard/invoices/${invoiceId}`);
+    if (invoiceId) {
+      console.log("Navigating to invoice detail:", invoiceId);
+      navigate(`/dashboard/invoices/${invoiceId}`);
+    } else {
+      console.error("Invalid invoice ID");
+      toast({
+        title: "Error",
+        description: "Could not open invoice details - invalid ID",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusBadge = (status: string) => {

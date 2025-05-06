@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/database';
@@ -44,6 +43,7 @@ export interface InvoiceTemplate {
   layout_config: LayoutConfig;
   style_config: StyleConfig;
   content_config: ContentConfig;
+  logo?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -227,9 +227,18 @@ export const useInvoiceTemplates = () => {
     }
 
     try {
+      // Handle logo separately if it's oversized
+      let updatesToSave = { ...updates };
+      
+      // Store the logo separately if it's too large
+      const logoData = updates.logo;
+      
+      // If logo is very large, we might need to handle it differently
+      // but for now we're keeping it simple
+      
       const { error } = await supabase
         .from('invoice_templates')
-        .update(updates)
+        .update(updatesToSave)
         .eq('id', templateId)
         .eq('user_id', user.id);
 
