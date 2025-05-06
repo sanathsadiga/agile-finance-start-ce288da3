@@ -79,14 +79,28 @@ export const calculateFinancialMetrics = (
   // Convert to array for charts
   const monthlyData = Object.values(monthsData);
 
-  // Calculate summary metrics
-  const totalRevenue = monthlyData.reduce((sum, month) => sum + month.revenue, 0);
-  const totalExpenses = monthlyData.reduce((sum, month) => sum + month.expenses, 0);
+  // Calculate summary metrics - only count paid invoices in revenue
+  const totalRevenue = invoices
+    .filter(invoice => invoice.status === 'paid')
+    .reduce((sum, invoice) => {
+      const amount = typeof invoice.amount === 'number' 
+        ? invoice.amount 
+        : parseFloat(String(invoice.amount).replace(/[^\d.-]/g, '')) || 0;
+      return sum + amount;
+    }, 0);
+    
+  const totalExpenses = expenses.reduce((sum, expense) => {
+    const amount = typeof expense.amount === 'number' 
+      ? expense.amount 
+      : parseFloat(String(expense.amount).replace(/[^\d.-]/g, '')) || 0;
+    return sum + amount;
+  }, 0);
+  
   const netProfit = totalRevenue - totalExpenses;
 
-  // Calculate outstanding invoices (unpaid or overdue)
+  // Calculate outstanding invoices (pending or overdue, but not paid or draft)
   const outstandingInvoices = invoices
-    .filter(invoice => invoice.status === 'unpaid' || invoice.status === 'overdue')
+    .filter(invoice => invoice.status === 'pending' || invoice.status === 'overdue')
     .reduce((sum, invoice) => {
       const amount = typeof invoice.amount === 'number' 
         ? invoice.amount 

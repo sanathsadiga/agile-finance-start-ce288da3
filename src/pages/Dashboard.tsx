@@ -13,6 +13,9 @@ import SummaryCards from '@/components/dashboard/SummaryCards';
 import RecentActivities from '@/components/dashboard/RecentActivities';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import { useExpenses } from '@/hooks/useExpenses';
+import { useInvoices } from '@/hooks/useInvoices';
+import { useSupabaseFinancialData } from '@/hooks/useSupabaseFinancialData';
+import { useSettings } from '@/hooks/useSettings';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -21,6 +24,19 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(true);
   const { expenses } = useExpenses();
+  const { invoices } = useInvoices();
+  const { businessSettings } = useSettings();
+  const currency = businessSettings?.default_currency || 'USD';
+  const { calculateFinancialMetrics } = useSupabaseFinancialData();
+  const { summary, monthlyData } = calculateFinancialMetrics();
+  
+  // Format currency based on user settings
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', { 
+      style: 'currency', 
+      currency: currency.toUpperCase() 
+    }).format(amount);
+  };
   
   // Process expense data by category for the chart
   const expensesByCategory = React.useMemo(() => {
@@ -47,6 +63,90 @@ const Dashboard = () => {
     return expenses.reduce((sum, expense) => sum + expense.amount, 0);
   }, [expenses]);
   
+  // Calculate invoice stats
+  const invoiceStats = React.useMemo(() => {
+    const stats = {
+      paid: { count: 0, amount: 0 },
+      pending: { count: 0, amount: 0 },
+      overdue: { count: 0, amount: 0 }
+    };
+    
+    invoices.forEach(invoice => {
+      if (invoice.status === 'paid') {
+        stats.paid.count++;
+        stats.paid.amount += invoice.amount;
+      } else if (invoice.status === 'pending') {
+        stats.pending.count++;
+        stats.pending.amount += invoice.amount;
+      } else if (invoice.status === 'overdue') {
+        stats.overdue.count++;
+        stats.overdue.amount += invoice.amount;
+      }
+    });
+    
+    return stats;
+  }, [invoices]);
+  
+  // Cash flow data for the last 6 months
+  const cashFlowData = React.useMemo(() => {
+    return monthlyData.slice(-6).map(month => ({
+      month: month.month,
+      in: month.revenue,
+      out: month.expenses,
+      net: month.profit
+    }));
+  }, [monthlyData]);
+  
+  // Calculate cash flow stats
+  const cashFlowStats = React.useMemo(() => {
+    if (cashFlowData.length === 0) {
+      return {
+        cashIn: 0,
+        cashOut: 0,
+        netCashFlow: 0,
+        upcomingPayments: 0,
+        cashInChange: 0,
+        cashOutChange: 0,
+        netCashFlowChange: 0
+      };
+    }
+    
+    const currentMonth = cashFlowData[cashFlowData.length - 1];
+    const previousMonth = cashFlowData.length > 1 ? cashFlowData[cashFlowData.length - 2] : null;
+    
+    const cashIn = currentMonth.in;
+    const cashOut = currentMonth.out;
+    const netCashFlow = currentMonth.net;
+    
+    // Calculate percentage changes if previous month data is available
+    const cashInChange = previousMonth ? ((cashIn - previousMonth.in) / previousMonth.in) * 100 : 0;
+    const cashOutChange = previousMonth ? ((cashOut - previousMonth.out) / previousMonth.out) * 100 : 0;
+    const netCashFlowChange = previousMonth ? ((netCashFlow - previousMonth.net) / previousMonth.net) * 100 : 0;
+    
+    // Calculate upcoming payments (due in next 7 days)
+    const next7Days = new Date();
+    next7Days.setDate(next7Days.getDate() + 7);
+    
+    const upcomingPayments = invoices
+      .filter(invoice => {
+        if (!invoice.dueDate) return false;
+        const dueDate = new Date(invoice.dueDate);
+        const today = new Date();
+        return dueDate > today && dueDate <= next7Days;
+      })
+      .reduce((sum, invoice) => sum + invoice.amount, 0);
+    
+    return {
+      cashIn,
+      cashOut,
+      netCashFlow,
+      upcomingPayments,
+      cashInChange,
+      cashOutChange,
+      netCashFlowChange
+    };
+  }, [cashFlowData, invoices]);
+  
   // Simulate data loading
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -57,7 +157,7 @@ const Dashboard = () => {
   }, []);
 
   const handleCreateInvoice = () => {
-    navigate('/invoices');
+    navigate('/dashboard/invoices');
     toast({
       title: "Create new invoice",
       description: "You can now create a new invoice."
@@ -126,9 +226,9 @@ const Dashboard = () => {
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">$18,650</div>
+                  <div className="text-2xl font-bold">{formatCurrency(cashFlowStats.cashIn)}</div>
                   <p className="text-xs text-muted-foreground">
-                    +12.5% from last month
+                    {cashFlowStats.cashInChange >= 0 ? '+' : ''}{cashFlowStats.cashInChange.toFixed(1)}% from last month
                   </p>
                 </CardContent>
               </Card>
@@ -138,9 +238,9 @@ const Dashboard = () => {
                   <CreditCard className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">$10,245</div>
+                  <div className="text-2xl font-bold">{formatCurrency(cashFlowStats.cashOut)}</div>
                   <p className="text-xs text-muted-foreground">
-                    +2.1% from last month
+                    {cashFlowStats.cashOutChange >= 0 ? '+' : ''}{cashFlowStats.cashOutChange.toFixed(1)}% from last month
                   </p>
                 </CardContent>
               </Card>
@@ -150,9 +250,9 @@ const Dashboard = () => {
                   <ArrowUpRight className="h-4 w-4 text-green-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">$8,405</div>
+                  <div className="text-2xl font-bold">{formatCurrency(cashFlowStats.netCashFlow)}</div>
                   <p className="text-xs text-muted-foreground">
-                    +20.1% from last month
+                    {cashFlowStats.netCashFlowChange >= 0 ? '+' : ''}{cashFlowStats.netCashFlowChange.toFixed(1)}% from last month
                   </p>
                 </CardContent>
               </Card>
@@ -162,7 +262,7 @@ const Dashboard = () => {
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">$3,240</div>
+                  <div className="text-2xl font-bold">{formatCurrency(cashFlowStats.upcomingPayments)}</div>
                   <p className="text-xs text-muted-foreground">
                     Due within 7 days
                   </p>
@@ -178,20 +278,13 @@ const Dashboard = () => {
               <CardContent className="pl-2">
                 <ResponsiveContainer width="100%" height={350}>
                   <LineChart
-                    data={[
-                      { month: "Jan", in: 12400, out: 8400, net: 4000 },
-                      { month: "Feb", in: 14100, out: 9200, net: 4900 },
-                      { month: "Mar", in: 15800, out: 9800, net: 6000 },
-                      { month: "Apr", in: 16200, out: 10500, net: 5700 },
-                      { month: "May", in: 18000, out: 11200, net: 6800 },
-                      { month: "Jun", in: 18650, out: 10245, net: 8405 }
-                    ]}
+                    data={cashFlowData}
                     margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
+                    <YAxis tickFormatter={(value) => formatCurrency(value)} />
+                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
                     <Legend />
                     <Line type="monotone" dataKey="in" stroke="#9b87f5" name="Cash In" activeDot={{ r: 8 }} />
                     <Line type="monotone" dataKey="out" stroke="#ef4444" name="Cash Out" />
@@ -208,7 +301,7 @@ const Dashboard = () => {
                 <h3 className="text-lg font-medium">Invoice Summary</h3>
                 <p className="text-sm text-muted-foreground">Track the status of your invoices</p>
               </div>
-              <Button onClick={() => navigate('/invoices')}>
+              <Button onClick={() => navigate('/dashboard/invoices')}>
                 View All Invoices
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -223,13 +316,13 @@ const Dashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6">
-                  <div className="text-2xl font-bold">$14,500</div>
+                  <div className="text-2xl font-bold">{formatCurrency(invoiceStats.paid.amount)}</div>
                   <p className="text-xs text-muted-foreground">
-                    3 invoices
+                    {invoiceStats.paid.count} invoice{invoiceStats.paid.count !== 1 ? 's' : ''}
                   </p>
                 </CardContent>
                 <CardFooter className="pt-0">
-                  <Button variant="ghost" size="sm" className="w-full" onClick={() => navigate('/invoices')}>
+                  <Button variant="ghost" size="sm" className="w-full" onClick={() => navigate('/dashboard/invoices')}>
                     <Eye className="mr-2 h-4 w-4" />
                     View Details
                   </Button>
@@ -244,13 +337,13 @@ const Dashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6">
-                  <div className="text-2xl font-bold">$8,250</div>
+                  <div className="text-2xl font-bold">{formatCurrency(invoiceStats.pending.amount)}</div>
                   <p className="text-xs text-muted-foreground">
-                    2 invoices
+                    {invoiceStats.pending.count} invoice{invoiceStats.pending.count !== 1 ? 's' : ''}
                   </p>
                 </CardContent>
                 <CardFooter className="pt-0">
-                  <Button variant="ghost" size="sm" className="w-full" onClick={() => navigate('/invoices')}>
+                  <Button variant="ghost" size="sm" className="w-full" onClick={() => navigate('/dashboard/invoices')}>
                     <Eye className="mr-2 h-4 w-4" />
                     View Details
                   </Button>
@@ -265,13 +358,13 @@ const Dashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6">
-                  <div className="text-2xl font-bold">$3,000</div>
+                  <div className="text-2xl font-bold">{formatCurrency(invoiceStats.overdue.amount)}</div>
                   <p className="text-xs text-muted-foreground">
-                    1 invoice
+                    {invoiceStats.overdue.count} invoice{invoiceStats.overdue.count !== 1 ? 's' : ''}
                   </p>
                 </CardContent>
                 <CardFooter className="pt-0">
-                  <Button variant="ghost" size="sm" className="w-full" onClick={() => navigate('/invoices')}>
+                  <Button variant="ghost" size="sm" className="w-full" onClick={() => navigate('/dashboard/invoices')}>
                     <Eye className="mr-2 h-4 w-4" />
                     View Details
                   </Button>
@@ -294,22 +387,28 @@ const Dashboard = () => {
             
             <Card>
               <CardContent className="pt-6">
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart
-                    data={expensesByCategory}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="category" />
-                    <YAxis />
-                    <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
-                    <Bar dataKey="amount" fill="#7E69AB" name="Amount ($)" />
-                  </BarChart>
-                </ResponsiveContainer>
+                {expensesByCategory.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart
+                      data={expensesByCategory}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="category" />
+                      <YAxis tickFormatter={(value) => formatCurrency(value)} />
+                      <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                      <Bar dataKey="amount" fill="#7E69AB" name="Amount" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-[300px]">
+                    <p className="text-muted-foreground">No expense data available</p>
+                  </div>
+                )}
               </CardContent>
               <CardFooter>
                 <p className="text-sm text-muted-foreground">
-                  Total expenses: <span className="font-medium text-red-600">${totalExpenses.toFixed(2)}</span>
+                  Total expenses: <span className="font-medium text-red-600">{formatCurrency(totalExpenses)}</span>
                 </p>
               </CardFooter>
             </Card>

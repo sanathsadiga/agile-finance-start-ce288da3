@@ -1,18 +1,21 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useFinancialData } from '@/hooks/useFinancialData';
+import { useSupabaseFinancialData } from '@/hooks/useSupabaseFinancialData';
 import { useExpenses } from '@/hooks/useExpenses';
+import { useSettings } from '@/hooks/useSettings';
 
 const DashboardCharts = () => {
   const [timePeriod, setTimePeriod] = useState('6months');
   const [chartType, setChartType] = useState('bar');
-  const { calculateFinancialMetrics } = useFinancialData();
+  const { calculateFinancialMetrics } = useSupabaseFinancialData();
   const { monthlyData } = calculateFinancialMetrics();
   const { expenses } = useExpenses();
+  const { businessSettings } = useSettings();
+  const currency = businessSettings?.default_currency || 'USD';
   
   // Process expense data by category for the chart
   const expensesByCategory = React.useMemo(() => {
@@ -49,7 +52,12 @@ const DashboardCharts = () => {
   })();
 
   // Custom tooltip formatter to display currency values
-  const currencyFormatter = (value: number) => `$${value.toFixed(2)}`;
+  const currencyFormatter = (value: number) => {
+    return new Intl.NumberFormat('en-US', { 
+      style: 'currency', 
+      currency: currency.toUpperCase() 
+    }).format(value);
+  };
 
   return (
     <Card className="col-span-4">
@@ -88,7 +96,7 @@ const DashboardCharts = () => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis tickFormatter={currencyFormatter} />
-              <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+              <Tooltip formatter={(value: number) => currencyFormatter(value)} />
               <Legend />
               <Bar dataKey="revenue" fill="#9b87f5" name="Revenue" />
               <Bar dataKey="expenses" fill="#ef4444" name="Expenses" />
@@ -104,7 +112,7 @@ const DashboardCharts = () => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis tickFormatter={currencyFormatter} />
-              <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+              <Tooltip formatter={(value: number) => currencyFormatter(value)} />
               <Legend />
               <Line type="monotone" dataKey="revenue" stroke="#9b87f5" name="Revenue" strokeWidth={2} />
               <Line type="monotone" dataKey="expenses" stroke="#ef4444" name="Expenses" strokeWidth={2} />

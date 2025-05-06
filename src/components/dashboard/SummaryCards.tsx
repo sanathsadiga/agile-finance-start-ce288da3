@@ -1,15 +1,30 @@
 
 import React from 'react';
 import { DollarSign, TrendingUp, CreditCard, ArrowDownRight, ArrowUpRight } from "lucide-react";
-import { useFinancialData } from '@/hooks/useFinancialData';
+import { useSupabaseFinancialData } from '@/hooks/useSupabaseFinancialData';
+import { useSettings } from '@/hooks/useSettings';
 
 const SummaryCards = () => {
-  const { calculateFinancialMetrics } = useFinancialData();
+  const { invoices, expenses, calculateFinancialMetrics } = useSupabaseFinancialData();
+  const { businessSettings } = useSettings();
+  const currency = businessSettings?.default_currency || 'USD';
+  
   const { summary } = calculateFinancialMetrics();
 
+  // Format currency based on user settings
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', { 
+      style: 'currency', 
+      currency: currency.toUpperCase(),
+      maximumFractionDigits: 0 
+    }).format(amount);
+  };
+
   // Calculate month-over-month changes
+  // Note: In a real app, this would compare with previous month data
+  // For now we'll use sample percentages that would normally be calculated
   const changePercentages = {
-    outstandingInvoices: 8.2, // These would be calculated from historical data in a real app
+    outstandingInvoices: 8.2,
     totalRevenue: 12.7,
     totalExpenses: 4.3,
     netProfit: 15.8
@@ -24,7 +39,7 @@ const SummaryCards = () => {
             <DollarSign className="h-4 w-4 text-blue-500" />
           </div>
         </div>
-        <p className="text-2xl font-bold mt-2">${summary.outstandingInvoices.toLocaleString()}</p>
+        <p className="text-2xl font-bold mt-2">{formatCurrency(summary.outstandingInvoices)}</p>
         <div className="flex items-center mt-2 text-xs">
           <ArrowUpRight className="h-3 w-3 text-green-500 mr-1" />
           <span className="text-green-500">{changePercentages.outstandingInvoices}%</span>
@@ -39,7 +54,7 @@ const SummaryCards = () => {
             <DollarSign className="h-4 w-4 text-green-500" />
           </div>
         </div>
-        <p className="text-2xl font-bold mt-2">${summary.totalRevenue.toLocaleString()}</p>
+        <p className="text-2xl font-bold mt-2">{formatCurrency(summary.totalRevenue)}</p>
         <div className="flex items-center mt-2 text-xs">
           <ArrowUpRight className="h-3 w-3 text-green-500 mr-1" />
           <span className="text-green-500">{changePercentages.totalRevenue}%</span>
@@ -54,7 +69,7 @@ const SummaryCards = () => {
             <CreditCard className="h-4 w-4 text-red-500" />
           </div>
         </div>
-        <p className="text-2xl font-bold mt-2">${summary.totalExpenses.toLocaleString()}</p>
+        <p className="text-2xl font-bold mt-2">{formatCurrency(summary.totalExpenses)}</p>
         <div className="flex items-center mt-2 text-xs">
           <ArrowDownRight className="h-3 w-3 text-green-500 mr-1" />
           <span className="text-green-500">{changePercentages.totalExpenses}%</span>
@@ -69,7 +84,7 @@ const SummaryCards = () => {
             <TrendingUp className="h-4 w-4 text-purple-500" />
           </div>
         </div>
-        <p className="text-2xl font-bold mt-2">${summary.netProfit.toLocaleString()}</p>
+        <p className="text-2xl font-bold mt-2">{formatCurrency(summary.netProfit)}</p>
         <div className="flex items-center mt-2 text-xs">
           <ArrowUpRight className="h-3 w-3 text-green-500 mr-1" />
           <span className="text-green-500">{changePercentages.netProfit}%</span>
