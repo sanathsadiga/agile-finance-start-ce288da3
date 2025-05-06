@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Upload, Image, Trash2 } from 'lucide-react';
+import { Upload, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface LogoUploaderProps {
@@ -137,7 +137,7 @@ const LogoUploader: React.FC<LogoUploaderProps> = ({ initialLogo, onLogoChange }
           className="border border-dashed border-gray-300 rounded-md p-6 flex flex-col items-center justify-center bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
           onClick={handleUploadClick}
         >
-          <Image className="h-8 w-8 text-gray-400 mb-2" />
+          <ImageIcon className="h-8 w-8 text-gray-400 mb-2" />
           <p className="text-sm text-gray-500">Upload your company logo</p>
           <p className="text-xs text-gray-400 mt-1">JPG or PNG, max 500x500px recommended</p>
         </div>

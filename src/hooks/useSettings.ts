@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase, logDatabaseOperation, checkEmailConfirmation } from '@/lib/supabase/database';
@@ -686,4 +685,3 @@ export const useSettings = () => {
     checkEmailConfirmation,
   };
 };
-

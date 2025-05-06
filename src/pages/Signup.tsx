@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -34,19 +33,18 @@ const Signup = () => {
       
       if (password.length < 6) {
         throw new Error("Password must be at least 6 characters long");
-        return;
       }
       
       console.log("Attempting signup with:", { firstName, lastName, email, companyName });
+      
+      // Update the signup call to match the expected parameters
       await signup({
         firstName,
         lastName,
         email,
         password,
         companyName,
-      });
-      
-      // Show success message - the toast is shown in AuthContext now
+      }, navigate);
       
       // Navigation happens in the signup function in AuthContext
     } catch (error: any) {
