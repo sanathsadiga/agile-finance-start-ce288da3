@@ -90,6 +90,11 @@ const InvoiceDetail = () => {
       navigate('/dashboard/invoices');
     } catch (error) {
       console.error('Error deleting invoice:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete invoice",
+        variant: "destructive",
+      });
     } finally {
       setIsDeleting(false);
     }

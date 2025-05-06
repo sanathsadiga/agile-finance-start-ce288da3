@@ -469,9 +469,10 @@ export const useInvoices = () => {
     
     try {
       await deleteInvoice(invoiceId);
-      navigate('/dashboard/invoices');
+      return true;
     } catch (error) {
       console.error('Error deleting invoice:', error);
+      return false;
     }
   };
 
