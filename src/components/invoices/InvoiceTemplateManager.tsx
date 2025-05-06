@@ -2,14 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Check, Copy, Trash, PenLine, Star, StarOff } from "lucide-react";
+import { Loader2, Plus, Check, Copy, Trash, PenLine, Star } from "lucide-react";
 import { InvoiceTemplate, useInvoiceTemplates } from "@/hooks/useInvoiceTemplates";
-import InvoiceTemplateEditor from "./InvoiceTemplateEditor";
 import InvoiceTemplatePreview from "./InvoiceTemplatePreview";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNavigate } from 'react-router-dom';
@@ -27,31 +25,15 @@ const InvoiceTemplateManager: React.FC<InvoiceTemplateManagerProps> = ({
   const {
     templates,
     isLoading,
-    addTemplate,
-    updateTemplate,
     setDefaultTemplate,
     deleteTemplate,
     duplicateTemplate
   } = useInvoiceTemplates();
 
-  const [activeTab, setActiveTab] = useState('gallery');
-  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate | null>(null);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [newTemplateName, setNewTemplateName] = useState('');
-
   // Handle creating a new template
-  const handleCreateTemplate = async () => {
-    try {
-      if (!newTemplateName.trim()) {
-        setNewTemplateName('New Template');
-      }
-      const template = await addTemplate(newTemplateName.trim() || 'New Template');
-      setNewTemplateName('');
-      setSelectedTemplate(template);
-      setIsEditorOpen(true);
-    } catch (error) {
-      console.error('Error creating template:', error);
-    }
+  const handleCreateTemplate = () => {
+    navigate('/dashboard/templates');
+    onClose();
   };
 
   // Handle navigating to the template editor page
@@ -62,20 +44,8 @@ const InvoiceTemplateManager: React.FC<InvoiceTemplateManagerProps> = ({
 
   // Handle editing an existing template
   const handleEditTemplate = (template: InvoiceTemplate) => {
-    setSelectedTemplate(template);
-    setIsEditorOpen(true);
-  };
-
-  // Handle saving a template
-  const handleSaveTemplate = async (updatedTemplate: Partial<InvoiceTemplate>) => {
-    try {
-      if (selectedTemplate) {
-        await updateTemplate(selectedTemplate.id, updatedTemplate);
-        setIsEditorOpen(false);
-      }
-    } catch (error) {
-      console.error('Error updating template:', error);
-    }
+    navigate(`/dashboard/templates/${template.id}`);
+    onClose();
   };
 
   // Handle setting a template as default
@@ -225,33 +195,6 @@ const InvoiceTemplateManager: React.FC<InvoiceTemplateManagerProps> = ({
           </div>
         </ScrollArea>
       )}
-
-      {/* Template Editor Dialog */}
-      <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
-        <DialogContent className="max-w-4xl h-[90vh] flex flex-col overflow-hidden">
-          <DialogHeader>
-            <DialogTitle>{selectedTemplate?.name || 'Edit Template'}</DialogTitle>
-            <DialogDescription>
-              Customize your invoice template
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col md:flex-row gap-4 flex-grow overflow-hidden">
-            <div className="md:w-1/2 overflow-y-auto px-1 pb-16">
-              {selectedTemplate && (
-                <InvoiceTemplateEditor
-                  template={selectedTemplate}
-                  onSave={handleSaveTemplate}
-                  onCancel={() => setIsEditorOpen(false)}
-                />
-              )}
-            </div>
-            <div className="md:w-1/2 overflow-y-auto border-l pl-4">
-              <h3 className="font-medium text-gray-500 mb-4">Preview</h3>
-              {selectedTemplate && <InvoiceTemplatePreview template={selectedTemplate} />}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

@@ -80,7 +80,7 @@ const App = () => {
                 } 
               />
               <Route 
-                path="/dashboard/invoices/:invoiceId" 
+                path="/dashboard/invoices/:id" 
                 element={
                   <ProtectedRoute>
                     <InvoiceDetail />

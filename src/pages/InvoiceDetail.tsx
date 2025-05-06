@@ -39,6 +39,17 @@ const InvoiceDetail = () => {
         // First fetch all invoices to ensure we have the latest data
         const invoicesData = await fetchInvoices();
         
+        if (!invoicesData || invoicesData.length === 0) {
+          console.error("Failed to fetch invoices");
+          toast({
+            title: "Error",
+            description: "Failed to load invoices data.",
+            variant: "destructive",
+          });
+          navigate('/dashboard/invoices');
+          return;
+        }
+        
         // Now check for the specific invoice in the updated invoices array
         const foundInvoice = invoicesData.find(inv => inv.id === id);
         
@@ -203,9 +214,9 @@ const InvoiceDetail = () => {
       <div className="container mx-auto px-4 py-8">
         <InvoiceView 
           invoice={invoice} 
-          onBack={() => navigate('/dashboard/invoices')} 
-          onEdit={() => setIsEditing(true)}
-          onDelete={() => setIsDeleting(true)}
+          onBack={handleGoBack} 
+          onEdit={handleEdit}
+          onDelete={handleDelete}
           onSend={handleSend}
           onDownload={handleDownload}
           onPrint={handlePrint}
