@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 const InvoiceDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { invoices, fetchInvoices, updateInvoice, deleteInvoice, sendInvoice, generatePDF, printInvoice } = useInvoices();
+  const { invoices, fetchInvoices, updateInvoice, deleteInvoice, sendInvoice, generatePDF, printInvoice, handleConfirmDelete } = useInvoices();
   const [isLoading, setIsLoading] = useState(true);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -37,10 +37,10 @@ const InvoiceDetail = () => {
         console.log("Loading invoice with ID:", id);
         
         // First fetch all invoices to ensure we have the latest data
-        await fetchInvoices();
+        const invoicesData = await fetchInvoices();
         
         // Now check for the specific invoice in the updated invoices array
-        const foundInvoice = invoices.find(inv => inv.id === id);
+        const foundInvoice = invoicesData.find(inv => inv.id === id);
         
         if (foundInvoice) {
           console.log("Found invoice:", foundInvoice);
@@ -68,7 +68,7 @@ const InvoiceDetail = () => {
     };
 
     loadInvoice();
-  }, [id, fetchInvoices, invoices, navigate, toast]);
+  }, [id, fetchInvoices, navigate, toast]);
 
   const handleGoBack = () => {
     navigate('/dashboard/invoices');
@@ -82,12 +82,14 @@ const InvoiceDetail = () => {
     setIsDeleting(true);
   };
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDeleteLocal = async () => {
     if (!invoice) return;
     
     try {
-      await deleteInvoice(invoice.id);
-      navigate('/dashboard/invoices');
+      const success = await handleConfirmDelete(invoice.id);
+      if (success) {
+        navigate('/dashboard/invoices');
+      }
     } catch (error) {
       console.error('Error deleting invoice:', error);
       toast({
@@ -199,31 +201,15 @@ const InvoiceDetail = () => {
     <div className="min-h-screen bg-gray-50">
       <DashboardHeader />
       <div className="container mx-auto px-4 py-8">
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-          </div>
-        ) : !invoice ? (
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold text-gray-700">Invoice not found</h2>
-            <button 
-              onClick={() => navigate('/dashboard/invoices')}
-              className="mt-4 text-primary hover:underline"
-            >
-              Go back to invoices
-            </button>
-          </div>
-        ) : (
-          <InvoiceView 
-            invoice={invoice} 
-            onBack={() => navigate('/dashboard/invoices')} 
-            onEdit={() => setIsEditing(true)}
-            onDelete={() => setIsDeleting(true)}
-            onSend={handleSend}
-            onDownload={handleDownload}
-            onPrint={handlePrint}
-          />
-        )}
+        <InvoiceView 
+          invoice={invoice} 
+          onBack={() => navigate('/dashboard/invoices')} 
+          onEdit={() => setIsEditing(true)}
+          onDelete={() => setIsDeleting(true)}
+          onSend={handleSend}
+          onDownload={handleDownload}
+          onPrint={handlePrint}
+        />
       </div>
 
       {/* Edit Invoice Dialog */}
@@ -253,7 +239,7 @@ const InvoiceDetail = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction onClick={handleConfirmDeleteLocal} className="bg-red-600 hover:bg-red-700">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

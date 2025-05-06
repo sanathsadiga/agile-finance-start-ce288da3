@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/database';
@@ -465,7 +466,7 @@ export const useInvoices = () => {
   };
 
   const handleConfirmDelete = async (invoiceId: string) => {
-    if (!invoiceId) return;
+    if (!invoiceId) return false;
     
     try {
       await deleteInvoice(invoiceId);
