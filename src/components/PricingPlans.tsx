@@ -139,112 +139,101 @@ const PricingPlans = () => {
   const plans = billingPeriod === 'monthly' ? monthlyPlans : yearlyPlans;
 
   return (
-    <section id="pricing" className="py-16 md:py-24 bg-gradient-to-b from-purple-50 to-white">
-      <div className="container mx-auto px-4 md:px-6">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 animate-fade-in">Simple Pricing</h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto animate-fade-in">
-            Choose the plan that works best for your business.
-            All plans include a 14-day free trial.
-          </p>
-          
-          <div className="flex justify-center mt-8 p-1 bg-gray-100 rounded-full w-fit mx-auto">
-            <button
-              onClick={() => setBillingPeriod('monthly')}
-              className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-                billingPeriod === 'monthly' 
-                  ? 'bg-brand-purple text-white shadow-md' 
-                  : 'text-gray-500 hover:text-gray-900'
-              }`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setBillingPeriod('yearly')}
-              className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-                billingPeriod === 'yearly' 
-                  ? 'bg-brand-purple text-white shadow-md' 
-                  : 'text-gray-500 hover:text-gray-900'
-              }`}
-            >
-              Yearly (Save 15%)
-            </button>
-          </div>
-        </div>
-        
-        {/* Updated grid layout with better responsive behavior */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 max-w-7xl mx-auto">
-          {plans.map((plan, index) => (
-            <div 
-              key={index} 
-              className={`bg-white rounded-lg overflow-hidden shadow-lg border transition-all duration-500 hover:shadow-xl flex flex-col ${
-                plan.highlight 
-                  ? 'border-brand-purple md:scale-102 shadow-xl' 
-                  : 'border-gray-100 hover:-translate-y-1'
-              }`}
-            >
-              {plan.highlight && (
-                <div className="bg-brand-purple text-white py-2 px-4 text-center text-sm font-medium">
-                  Most Popular
-                </div>
-              )}
-              
-              <div className="p-6 flex-grow">
-                <h3 className="text-xl font-bold mb-1">{plan.name}</h3>
-                <div className="mb-4 flex items-end">
-                  <span className="text-3xl font-bold">{plan.price}</span>
-                  {plan.period && <span className="text-gray-600 ml-1">{plan.period}</span>}
-                </div>
-                <p className="text-gray-600 mb-6 min-h-[3rem]">{plan.description}</p>
-                
-                <Link to="/signup" className="w-full">
-                  <Button 
-                    variant={plan.buttonVariant as "outline" | "default"}
-                    className={`w-full ${plan.highlight ? 'bg-brand-purple hover:bg-brand-tertiary-purple' : ''}`}
-                  >
-                    {plan.buttonText}
-                  </Button>
-                </Link>
-              </div>
-              
-              <div className="border-t border-gray-100 p-6">
-                <ul className="space-y-3">
-                  {plan.features.map((feature, featureIndex) => (
-                    <li key={featureIndex} className="flex items-start">
-                      <div className="mr-2 mt-1 flex-shrink-0">
-                        <Check className="h-4 w-4 text-brand-purple" />
-                      </div>
-                      <span className="text-gray-600 text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          ))}
-        </div>
-        
-        <div className="text-center mt-12">
-          <p className="text-gray-600 mb-4">
-            Need a custom plan? Contact us for enterprise pricing.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <div className="flex items-center space-x-2 bg-gray-100 rounded-full px-4 py-2 hover:bg-gray-200 transition-colors">
-              <Check className="h-4 w-4 text-brand-purple" />
-              <span className="text-sm">No credit card required</span>
-            </div>
-            <div className="flex items-center space-x-2 bg-gray-100 rounded-full px-4 py-2 hover:bg-gray-200 transition-colors">
-              <Check className="h-4 w-4 text-brand-purple" />
-              <span className="text-sm">Cancel anytime</span>
-            </div>
-            <div className="flex items-center space-x-2 bg-gray-100 rounded-full px-4 py-2 hover:bg-gray-200 transition-colors">
-              <Check className="h-4 w-4 text-brand-purple" />
-              <span className="text-sm">14-day free trial</span>
-            </div>
-          </div>
-        </div>
+    <section id="pricing" className="py-20 bg-gradient-to-b from-purple-50 to-white">
+  <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="text-center mb-16">
+      <h2 className="text-4xl font-bold text-gray-900 tracking-tight mb-4">Simple, Transparent Pricing</h2>
+      <p className="text-lg text-gray-600 max-w-xl mx-auto">
+        Choose the plan that fits your business. All come with a 14-day free trial.
+      </p>
+
+      {/* Toggle */}
+      <div className="inline-flex mt-8 bg-gray-100 rounded-full p-1">
+        {["monthly", "yearly"].map((period) => (
+          <button
+            key={period}
+            onClick={() => setBillingPeriod(period)}
+            className={`px-6 py-2 text-sm rounded-full transition-all ${
+              billingPeriod === period
+                ? "bg-brand-purple text-white shadow-md"
+                : "text-gray-500 hover:text-gray-900"
+            }`}
+          >
+            {period === "monthly" ? "Monthly" : "Yearly (Save 15%)"}
+          </button>
+        ))}
       </div>
-    </section>
+    </div>
+
+    {/* Pricing Cards */}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+      {plans.map((plan, idx) => (
+        <div
+          key={idx}
+          className={`flex flex-col rounded-2xl border border-gray-200 shadow-lg overflow-hidden relative ${
+            plan.highlight
+              ? "bg-white/70 backdrop-blur-md ring-2 ring-brand-purple"
+              : "bg-white"
+          }`}
+        >
+          {plan.highlight && (
+            <span className="absolute top-0 left-0 bg-brand-purple text-white text-xs font-semibold px-4 py-1 rounded-br-xl">
+              Most Popular
+            </span>
+          )}
+
+          <div className="p-6 flex-grow">
+            <h3 className="text-xl font-semibold mb-2">{plan.name}</h3>
+            <div className="flex items-baseline mb-4">
+              <span className="text-4xl font-bold text-gray-900">{plan.price}</span>
+              {plan.period && <span className="text-gray-500 ml-1">{plan.period}</span>}
+            </div>
+            <p className="text-gray-600 mb-6">{plan.description}</p>
+
+            <Link to="/signup" className="block mt-auto">
+              <Button
+                variant={plan.buttonVariant as "default" | "outline"}
+                className={`w-full ${plan.highlight ? "bg-brand-purple text-white hover:bg-brand-tertiary-purple" : ""}`}
+              >
+                {plan.buttonText}
+              </Button>
+            </Link>
+          </div>
+
+          <div className="border-t border-gray-100 bg-gray-50 p-6">
+            <ul className="space-y-3">
+              {plan.features.map((feature, i) => (
+                <li key={i} className="flex items-start text-sm text-gray-700">
+                  <Check className="w-4 h-4 text-brand-purple mr-2 mt-1" />
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* Notes */}
+    <div className="text-center mt-12">
+      <p className="text-gray-600 mb-4">Need a custom plan? Contact us for enterprise pricing.</p>
+      <div className="flex flex-wrap justify-center gap-4">
+        {["No credit card required", "Cancel anytime", "14-day free trial"].map((msg, idx) => (
+          <div
+            key={idx}
+            className="flex items-center space-x-2 bg-gray-100 px-4 py-2 rounded-full hover:bg-gray-200 transition"
+          >
+            <Check className="h-4 w-4 text-brand-purple" />
+            <span className="text-sm">{msg}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
+
   );
+  
 };
 
 export default PricingPlans;

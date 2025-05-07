@@ -7,6 +7,7 @@ import Testimonials from '@/components/Testimonials';
 import PricingPlans from '@/components/PricingPlans';
 import Footer from '@/components/Footer';
 import { Helmet } from 'react-helmet-async';
+import CookieConsent from '@/components/CookieConsent';
 
 const Index = () => {
   // Intersection Observer for scroll animations
@@ -46,6 +47,7 @@ const Index = () => {
       
       <Navbar />
       <Hero />
+      <CookieConsent />
       <Features />
       <PricingPlans />
       <Testimonials />

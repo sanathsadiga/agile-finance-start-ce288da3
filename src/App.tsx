@@ -18,7 +18,13 @@ import InvoiceTemplateEditor from "./pages/InvoiceTemplateEditor";
 import Expenses from "./pages/Expenses";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import Aboutus from "./pages/aboutus";
 import NotFound from "./pages/NotFound";
+import ContactUs from "./pages/ContactUsPage";
+import Blog from "./pages/BlogPage";
+import Community from "./pages/Community";
+import Documentation from "./pages/Documentation";
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,7 +40,7 @@ const App = () => {
     // Check Supabase connection and initialize database on app startup
     const checkConnection = async () => {
       console.log('Supabase object:', supabase ? 'Initialized' : 'Not initialized');
-      
+
       try {
         const isConnected = await checkSupabaseConnection();
         if (isConnected) {
@@ -48,7 +54,7 @@ const App = () => {
         console.error('Error during connection check:', error);
       }
     };
-    
+
     checkConnection();
   }, []);
 
@@ -63,79 +69,89 @@ const App = () => {
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
-              <Route 
-                path="/dashboard" 
+              <Route
+                path="/dashboard"
                 element={
                   <ProtectedRoute>
                     <Dashboard />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/dashboard/invoices" 
+              <Route
+                path="/dashboard/invoices"
                 element={
                   <ProtectedRoute>
                     <Invoices />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/dashboard/invoices/:id" 
+              <Route
+                path="/dashboard/invoices/:id"
                 element={
                   <ProtectedRoute>
                     <InvoiceDetail />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/dashboard/templates" 
+              <Route
+                path="/dashboard/templates"
                 element={
                   <ProtectedRoute>
                     <InvoiceTemplateEditor />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/dashboard/templates/:templateId" 
+              <Route
+                path="/dashboard/templates/:templateId"
                 element={
                   <ProtectedRoute>
                     <InvoiceTemplateEditor />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/dashboard/expenses" 
+              <Route
+                path="/dashboard/expenses"
                 element={
                   <ProtectedRoute>
                     <Expenses />
                   </ProtectedRoute>
-                } 
+                }
               />
               {/* Redirect deprecated routes to their dashboard counterparts */}
-              <Route 
-                path="/invoices" 
-                element={<Navigate to="/dashboard/invoices" replace />} 
+              <Route
+                path="/invoices"
+                element={<Navigate to="/dashboard/invoices" replace />}
               />
-              <Route 
-                path="/expenses" 
-                element={<Navigate to="/dashboard/expenses" replace />} 
+              <Route
+                path="/expenses"
+                element={<Navigate to="/dashboard/expenses" replace />}
               />
-              <Route 
-                path="/reports" 
+              <Route
+                path="/reports"
                 element={
                   <ProtectedRoute>
                     <Reports />
                   </ProtectedRoute>
-                } 
+                }
               />
-              <Route 
-                path="/settings" 
+              <Route
+                path="/settings"
                 element={
                   <ProtectedRoute>
                     <Settings />
                   </ProtectedRoute>
-                } 
+                }
               />
+              <Route path="/aboutus"
+                element={<Aboutus />} />
+              <Route path="/contactus"
+                element={<ContactUs />} />
+              <Route path="/blog"
+                element={<Blog />} />
+              <Route path="/community"
+                element={<Community />} />
+              <Route path="/documentation"
+                element={<Documentation />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>

@@ -33,6 +33,13 @@ const Navbar = () => {
           <Link to="/#pricing" className="text-gray-600 hover:text-brand-purple transition-colors">
             Pricing
           </Link>
+          <Link 
+              to="/aboutus" 
+              className="text-gray-600 hover:text-brand-purple transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              About us
+            </Link>
           <div className="pl-6 space-x-2 border-l border-gray-200">
             {isAuthenticated ? (
               <>
@@ -89,6 +96,14 @@ const Navbar = () => {
             >
               Pricing
             </Link>
+            <Link 
+              to="/" 
+              className="text-gray-600 hover:text-brand-purple transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Home
+            </Link>
+            
             <div className="pt-4 space-y-2 border-t border-gray-200">
               {isAuthenticated ? (
                 <Link to="/dashboard" className="w-full" onClick={() => setIsMenuOpen(false)}>

@@ -30,18 +30,18 @@ const Footer = () => {
             <h3 className="font-bold text-lg mb-4">Resources</h3>
             <ul className="space-y-3 text-gray-600">
               <li><Link to="/#" className="hover:text-brand-purple transition-colors">Help Center</Link></li>
-              <li><Link to="/#" className="hover:text-brand-purple transition-colors">Documentation</Link></li>
-              <li><Link to="/#" className="hover:text-brand-purple transition-colors">Blog</Link></li>
-              <li><Link to="/#" className="hover:text-brand-purple transition-colors">Community</Link></li>
+              <li><Link to="/documentation" className="hover:text-brand-purple transition-colors">Documentation</Link></li>
+              <li><Link to="/blog" className="hover:text-brand-purple transition-colors">Blog</Link></li>
+              <li><Link to="/community" className="hover:text-brand-purple transition-colors">Community</Link></li>
             </ul>
           </div>
           
           <div>
             <h3 className="font-bold text-lg mb-4">Company</h3>
             <ul className="space-y-3 text-gray-600">
-              <li><Link to="/#" className="hover:text-brand-purple transition-colors">About</Link></li>
+              <li><Link to="/aboutus" className="hover:text-brand-purple transition-colors">About</Link></li>
               <li><Link to="/#" className="hover:text-brand-purple transition-colors">Careers</Link></li>
-              <li><Link to="/#" className="hover:text-brand-purple transition-colors">Contact</Link></li>
+              <li><Link to="/contactus" className="hover:text-brand-purple transition-colors">Contact</Link></li>
               <li><Link to="/#" className="hover:text-brand-purple transition-colors">Legal</Link></li>
             </ul>
           </div>
