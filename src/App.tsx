@@ -26,6 +26,16 @@ import Community from "./pages/Community";
 import Documentation from "./pages/Documentation";
 import AuthCallback from "./pages/AuthCallback";
 
+// Admin pages
+import AdminLogin from "./pages/admin/Login";
+import AdminLayout from "./components/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/Dashboard";
+import BlogManager from "./pages/admin/BlogManager";
+import DocsManager from "./pages/admin/DocsManager";
+import UserManager from "./pages/admin/UserManager";
+import SubscriptionManager from "./pages/admin/SubscriptionManager";
+import AdminSettings from "./pages/admin/AdminSettings";
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -156,6 +166,20 @@ const App = () => {
                 element={<Community />} />
               <Route path="/documentation"
                 element={<Documentation />} />
+
+              {/* Admin Routes */}
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+              
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="blogs" element={<BlogManager />} />
+                <Route path="documentation" element={<DocsManager />} />
+                <Route path="users" element={<UserManager />} />
+                <Route path="subscriptions" element={<SubscriptionManager />} />
+                <Route path="settings" element={<AdminSettings />} />
+              </Route>
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>
