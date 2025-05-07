@@ -7,6 +7,7 @@ import Footer from '@/components/Footer';
 import { supabase } from '@/lib/supabase/database';
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 
 interface BlogPost {
