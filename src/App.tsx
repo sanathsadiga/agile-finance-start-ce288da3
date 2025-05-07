@@ -24,6 +24,7 @@ import ContactUs from "./pages/ContactUsPage";
 import Blog from "./pages/BlogPage";
 import Community from "./pages/Community";
 import Documentation from "./pages/Documentation";
+import AuthCallback from "./pages/AuthCallback";
 
 
 const queryClient = new QueryClient({
@@ -69,6 +70,7 @@ const App = () => {
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
               <Route
                 path="/dashboard"
                 element={
@@ -147,6 +149,8 @@ const App = () => {
               <Route path="/contactus"
                 element={<ContactUs />} />
               <Route path="/blog"
+                element={<Blog />} />
+              <Route path="/blog/:slug"
                 element={<Blog />} />
               <Route path="/community"
                 element={<Community />} />
