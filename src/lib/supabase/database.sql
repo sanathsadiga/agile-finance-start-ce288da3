@@ -148,7 +148,7 @@ DECLARE
   support_user_id UUID;
 BEGIN
   -- First check if user exists in auth.users
-  SELECT id INTO support_user_id FROM auth.users WHERE email = 'support@econatuarls.site';
+  SELECT id INTO support_user_id FROM auth.users WHERE email = 'support@econatuarls.life';
   
   IF support_user_id IS NULL THEN
     -- User doesn't exist, we'll create a placeholder record in profiles
@@ -158,7 +158,7 @@ BEGIN
       uuid_generate_v4(),
       'Support',
       'Admin',
-      'support@econatuarls.site',
+      'support@econatuarls.life',
       true
     );
   ELSE

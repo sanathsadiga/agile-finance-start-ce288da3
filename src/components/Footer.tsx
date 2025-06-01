@@ -19,7 +19,7 @@ const Footer = () => {
           <div>
             <h3 className="font-bold text-lg mb-4">Product</h3>
             <ul className="space-y-3 text-gray-600">
-              <li><Link to="/#features" className="hover:text-brand-purple transition-colors">Features</Link></li>
+              <li><Link to="/features" className="hover:text-brand-purple transition-colors">Features</Link></li>
               <li><Link to="/#pricing" className="hover:text-brand-purple transition-colors">Pricing</Link></li>
               <li><Link to="/#" className="hover:text-brand-purple transition-colors">Integrations</Link></li>
               <li><Link to="/#" className="hover:text-brand-purple transition-colors">Changelog</Link></li>

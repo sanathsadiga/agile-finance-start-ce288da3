@@ -25,7 +25,9 @@ import Blog from "./pages/BlogPage";
 import Community from "./pages/Community";
 import Documentation from "./pages/Documentation";
 import AuthCallback from "./pages/AuthCallback";
-
+import ScrollToTop from './components/ScrollToTop';
+import PricingPage from './pages/pricingpage';
+import FeaturesPage from './pages/features';
 // Admin pages
 import AdminLogin from "./pages/admin/Login";
 import AdminLayout from "./components/admin/AdminLayout";
@@ -75,6 +77,7 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ScrollToTop />
           <AuthProvider>
             <Routes>
               <Route path="/" element={<Index />} />
@@ -166,11 +169,14 @@ const App = () => {
                 element={<Community />} />
               <Route path="/documentation"
                 element={<Documentation />} />
-
+              <Route path="/pricing"
+                element={<PricingPage />} />
+                <Route path="/features"
+                element={<FeaturesPage />} />
               {/* Admin Routes */}
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-              
+
               <Route path="/admin" element={<AdminLayout />}>
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="blogs" element={<BlogManager />} />
@@ -179,7 +185,7 @@ const App = () => {
                 <Route path="subscriptions" element={<SubscriptionManager />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>
-              
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>

@@ -55,7 +55,7 @@ const Hero = () => {
                   <TrendingUp className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </Link>
-              <Link to="/#features">
+              <Link to="/features">
                 <Button variant="outline" size="lg" className="w-full sm:w-auto hover:bg-brand-purple/10 transition-all duration-300">
                   Explore features
                 </Button>

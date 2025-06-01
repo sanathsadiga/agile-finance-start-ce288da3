@@ -20,7 +20,7 @@ const AdminLogin = () => {
 
     try {
       // Validate if it's an admin email
-      if (email !== "support@econatuarls.site" && !email.endsWith("@admin.econatuarls.site")) {
+      if (email !== "support@econatuarls.life" && !email.endsWith("@admin.econatuarls.life")) {
         toast({
           title: "Access Denied",
           description: "Only admin accounts can access this panel.",

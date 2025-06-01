@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 
 // Import Google icon
-import googleIcon from '../assets/google.svg';
+import googleIcon from '../assets/google.png';
 
 interface LoginFormData {
   email: string;
