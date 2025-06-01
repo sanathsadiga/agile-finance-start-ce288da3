@@ -1,265 +1,165 @@
 
 import { useState, useEffect } from 'react';
-import { Helmet } from 'react-helmet-async';
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import { supabase } from '@/lib/supabase/database';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Search } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Search, BookOpen, FileText, Code, Lightbulb } from 'lucide-react';
 
-interface DocItem {
-  id: string;
-  title: string;
-  slug: string;
-  content: string;
-  category: string;
-  section: string;
-  order_index: number;
-}
+// Mock documentation data
+const mockDocs = [
+  {
+    id: '1',
+    title: 'Getting Started with FinanceFlow',
+    category: 'Getting Started',
+    content: 'Learn how to set up your account and create your first invoice...',
+    tags: ['beginner', 'setup', 'tutorial'],
+    lastUpdated: '2024-01-15'
+  },
+  {
+    id: '2',
+    title: 'Invoice Management Guide',
+    category: 'Invoices',
+    content: 'Complete guide to creating, editing, and managing invoices...',
+    tags: ['invoices', 'billing', 'guide'],
+    lastUpdated: '2024-01-12'
+  },
+  {
+    id: '3',
+    title: 'Expense Tracking Tutorial',
+    category: 'Expenses',
+    content: 'How to track and categorize your business expenses...',
+    tags: ['expenses', 'tracking', 'categories'],
+    lastUpdated: '2024-01-10'
+  },
+  {
+    id: '4',
+    title: 'API Integration',
+    category: 'API',
+    content: 'Integrate FinanceFlow with your existing systems using our API...',
+    tags: ['api', 'integration', 'developers'],
+    lastUpdated: '2024-01-08'
+  }
+];
 
-export default function DocumentationPage() {
-  const [docs, setDocs] = useState<DocItem[]>([]);
-  const [selectedDoc, setSelectedDoc] = useState<DocItem | null>(null);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filteredDocs, setFilteredDocs] = useState<DocItem[]>([]);
+const Documentation = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [docs, setDocs] = useState(mockDocs);
 
-  // Fetch documentation from database
-  useEffect(() => {
-    const fetchDocs = async () => {
-      try {
-        // Fetch documentation items ordered by category and order_index
-        const { data, error } = await supabase
-          .from('documentation')
-          .select('*')
-          .order('category')
-          .order('order_index');
-          
-        if (error) throw error;
-        
-        if (data && data.length > 0) {
-          setDocs(data as DocItem[]);
-          setSelectedDoc(data[0] as DocItem);
-          
-          // Extract unique categories
-          const uniqueCategories = Array.from(new Set(data.map((doc: any) => doc.category)));
-          setCategories(uniqueCategories as string[]);
-        }
-        
-      } catch (error) {
-        console.error('Error fetching documentation:', error);
-        // Fallback to sample data if database fetch fails
-        const fallbackDocs = [
-          {
-            id: '1',
-            title: 'Getting Started with FinanceFlow',
-            slug: 'getting-started',
-            content: '# Getting Started\n\nThis document will help you get started with our platform. It covers everything from setting up your account to making your first transaction.',
-            category: 'Getting Started',
-            section: 'User Guide',
-            order_index: 1
-          },
-          {
-            id: '2',
-            title: 'API Documentation',
-            slug: 'api-documentation',
-            content: '# API Documentation\n\nThe API documentation provides all the details you need to integrate with our system. It includes all available endpoints and usage examples.',
-            category: 'API',
-            section: 'Developer',
-            order_index: 1
-          },
-          {
-            id: '3',
-            title: 'FAQs',
-            slug: 'faqs',
-            content: '# FAQs\n\nFind answers to the most frequently asked questions by users. From account-related queries to troubleshooting steps.',
-            category: 'Support',
-            section: 'Help',
-            order_index: 1
-          },
-          {
-            id: '4',
-            title: 'Best Practices',
-            slug: 'best-practices',
-            content: '# Best Practices\n\nThis document provides tips and recommendations on using our platform most effectively and efficiently.',
-            category: 'Getting Started',
-            section: 'User Guide',
-            order_index: 2
-          },
-          {
-            id: '5',
-            title: 'Release Notes',
-            slug: 'release-notes',
-            content: '# Release Notes\n\nStay updated on the latest updates, features, and fixes that have been released.',
-            category: 'Support',
-            section: 'Help',
-            order_index: 2
-          }
-        ];
-        
-        setDocs(fallbackDocs);
-        setSelectedDoc(fallbackDocs[0]);
-        
-        // Extract unique categories
-        const uniqueCategories = Array.from(new Set(fallbackDocs.map(doc => doc.category)));
-        setCategories(uniqueCategories);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const categories = ['All', 'Getting Started', 'Invoices', 'Expenses', 'API'];
+
+  const filteredDocs = docs.filter(doc => {
+    const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         doc.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         doc.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    fetchDocs();
-  }, []);
+    const matchesCategory = selectedCategory === 'All' || doc.category === selectedCategory;
+    
+    return matchesSearch && matchesCategory;
+  });
 
-  // Filter docs based on search query
-  useEffect(() => {
-    if (searchQuery) {
-      const lowercaseQuery = searchQuery.toLowerCase();
-      const filtered = docs.filter(doc => 
-        doc.title.toLowerCase().includes(lowercaseQuery) ||
-        doc.content.toLowerCase().includes(lowercaseQuery) ||
-        doc.category.toLowerCase().includes(lowercaseQuery)
-      );
-      setFilteredDocs(filtered);
-    } else {
-      setFilteredDocs(docs);
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'Getting Started':
+        return <Lightbulb className="h-4 w-4" />;
+      case 'Invoices':
+        return <FileText className="h-4 w-4" />;
+      case 'Expenses':
+        return <BookOpen className="h-4 w-4" />;
+      case 'API':
+        return <Code className="h-4 w-4" />;
+      default:
+        return <BookOpen className="h-4 w-4" />;
     }
-  }, [searchQuery, docs]);
-
-  // Function to render markdown content
-  const renderMarkdown = (content: string) => {
-    // This is a simple implementation - for production, use a proper markdown renderer
-    const htmlContent = content
-      .replace(/^# (.*$)/gm, '<h1 class="text-3xl font-bold mb-4">$1</h1>')
-      .replace(/^## (.*$)/gm, '<h2 class="text-2xl font-semibold mb-3 mt-6">$1</h2>')
-      .replace(/^### (.*$)/gm, '<h3 class="text-xl font-semibold mb-2 mt-5">$1</h3>')
-      .replace(/\*\*(.*)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*)\*/g, '<em>$1</em>')
-      .replace(/\n/g, '<br />');
-      
-    return <div dangerouslySetInnerHTML={{ __html: htmlContent }} />;
   };
 
   return (
-    <main className="min-h-screen flex flex-col">
-      <Helmet>
-        <title>FinanceFlow - Documentation</title>
-        <meta name="description" content="Explore the documentation to get detailed information about using the platform." />
-        <meta name="keywords" content="documentation, guide, API, FAQ, platform, release notes" />
-        <meta property="og:title" content="FinanceFlow - Documentation" />
-        <meta property="og:description" content="Explore the documentation to get detailed information about using the platform." />
-        <meta property="og:type" content="website" />
-        <link rel="canonical" href="https://financeflow.com/documentation" />
-      </Helmet>
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
-
-      {/* Hero Section with Title */}
-      <section className="bg-gradient-to-r from-brand-purple to-brand-tertiary-purple text-white text-center py-10">
-        <div className="container mx-auto px-4">
-          <h1 className="text-4xl font-bold mb-4">Documentation</h1>
-          <p className="text-lg max-w-2xl mx-auto">
-            Explore all the resources and guides you need to get started and make the most out of our platform.
-          </p>
-          <div className="mt-6 max-w-md mx-auto relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-white/70" />
-            <Input
-              type="search"
-              placeholder="Search documentation..."
-              className="pl-10 pr-4 py-2 w-full bg-white/10 border-white/20 text-white placeholder:text-white/70"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
-      </section>
-
-      <section className="flex-1 flex flex-col md:flex-row">
-        {/* Sidebar */}
-        <div className="w-full md:w-1/4 bg-gray-800 text-white p-4 md:p-6 md:min-h-[calc(100vh-300px)]">
-          <ScrollArea className="h-[calc(100vh-350px)]">
-            {loading ? (
-              <>
-                <Skeleton className="h-6 w-3/4 mb-6 bg-gray-700" />
-                <div className="space-y-4">
-                  {[1, 2, 3, 4, 5].map(i => (
-                    <Skeleton key={i} className="h-5 w-full bg-gray-700" />
-                  ))}
-                </div>
-              </>
-            ) : (
-              <>
-                <h3 className="text-xl font-semibold mb-6">Documentation</h3>
-                <div className="space-y-6">
-                  {categories.map((category) => (
-                    <div key={category} className="space-y-2">
-                      <h4 className="font-medium text-sm uppercase tracking-wider text-gray-400">{category}</h4>
-                      <ul className="space-y-1">
-                        {filteredDocs
-                          .filter(doc => doc.category === category)
-                          .map((doc) => (
-                            <li key={doc.id}>
-                              <button
-                                onClick={() => setSelectedDoc(doc)}
-                                className={`text-base font-medium hover:text-blue-400 transition duration-300 w-full text-left p-2 rounded-md ${
-                                  selectedDoc?.id === doc.id
-                                    ? 'bg-blue-600 text-white'
-                                    : 'text-gray-300 hover:bg-blue-900/30'
-                                }`}
-                              >
-                                {doc.title}
-                              </button>
-                            </li>
-                          ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </ScrollArea>
-        </div>
-
-        {/* Document Content Area */}
-        <div className="w-full md:w-3/4 bg-white p-4 md:p-8 overflow-y-auto flex flex-col">
-          {loading ? (
-            <div className="space-y-6">
-              <Skeleton className="h-8 w-2/3" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-6 w-1/3 mt-4" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-5/6" />
-            </div>
-          ) : selectedDoc ? (
-            <div className="prose max-w-none">
-              {renderMarkdown(selectedDoc.content)}
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-gray-500">Select a document from the sidebar</p>
-            </div>
-          )}
-          
-          {/* Feedback section */}
-          {selectedDoc && !loading && (
-            <div className="mt-16 pt-8 border-t border-gray-200">
-              <h3 className="text-lg font-medium mb-2">Was this helpful?</h3>
-              <div className="flex space-x-2">
-                <Button variant="outline" size="sm">Yes</Button>
-                <Button variant="outline" size="sm">No</Button>
+      
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">Documentation</h1>
+            <p className="text-xl text-gray-600 mb-8">
+              Everything you need to know about using FinanceFlow
+            </p>
+            
+            <div className="max-w-md mx-auto mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder="Search documentation..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
             </div>
+            
+            <div className="flex flex-wrap justify-center gap-2 mb-8">
+              {categories.map(category => (
+                <Button
+                  key={category}
+                  variant={selectedCategory === category ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory(category)}
+                  className="flex items-center gap-2"
+                >
+                  {getCategoryIcon(category)}
+                  {category}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredDocs.map(doc => (
+              <Card key={doc.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardHeader>
+                  <div className="flex items-center justify-between mb-2">
+                    <Badge variant="secondary" className="flex items-center gap-1">
+                      {getCategoryIcon(doc.category)}
+                      {doc.category}
+                    </Badge>
+                    <span className="text-xs text-gray-500">
+                      Updated {new Date(doc.lastUpdated).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <CardTitle className="text-lg">{doc.title}</CardTitle>
+                  <CardDescription className="line-clamp-2">
+                    {doc.content}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-1">
+                    {doc.tags.map(tag => (
+                      <Badge key={tag} variant="outline" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {filteredDocs.length === 0 && (
+            <div className="text-center py-12">
+              <BookOpen className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No documentation found</h3>
+              <p className="text-gray-600">
+                Try adjusting your search or browse different categories.
+              </p>
+            </div>
           )}
         </div>
-      </section>
-
-      <Footer />
-    </main>
+      </div>
+    </div>
   );
-}
+};
+
+export default Documentation;

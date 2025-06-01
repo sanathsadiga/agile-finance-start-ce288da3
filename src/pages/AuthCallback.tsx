@@ -1,7 +1,6 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase/database';
 import { Loader2 } from 'lucide-react';
 
 const AuthCallback = () => {
@@ -11,19 +10,22 @@ const AuthCallback = () => {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        // Process the OAuth callback
-        const { data, error } = await supabase.auth.getSession();
+        // For API-based auth, check if we have a token in URL params or localStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
         
-        if (error) {
-          throw error;
-        }
-        
-        if (data.session) {
-          // Successfully authenticated, redirect to dashboard
+        if (token) {
+          // Store the token and redirect to dashboard
+          localStorage.setItem('authToken', token);
           navigate('/dashboard', { replace: true });
         } else {
-          // No session found, redirect to login
-          navigate('/login', { replace: true });
+          // Check if already authenticated
+          const existingToken = localStorage.getItem('authToken');
+          if (existingToken) {
+            navigate('/dashboard', { replace: true });
+          } else {
+            navigate('/login', { replace: true });
+          }
         }
       } catch (err: any) {
         console.error('Auth callback error:', err);

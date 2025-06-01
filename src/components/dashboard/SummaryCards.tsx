@@ -1,11 +1,11 @@
 
 import React from 'react';
 import { DollarSign, TrendingUp, CreditCard, ArrowDownRight, ArrowUpRight } from "lucide-react";
-import { useSupabaseFinancialData } from '@/hooks/useSupabaseFinancialData';
+import { useApiFinancialData } from '@/hooks/useApiFinancialData';
 import { useSettings } from '@/hooks/useSettings';
 
 const SummaryCards = () => {
-  const { invoices, expenses, calculateFinancialMetrics } = useSupabaseFinancialData();
+  const { calculateFinancialMetrics } = useApiFinancialData();
   const { businessSettings } = useSettings();
   const currency = businessSettings?.default_currency || 'USD';
   

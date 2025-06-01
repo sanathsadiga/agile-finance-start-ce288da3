@@ -4,14 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResponsiveContainer, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useSupabaseFinancialData } from '@/hooks/useSupabaseFinancialData';
+import { useApiFinancialData } from '@/hooks/useApiFinancialData';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useSettings } from '@/hooks/useSettings';
 
 const DashboardCharts = () => {
   const [timePeriod, setTimePeriod] = useState('6months');
   const [chartType, setChartType] = useState('bar');
-  const { calculateFinancialMetrics } = useSupabaseFinancialData();
+  const { calculateFinancialMetrics } = useApiFinancialData();
   const { monthlyData } = calculateFinancialMetrics();
   const { expenses } = useExpenses();
   const { businessSettings } = useSettings();

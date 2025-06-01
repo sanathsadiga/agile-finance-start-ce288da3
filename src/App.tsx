@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
-import { checkSupabaseConnection, supabase, initializeDatabase } from "./lib/supabase/database";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -24,20 +23,9 @@ import ContactUs from "./pages/ContactUsPage";
 import Blog from "./pages/BlogPage";
 import Community from "./pages/Community";
 import Documentation from "./pages/Documentation";
-import AuthCallback from "./pages/AuthCallback";
 import ScrollToTop from './components/ScrollToTop';
 import PricingPage from './pages/pricingpage';
 import FeaturesPage from './pages/features';
-// Admin pages
-import AdminLogin from "./pages/admin/Login";
-import AdminLayout from "./components/admin/AdminLayout";
-import AdminDashboard from "./pages/admin/Dashboard";
-import BlogManager from "./pages/admin/BlogManager";
-import DocsManager from "./pages/admin/DocsManager";
-import UserManager from "./pages/admin/UserManager";
-import SubscriptionManager from "./pages/admin/SubscriptionManager";
-import AdminSettings from "./pages/admin/AdminSettings";
-
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,25 +38,7 @@ const queryClient = new QueryClient({
 
 const App = () => {
   useEffect(() => {
-    // Check Supabase connection and initialize database on app startup
-    const checkConnection = async () => {
-      console.log('Supabase object:', supabase ? 'Initialized' : 'Not initialized');
-
-      try {
-        const isConnected = await checkSupabaseConnection();
-        if (isConnected) {
-          console.log('✅ Supabase connection successful!');
-          // Initialize database and check RLS policies
-          await initializeDatabase();
-        } else {
-          console.error('❌ Supabase connection failed. Check your environment variables.');
-        }
-      } catch (error) {
-        console.error('Error during connection check:', error);
-      }
-    };
-
-    checkConnection();
+    console.log('App initialized with API-based backend');
   }, []);
 
   return (
@@ -83,7 +53,6 @@ const App = () => {
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
-              <Route path="/auth/callback" element={<AuthCallback />} />
               <Route
                 path="/dashboard"
                 element={
@@ -157,34 +126,14 @@ const App = () => {
                   </ProtectedRoute>
                 }
               />
-              <Route path="/aboutus"
-                element={<Aboutus />} />
-              <Route path="/contactus"
-                element={<ContactUs />} />
-              <Route path="/blog"
-                element={<Blog />} />
-              <Route path="/blog/:slug"
-                element={<Blog />} />
-              <Route path="/community"
-                element={<Community />} />
-              <Route path="/documentation"
-                element={<Documentation />} />
-              <Route path="/pricing"
-                element={<PricingPage />} />
-                <Route path="/features"
-                element={<FeaturesPage />} />
-              {/* Admin Routes */}
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="blogs" element={<BlogManager />} />
-                <Route path="documentation" element={<DocsManager />} />
-                <Route path="users" element={<UserManager />} />
-                <Route path="subscriptions" element={<SubscriptionManager />} />
-                <Route path="settings" element={<AdminSettings />} />
-              </Route>
+              <Route path="/aboutus" element={<Aboutus />} />
+              <Route path="/contactus" element={<ContactUs />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:slug" element={<Blog />} />
+              <Route path="/community" element={<Community />} />
+              <Route path="/documentation" element={<Documentation />} />
+              <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/features" element={<FeaturesPage />} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>
