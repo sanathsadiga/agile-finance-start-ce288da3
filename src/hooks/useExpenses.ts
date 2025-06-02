@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { expenseService, Expense } from '@/services/expenseService';
 import { useToast } from '@/hooks/use-toast';
 
-export { Expense } from '@/services/expenseService';
+export type { Expense } from '@/services/expenseService';
 
 export const useExpenses = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);

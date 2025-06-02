@@ -11,16 +11,18 @@ interface User {
   companyName?: string;
 }
 
+export interface SignupData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  companyName?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<{ error?: string }>;
-  signup: (userData: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-    companyName?: string;
-  }) => Promise<{ error?: string }>;
+  signup: (userData: SignupData) => Promise<{ error?: string }>;
   signInWithGoogle: () => Promise<{ error?: string }>;
   logout: () => Promise<void>;
   loading: boolean;
@@ -69,13 +71,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const signup = async (userData: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-    companyName?: string;
-  }) => {
+  const signup = async (userData: SignupData) => {
     try {
       setLoading(true);
       const response = await authService.signup(userData);

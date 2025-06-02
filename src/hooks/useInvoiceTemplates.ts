@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 export interface InvoiceTemplate {
   id: string;
   name: string;
+  description?: string;
   is_default: boolean;
-  style_config: {
+  styles: {
     fontFamily: string;
     fontSize: string;
     primaryColor: string;
@@ -14,141 +15,147 @@ export interface InvoiceTemplate {
     headerAlignment: string;
     logoPosition: string;
     tableStyle: string;
+    borderStyle?: string;
   };
-  content_config: {
-    headerText: string;
-    footerText: string;
-    notesLabel: string;
-    termsLabel: string;
-    discountLabel: string;
+  layout: {
+    showLogo: boolean;
+    showCompanyInfo: boolean;
+    showBillTo: boolean;
+    showDates: boolean;
+    showItemTable: boolean;
+    showNotes: boolean;
+    showTerms: boolean;
   };
-  layout_config: {
-    header: boolean;
-    logo: boolean;
-    businessInfo: boolean;
-    clientInfo: boolean;
-    invoiceInfo: boolean;
-    itemTable: boolean;
-    summary: boolean;
-    discounts: boolean;
-    notes: boolean;
-    footer: boolean;
-  };
-  logo?: string;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export const useInvoiceTemplates = () => {
   const [templates, setTemplates] = useState<InvoiceTemplate[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentTemplate, setCurrentTemplate] = useState<InvoiceTemplate | null>(null);
-
-  // Mock default template
-  const defaultTemplate: InvoiceTemplate = {
-    id: 'default',
-    name: 'Default Template',
-    is_default: true,
-    style_config: {
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentTemplate, setCurrentTemplate] = useState<InvoiceTemplate>({
+    id: '',
+    name: '',
+    is_default: false,
+    styles: {
       fontFamily: 'Inter',
       fontSize: '14px',
-      primaryColor: '#9b87f5',
-      secondaryColor: '#f3f4f6',
-      textColor: '#1f2937',
+      primaryColor: '#000000',
+      secondaryColor: '#666666',
+      textColor: '#000000',
       headerAlignment: 'left',
       logoPosition: 'left',
-      tableStyle: 'bordered',
+      tableStyle: 'modern',
+      borderStyle: 'solid',
     },
-    content_config: {
-      headerText: 'INVOICE',
-      footerText: 'Thank you for your business!',
-      notesLabel: 'Notes',
-      termsLabel: 'Terms & Conditions',
-      discountLabel: 'Discount',
+    layout: {
+      showLogo: true,
+      showCompanyInfo: true,
+      showBillTo: true,
+      showDates: true,
+      showItemTable: true,
+      showNotes: true,
+      showTerms: true,
     },
-    layout_config: {
-      header: true,
-      logo: true,
-      businessInfo: true,
-      clientInfo: true,
-      invoiceInfo: true,
-      itemTable: true,
-      summary: true,
-      discounts: true,
-      notes: true,
-      footer: true,
-    },
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
+  });
 
+  // Load templates on mount
   useEffect(() => {
-    // Load templates from localStorage or set default
-    const savedTemplates = localStorage.getItem('invoiceTemplates');
-    if (savedTemplates) {
-      setTemplates(JSON.parse(savedTemplates));
-    } else {
-      setTemplates([defaultTemplate]);
-    }
+    loadTemplates();
   }, []);
 
-  const saveTemplate = async (template: InvoiceTemplate) => {
-    const updatedTemplates = templates.map(t => 
-      t.id === template.id ? template : t
-    );
-    setTemplates(updatedTemplates);
-    localStorage.setItem('invoiceTemplates', JSON.stringify(updatedTemplates));
+  const loadTemplates = async () => {
+    setIsLoading(true);
+    try {
+      // Mock templates for now - replace with API call
+      const mockTemplates: InvoiceTemplate[] = [
+        {
+          id: '1',
+          name: 'Modern',
+          description: 'Clean and modern template',
+          is_default: true,
+          styles: {
+            fontFamily: 'Inter',
+            fontSize: '14px',
+            primaryColor: '#000000',
+            secondaryColor: '#666666',
+            textColor: '#000000',
+            headerAlignment: 'left',
+            logoPosition: 'left',
+            tableStyle: 'modern',
+            borderStyle: 'solid',
+          },
+          layout: {
+            showLogo: true,
+            showCompanyInfo: true,
+            showBillTo: true,
+            showDates: true,
+            showItemTable: true,
+            showNotes: true,
+            showTerms: true,
+          },
+        },
+      ];
+      
+      setTemplates(mockTemplates);
+    } catch (error) {
+      console.error('Error loading templates:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const createTemplate = async (template: Omit<InvoiceTemplate, 'id' | 'created_at' | 'updated_at'>) => {
-    const newTemplate: InvoiceTemplate = {
-      ...template,
-      id: Date.now().toString(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    
-    const updatedTemplates = [...templates, newTemplate];
-    setTemplates(updatedTemplates);
-    localStorage.setItem('invoiceTemplates', JSON.stringify(updatedTemplates));
-    return newTemplate;
+  const addTemplate = async (template: Omit<InvoiceTemplate, 'id'>) => {
+    try {
+      const newTemplate = {
+        ...template,
+        id: Date.now().toString(),
+      };
+      setTemplates(prev => [...prev, newTemplate]);
+      return newTemplate;
+    } catch (error) {
+      console.error('Error adding template:', error);
+      throw error;
+    }
+  };
+
+  const updateTemplate = async (id: string, template: Partial<InvoiceTemplate>) => {
+    try {
+      setTemplates(prev => 
+        prev.map(t => t.id === id ? { ...t, ...template } : t)
+      );
+    } catch (error) {
+      console.error('Error updating template:', error);
+      throw error;
+    }
   };
 
   const deleteTemplate = async (id: string) => {
-    const updatedTemplates = templates.filter(t => t.id !== id);
-    setTemplates(updatedTemplates);
-    localStorage.setItem('invoiceTemplates', JSON.stringify(updatedTemplates));
+    try {
+      setTemplates(prev => prev.filter(t => t.id !== id));
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      throw error;
+    }
   };
 
   const setDefaultTemplate = async (id: string) => {
-    const updatedTemplates = templates.map(t => ({
-      ...t,
-      is_default: t.id === id
-    }));
-    setTemplates(updatedTemplates);
-    localStorage.setItem('invoiceTemplates', JSON.stringify(updatedTemplates));
-  };
-
-  const duplicateTemplate = async (id: string) => {
-    const originalTemplate = templates.find(t => t.id === id);
-    if (originalTemplate) {
-      const duplicatedTemplate: InvoiceTemplate = {
-        ...originalTemplate,
-        id: Date.now().toString(),
-        name: `${originalTemplate.name} (Copy)`,
-        is_default: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      
-      const updatedTemplates = [...templates, duplicatedTemplate];
-      setTemplates(updatedTemplates);
-      localStorage.setItem('invoiceTemplates', JSON.stringify(updatedTemplates));
+    try {
+      setTemplates(prev => 
+        prev.map(t => ({ ...t, is_default: t.id === id }))
+      );
+    } catch (error) {
+      console.error('Error setting default template:', error);
+      throw error;
     }
   };
 
   const getDefaultTemplate = () => {
-    return templates.find(t => t.is_default) || defaultTemplate;
+    return templates.find(t => t.is_default) || templates[0];
+  };
+
+  const fetchTemplates = async () => {
+    return loadTemplates();
   };
 
   return {
@@ -156,11 +163,11 @@ export const useInvoiceTemplates = () => {
     isLoading,
     currentTemplate,
     setCurrentTemplate,
-    saveTemplate,
-    createTemplate,
+    addTemplate,
+    updateTemplate,
     deleteTemplate,
     setDefaultTemplate,
-    duplicateTemplate,
     getDefaultTemplate,
+    fetchTemplates,
   };
 };

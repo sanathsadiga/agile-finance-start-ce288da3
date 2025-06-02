@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,7 +78,9 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
   useEffect(() => {
     if (invoiceSettings && issueDate && !initialSetupDone) {
       console.log('InvoiceForm: Setting due date based on invoice settings');
-      const paymentTerms = invoiceSettings.default_payment_terms || 30;
+      const paymentTerms = typeof invoiceSettings.default_payment_terms === 'number' 
+        ? invoiceSettings.default_payment_terms 
+        : parseInt(invoiceSettings.default_payment_terms || '30', 10);
       setDueDate(addDays(issueDate, paymentTerms));
     }
   }, [invoiceSettings, issueDate, initialSetupDone]);
@@ -88,7 +89,9 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
   useEffect(() => {
     if (initialSetupDone && issueDate && invoiceSettings) {
       console.log('InvoiceForm: Updating due date after issue date change');
-      const paymentTerms = invoiceSettings.default_payment_terms || 30;
+      const paymentTerms = typeof invoiceSettings.default_payment_terms === 'number' 
+        ? invoiceSettings.default_payment_terms 
+        : parseInt(invoiceSettings.default_payment_terms || '30', 10);
       setDueDate(addDays(issueDate, paymentTerms));
     }
   }, [issueDate, initialSetupDone, invoiceSettings]);
@@ -99,7 +102,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
     ? (subtotal * (discountValue / 100)) 
     : discountValue;
   const subtotalAfterDiscount = subtotal - discountAmount;
-  const taxRate = taxSettings?.tax_enabled ? (taxSettings?.default_tax_rate / 100) : 0;
+  const taxRate = taxSettings?.tax_enabled ? ((taxSettings?.default_tax_rate || 0) / 100) : 0;
   const taxAmount = subtotalAfterDiscount * taxRate;
   const total = subtotalAfterDiscount + taxAmount;
 

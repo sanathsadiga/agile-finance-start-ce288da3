@@ -1,10 +1,10 @@
+
 import React, { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings, BusinessSettings, AccountSettings, InvoiceSettings, TaxSettings } from "@/hooks/useSettings";
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardHeader from '@/components/layout/DashboardHeader';
-import { checkEmailConfirmation } from '@/lib/supabase/database';
 
 // Import our extracted components
 import BusinessSettingsForm from '@/components/settings/BusinessSettingsForm';
@@ -20,6 +20,10 @@ const Settings = () => {
   const { 
     isLoading, 
     isSaving,
+    businessSettings,
+    accountSettings,
+    invoiceSettings,
+    taxSettings,
     updateBusinessSettings, 
     updateAccountSettings, 
     updateInvoiceSettings,
@@ -29,7 +33,7 @@ const Settings = () => {
     fetchTaxSettings
   } = useSettings();
 
-  const [emailConfirmed, setEmailConfirmed] = useState<boolean>(false);
+  const [emailConfirmed, setEmailConfirmed] = useState<boolean>(true); // Mock as confirmed for now
   const [lastLoadTime, setLastLoadTime] = useState<Date>(new Date());
 
   const [businessData, setBusinessData] = useState<BusinessSettings>({
@@ -61,7 +65,7 @@ const Settings = () => {
     tax_enabled: false,
     default_tax_rate: 10,
     tax_name: 'Sales Tax',
-    tax_registration_number: null
+    tax_registration_number: ''
   });
 
   // Fix infinite loop by only loading settings once or when user changes
@@ -72,10 +76,8 @@ const Settings = () => {
       console.log('[SETTINGS] Loading user settings');
       
       try {
-        // Check if email is confirmed
-        const isConfirmed = await checkEmailConfirmation(user.id);
-        console.log('[SETTINGS] Email confirmation status:', isConfirmed);
-        setEmailConfirmed(isConfirmed);
+        // Mock email confirmation as true for now
+        setEmailConfirmed(true);
         
         // Load user profile data
         const profile = await fetchUserProfile();
@@ -83,22 +85,22 @@ const Settings = () => {
         if (profile) {
           // Update business data
           setBusinessData({
-            company_name: profile.company_name || '',
-            business_phone: profile.business_phone || '',
-            business_website: profile.business_website || '',
-            business_address: profile.business_address || '',
-            business_city: profile.business_city || '',
-            business_state: profile.business_state || '',
-            business_postal_code: profile.business_postal_code || '',
-            business_country: profile.business_country || '',
-            default_currency: profile.default_currency || 'usd'
+            company_name: businessSettings.company_name || '',
+            business_phone: businessSettings.business_phone || '',
+            business_website: businessSettings.business_website || '',
+            business_address: businessSettings.business_address || '',
+            business_city: businessSettings.business_city || '',
+            business_state: businessSettings.business_state || '',
+            business_postal_code: businessSettings.business_postal_code || '',
+            business_country: businessSettings.business_country || '',
+            default_currency: businessSettings.default_currency || 'usd'
           });
           
           // Update account data
           setAccountData({
-            first_name: profile.first_name,
-            last_name: profile.last_name,
-            email: profile.email
+            first_name: accountSettings.first_name,
+            last_name: accountSettings.last_name,
+            email: accountSettings.email
           });
         } else if (user) {
           // Fallback to user context if we can't fetch from database
@@ -117,26 +119,26 @@ const Settings = () => {
         }
         
         // Load invoice settings
-        const invoiceSettings = await fetchInvoiceSettings();
-        if (invoiceSettings) {
+        const invoiceSettingsData = await fetchInvoiceSettings();
+        if (invoiceSettingsData) {
           setInvoiceData({
-            invoice_prefix: invoiceSettings.invoice_prefix || 'INV-',
-            next_invoice_number: invoiceSettings.next_invoice_number || 1001,
-            default_payment_terms: invoiceSettings.default_payment_terms || 30,
-            auto_reminders: invoiceSettings.auto_reminders || false,
-            notes_default: invoiceSettings.notes_default || null,
-            terms_default: invoiceSettings.terms_default || null
+            invoice_prefix: invoiceSettingsData.invoice_prefix || 'INV-',
+            next_invoice_number: invoiceSettingsData.next_invoice_number || 1001,
+            default_payment_terms: invoiceSettingsData.default_payment_terms || 30,
+            auto_reminders: invoiceSettingsData.auto_reminders || false,
+            notes_default: invoiceSettingsData.notes_default || '',
+            terms_default: invoiceSettingsData.terms_default || ''
           });
         }
         
         // Load tax settings
-        const taxSettings = await fetchTaxSettings();
-        if (taxSettings) {
+        const taxSettingsData = await fetchTaxSettings();
+        if (taxSettingsData) {
           setTaxData({
-            tax_enabled: taxSettings.tax_enabled || false,
-            default_tax_rate: taxSettings.default_tax_rate || 10,
-            tax_name: taxSettings.tax_name || 'Sales Tax',
-            tax_registration_number: taxSettings.tax_registration_number || null
+            tax_enabled: taxSettingsData.tax_enabled || false,
+            default_tax_rate: taxSettingsData.default_tax_rate || 10,
+            tax_name: taxSettingsData.tax_name || 'Sales Tax',
+            tax_registration_number: taxSettingsData.tax_registration_number || ''
           });
         }
         

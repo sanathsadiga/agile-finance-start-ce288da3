@@ -22,9 +22,14 @@ export interface BusinessSettings {
 export interface InvoiceSettings {
   invoice_number_prefix?: string;
   invoice_number_format?: string;
-  default_payment_terms?: string;
+  default_payment_terms?: string | number;
   default_notes?: string;
   auto_send_reminders?: boolean;
+  invoice_prefix?: string;
+  next_invoice_number?: number;
+  auto_reminders?: boolean;
+  notes_default?: string;
+  terms_default?: string;
 }
 
 export interface TaxSettings {
@@ -32,6 +37,10 @@ export interface TaxSettings {
   tax_rate?: number;
   tax_label?: string;
   apply_tax_by_default?: boolean;
+  tax_enabled?: boolean;
+  default_tax_rate?: number;
+  tax_name?: string;
+  tax_registration_number?: string;
 }
 
 export const useSettings = () => {
@@ -56,9 +65,14 @@ export const useSettings = () => {
   const [invoiceSettings, setInvoiceSettings] = useState<InvoiceSettings>({
     invoice_number_prefix: 'INV',
     invoice_number_format: 'sequential',
-    default_payment_terms: '30',
+    default_payment_terms: 30,
     default_notes: '',
     auto_send_reminders: false,
+    invoice_prefix: 'INV-',
+    next_invoice_number: 1001,
+    auto_reminders: false,
+    notes_default: '',
+    terms_default: '',
   });
 
   const [taxSettings, setTaxSettings] = useState<TaxSettings>({
@@ -66,6 +80,10 @@ export const useSettings = () => {
     tax_rate: 0,
     tax_label: 'Tax',
     apply_tax_by_default: false,
+    tax_enabled: false,
+    default_tax_rate: 10,
+    tax_name: 'Sales Tax',
+    tax_registration_number: '',
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -98,6 +116,10 @@ export const useSettings = () => {
     try {
       localStorage.setItem('accountSettings', JSON.stringify(settings));
       setAccountSettings(settings);
+      return true;
+    } catch (error) {
+      console.error('Error saving account settings:', error);
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -108,6 +130,10 @@ export const useSettings = () => {
     try {
       localStorage.setItem('businessSettings', JSON.stringify(settings));
       setBusinessSettings(settings);
+      return true;
+    } catch (error) {
+      console.error('Error saving business settings:', error);
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -118,6 +144,10 @@ export const useSettings = () => {
     try {
       localStorage.setItem('invoiceSettings', JSON.stringify(settings));
       setInvoiceSettings(settings);
+      return true;
+    } catch (error) {
+      console.error('Error saving invoice settings:', error);
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -128,9 +158,45 @@ export const useSettings = () => {
     try {
       localStorage.setItem('taxSettings', JSON.stringify(settings));
       setTaxSettings(settings);
+      return true;
+    } catch (error) {
+      console.error('Error saving tax settings:', error);
+      return false;
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Additional methods expected by Settings page
+  const updateBusinessSettings = async (settings: BusinessSettings) => {
+    return await saveBusinessSettings(settings);
+  };
+
+  const updateAccountSettings = async (settings: AccountSettings) => {
+    return await saveAccountSettings(settings);
+  };
+
+  const updateInvoiceSettings = async (settings: InvoiceSettings) => {
+    return await saveInvoiceSettings(settings);
+  };
+
+  const updateTaxSettings = async (settings: TaxSettings) => {
+    return await saveTaxSettings(settings);
+  };
+
+  const fetchUserProfile = async () => {
+    // Mock implementation - replace with actual API call
+    return accountSettings;
+  };
+
+  const fetchInvoiceSettings = async () => {
+    // Mock implementation - replace with actual API call
+    return invoiceSettings;
+  };
+
+  const fetchTaxSettings = async () => {
+    // Mock implementation - replace with actual API call
+    return taxSettings;
   };
 
   return {
@@ -144,5 +210,12 @@ export const useSettings = () => {
     saveBusinessSettings,
     saveInvoiceSettings,
     saveTaxSettings,
+    updateBusinessSettings,
+    updateAccountSettings,
+    updateInvoiceSettings,
+    updateTaxSettings,
+    fetchUserProfile,
+    fetchInvoiceSettings,
+    fetchTaxSettings,
   };
 };

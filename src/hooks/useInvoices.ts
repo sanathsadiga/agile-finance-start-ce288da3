@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { invoiceService, Invoice } from '@/services/invoiceService';
 import { useToast } from '@/hooks/use-toast';
 
-export { Invoice } from '@/services/invoiceService';
+export type { Invoice } from '@/services/invoiceService';
 
 export const useInvoices = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -93,63 +93,18 @@ export const useInvoices = () => {
     }
   }, [toast]);
 
-  const handleConfirmDelete = useCallback(async (id: string) => {
+  const getInvoice = useCallback(async (id: string) => {
     try {
-      await deleteInvoice(id);
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }, [deleteInvoice]);
-
-  const sendInvoice = useCallback(async (id: string) => {
-    try {
-      await invoiceService.sendInvoice(id);
-      toast({
-        title: 'Invoice sent',
-        description: 'Your invoice has been sent successfully.',
-      });
-      return true;
+      return await invoiceService.getInvoice(id);
     } catch (error: any) {
       toast({
-        title: 'Failed to send invoice',
-        description: error.message || 'Could not send invoice',
+        title: 'Failed to load invoice',
+        description: error.message || 'Could not load invoice',
         variant: 'destructive',
       });
-      return false;
+      throw error;
     }
   }, [toast]);
-
-  const generatePDF = useCallback(async (id: string) => {
-    try {
-      const blob = await invoiceService.generatePDF(id);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `invoice-${id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      return true;
-    } catch (error: any) {
-      toast({
-        title: 'Failed to generate PDF',
-        description: error.message || 'Could not generate PDF',
-        variant: 'destructive',
-      });
-      return false;
-    }
-  }, [toast]);
-
-  const printInvoice = useCallback((id: string) => {
-    try {
-      window.print();
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }, []);
 
   return {
     invoices,
@@ -158,9 +113,6 @@ export const useInvoices = () => {
     addInvoice,
     updateInvoice,
     deleteInvoice,
-    handleConfirmDelete,
-    sendInvoice,
-    generatePDF,
-    printInvoice,
+    getInvoice,
   };
 };
