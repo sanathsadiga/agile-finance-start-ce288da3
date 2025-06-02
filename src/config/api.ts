@@ -3,7 +3,7 @@
 export const API_CONFIG = {
   // Base URL for your Java Spring backend
   // Update this to match your Spring Boot server
-  BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:8080/api',
+  BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api',
   
   // Endpoints
   ENDPOINTS: {
