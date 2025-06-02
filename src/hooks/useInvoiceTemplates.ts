@@ -6,7 +6,19 @@ export interface InvoiceTemplate {
   name: string;
   description?: string;
   is_default: boolean;
-  styles: {
+  layout_config: {
+    header: boolean;
+    logo: boolean;
+    businessInfo: boolean;
+    clientInfo: boolean;
+    invoiceInfo: boolean;
+    itemTable: boolean;
+    discounts: boolean;
+    summary: boolean;
+    notes: boolean;
+    footer: boolean;
+  };
+  style_config: {
     fontFamily: string;
     fontSize: string;
     primaryColor: string;
@@ -17,15 +29,14 @@ export interface InvoiceTemplate {
     tableStyle: string;
     borderStyle?: string;
   };
-  layout: {
-    showLogo: boolean;
-    showCompanyInfo: boolean;
-    showBillTo: boolean;
-    showDates: boolean;
-    showItemTable: boolean;
-    showNotes: boolean;
-    showTerms: boolean;
+  content_config: {
+    headerText: string;
+    footerText: string;
+    notesLabel: string;
+    termsLabel: string;
+    discountLabel: string;
   };
+  logo?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -37,7 +48,19 @@ export const useInvoiceTemplates = () => {
     id: '',
     name: '',
     is_default: false,
-    styles: {
+    layout_config: {
+      header: true,
+      logo: true,
+      businessInfo: true,
+      clientInfo: true,
+      invoiceInfo: true,
+      itemTable: true,
+      discounts: true,
+      summary: true,
+      notes: true,
+      footer: true,
+    },
+    style_config: {
       fontFamily: 'Inter',
       fontSize: '14px',
       primaryColor: '#000000',
@@ -48,14 +71,12 @@ export const useInvoiceTemplates = () => {
       tableStyle: 'modern',
       borderStyle: 'solid',
     },
-    layout: {
-      showLogo: true,
-      showCompanyInfo: true,
-      showBillTo: true,
-      showDates: true,
-      showItemTable: true,
-      showNotes: true,
-      showTerms: true,
+    content_config: {
+      headerText: 'INVOICE',
+      footerText: 'Thank you for your business',
+      notesLabel: 'Notes',
+      termsLabel: 'Terms & Conditions',
+      discountLabel: 'Discount',
     },
   });
 
@@ -74,7 +95,19 @@ export const useInvoiceTemplates = () => {
           name: 'Modern',
           description: 'Clean and modern template',
           is_default: true,
-          styles: {
+          layout_config: {
+            header: true,
+            logo: true,
+            businessInfo: true,
+            clientInfo: true,
+            invoiceInfo: true,
+            itemTable: true,
+            discounts: true,
+            summary: true,
+            notes: true,
+            footer: true,
+          },
+          style_config: {
             fontFamily: 'Inter',
             fontSize: '14px',
             primaryColor: '#000000',
@@ -85,14 +118,12 @@ export const useInvoiceTemplates = () => {
             tableStyle: 'modern',
             borderStyle: 'solid',
           },
-          layout: {
-            showLogo: true,
-            showCompanyInfo: true,
-            showBillTo: true,
-            showDates: true,
-            showItemTable: true,
-            showNotes: true,
-            showTerms: true,
+          content_config: {
+            headerText: 'INVOICE',
+            footerText: 'Thank you for your business',
+            notesLabel: 'Notes',
+            termsLabel: 'Terms & Conditions',
+            discountLabel: 'Discount',
           },
         },
       ];
@@ -139,6 +170,25 @@ export const useInvoiceTemplates = () => {
     }
   };
 
+  const duplicateTemplate = async (id: string) => {
+    try {
+      const templateToDuplicate = templates.find(t => t.id === id);
+      if (templateToDuplicate) {
+        const duplicatedTemplate = {
+          ...templateToDuplicate,
+          id: Date.now().toString(),
+          name: `${templateToDuplicate.name} (Copy)`,
+          is_default: false,
+        };
+        setTemplates(prev => [...prev, duplicatedTemplate]);
+        return duplicatedTemplate;
+      }
+    } catch (error) {
+      console.error('Error duplicating template:', error);
+      throw error;
+    }
+  };
+
   const setDefaultTemplate = async (id: string) => {
     try {
       setTemplates(prev => 
@@ -166,6 +216,7 @@ export const useInvoiceTemplates = () => {
     addTemplate,
     updateTemplate,
     deleteTemplate,
+    duplicateTemplate,
     setDefaultTemplate,
     getDefaultTemplate,
     fetchTemplates,

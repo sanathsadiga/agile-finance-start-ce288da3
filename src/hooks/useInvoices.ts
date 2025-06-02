@@ -106,6 +106,81 @@ export const useInvoices = () => {
     }
   }, [toast]);
 
+  const sendInvoice = useCallback(async (id: string) => {
+    try {
+      await invoiceService.sendInvoice(id);
+      toast({
+        title: 'Invoice sent',
+        description: 'Your invoice has been sent successfully.',
+      });
+      return true;
+    } catch (error: any) {
+      toast({
+        title: 'Failed to send invoice',
+        description: error.message || 'Could not send invoice',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  }, [toast]);
+
+  const generatePDF = useCallback(async (id: string) => {
+    try {
+      const blob = await invoiceService.generatePDF(id);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice-${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: 'PDF generated',
+        description: 'Your invoice PDF has been downloaded.',
+      });
+      return true;
+    } catch (error: any) {
+      toast({
+        title: 'Failed to generate PDF',
+        description: error.message || 'Could not generate PDF',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  }, [toast]);
+
+  const printInvoice = useCallback((id: string) => {
+    try {
+      // Open a new window with the invoice for printing
+      const printWindow = window.open(`/invoice/${id}/print`, '_blank');
+      if (printWindow) {
+        printWindow.focus();
+        printWindow.print();
+        return true;
+      }
+      return false;
+    } catch (error: any) {
+      toast({
+        title: 'Failed to print invoice',
+        description: error.message || 'Could not print invoice',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  }, [toast]);
+
+  const handleConfirmDelete = useCallback(async (id: string) => {
+    try {
+      await deleteInvoice(id);
+      return true;
+    } catch (error) {
+      console.error('Error deleting invoice:', error);
+      return false;
+    }
+  }, [deleteInvoice]);
+
   return {
     invoices,
     isLoading,
@@ -114,5 +189,9 @@ export const useInvoices = () => {
     updateInvoice,
     deleteInvoice,
     getInvoice,
+    sendInvoice,
+    generatePDF,
+    printInvoice,
+    handleConfirmDelete,
   };
 };

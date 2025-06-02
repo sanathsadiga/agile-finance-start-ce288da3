@@ -157,9 +157,43 @@ const InvoiceTemplateEditor = () => {
         defaultTemplateCreated.current = true; // Set flag to prevent multiple creation attempts
         
         try {
-          const defaultName = "Default Template";
-          console.log("TemplateEditor: Creating default template:", defaultName);
-          const createdTemplate = await addTemplate(defaultName);
+          const defaultTemplateData = {
+            name: "Default Template",
+            is_default: true,
+            layout_config: {
+              header: true,
+              logo: true,
+              businessInfo: true,
+              clientInfo: true,
+              invoiceInfo: true,
+              itemTable: true,
+              discounts: true,
+              summary: true,
+              notes: true,
+              footer: true,
+            },
+            style_config: {
+              fontFamily: 'Inter, sans-serif',
+              fontSize: '16px',
+              primaryColor: '#6366f1',
+              secondaryColor: '#f3f4f6',
+              textColor: '#111827',
+              borderStyle: '1px solid #e5e7eb',
+              headerAlignment: 'left',
+              logoPosition: 'left',
+              tableStyle: 'bordered'
+            },
+            content_config: {
+              headerText: 'INVOICE',
+              footerText: 'Thank you for your business',
+              notesLabel: 'Notes',
+              termsLabel: 'Terms & Conditions',
+              discountLabel: 'Discount'
+            },
+          };
+          
+          console.log("TemplateEditor: Creating default template:", defaultTemplateData);
+          const createdTemplate = await addTemplate(defaultTemplateData);
           console.log("TemplateEditor: Default template created successfully:", createdTemplate);
           
           toast({
@@ -214,9 +248,11 @@ const InvoiceTemplateEditor = () => {
       } else {
         // Create new template
         console.log('TemplateEditor: Creating new template');
-        const newTemplate = await addTemplate(name);
+        const newTemplate = await addTemplate({
+          ...templateData,
+          is_default: false,
+        });
         console.log('TemplateEditor: New template created:', newTemplate);
-        await updateTemplate(newTemplate.id, templateData);
         toast({
           title: "Template created",
           description: `${name} has been created successfully.`,
