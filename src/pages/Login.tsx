@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface LoginFormData {
   email: string;
@@ -19,6 +19,8 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const { toast } = useToast();
+  const { login, signInWithGoogle } = useAuth();
+  const navigate = useNavigate();
   const { 
     register, 
     handleSubmit, 
@@ -28,32 +30,25 @@ const Login = () => {
   const onSubmit = async (data: LoginFormData) => {
     setLoading(true);
     try {
-      // TODO: Replace with Java Spring API call
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Login failed');
+      const result = await login(data.email, data.password);
+      
+      if (result.error) {
+        toast({
+          title: 'Login failed',
+          description: result.error,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Login successful',
+          description: 'Welcome back!',
+        });
+        navigate('/dashboard');
       }
-
-      const result = await response.json();
-      // TODO: Handle successful login (store token, redirect, etc.)
-      toast({
-        title: 'Login successful',
-        description: 'Welcome back!',
-      });
     } catch (err) {
       toast({
         title: 'Login failed',
-        description: 'Invalid credentials',
+        description: 'An unexpected error occurred',
         variant: 'destructive',
       });
     } finally {
@@ -64,19 +59,21 @@ const Login = () => {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
-      // TODO: Replace with Java Spring API call for Google OAuth
-      const response = await fetch('/api/auth/google', {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        throw new Error('Google sign-in failed');
+      const result = await signInWithGoogle();
+      
+      if (result.error) {
+        toast({
+          title: 'Google sign-in failed',
+          description: result.error,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Google sign-in successful',
+          description: 'Welcome!',
+        });
+        navigate('/dashboard');
       }
-
-      toast({
-        title: 'Google sign-in successful',
-        description: 'Welcome!',
-      });
     } catch (err) {
       toast({
         title: 'Google sign-in failed',

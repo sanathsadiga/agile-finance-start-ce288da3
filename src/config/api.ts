@@ -3,29 +3,29 @@
 export const API_CONFIG = {
   // Base URL for your Java Spring backend
   // Update this to match your Spring Boot server
-  BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api',
+  BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
   
   // Endpoints
   ENDPOINTS: {
     // Authentication
-    LOGIN: '/auth/login',
-    SIGNUP: '/auth/signup',
-    GOOGLE_AUTH: '/auth/google',
-    LOGOUT: '/auth/logout',
+    LOGIN: '/api/v1/auth/login',
+    SIGNUP: '/api/v1/auth/signup',
+    GOOGLE_AUTH: '/api/v1/auth/google',
+    LOGOUT: '/api/v1/auth/logout',
     
     // Invoices
-    INVOICES: '/invoices',
+    INVOICES: '/api/v1/invoices',
     
     // Expenses
-    EXPENSES: '/expenses',
+    EXPENSES: '/api/v1/expenses',
     
     // Blogs
-    BLOGS: '/blogs',
+    BLOGS: '/api/v1/blogs',
     
     // Admin endpoints
-    ADMIN_BLOGS: '/admin/blogs',
-    ADMIN_USERS: '/admin/users',
-    ADMIN_SUBSCRIPTIONS: '/admin/subscriptions',
+    ADMIN_BLOGS: '/api/v1/admin/blogs',
+    ADMIN_USERS: '/api/v1/admin/users',
+    ADMIN_SUBSCRIPTIONS: '/api/v1/admin/subscriptions',
   },
   
   // Request timeouts

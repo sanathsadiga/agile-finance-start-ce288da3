@@ -1,6 +1,6 @@
 
 // Base API configuration for Java Spring backend
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -16,7 +16,7 @@ async function apiRequest<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   
-  // Get token from localStorage (you'll need to implement token storage)
+  // Get token from localStorage
   const token = localStorage.getItem('authToken');
   
   const config: RequestInit = {

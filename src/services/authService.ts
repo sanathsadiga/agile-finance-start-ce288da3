@@ -16,7 +16,7 @@ export interface SignupRequest {
 
 export interface AuthResponse {
   token: string;
-  user: {
+  user?: {
     id: string;
     email: string;
     firstName: string;
@@ -28,7 +28,19 @@ export interface AuthResponse {
 export const authService = {
   // Login with email and password
   login: async (credentials: LoginRequest): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/auth/login', credentials);
+    // The backend returns just a token string, so we need to handle this
+    const token = await api.post<string>('/api/v1/auth/login', credentials);
+    
+    // Since backend only returns token, we create a minimal user object
+    const response: AuthResponse = {
+      token,
+      user: {
+        id: 'temp-id', // You might want to decode JWT or fetch user data separately
+        email: credentials.email,
+        firstName: '',
+        lastName: '',
+      }
+    };
     
     // Store token in localStorage
     localStorage.setItem('authToken', response.token);
@@ -39,7 +51,18 @@ export const authService = {
 
   // Register new user
   signup: async (userData: SignupRequest): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/auth/signup', userData);
+    const token = await api.post<string>('/api/v1/auth/signup', userData);
+    
+    const response: AuthResponse = {
+      token,
+      user: {
+        id: 'temp-id',
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        companyName: userData.companyName,
+      }
+    };
     
     // Store token in localStorage
     localStorage.setItem('authToken', response.token);
@@ -50,7 +73,17 @@ export const authService = {
 
   // Google OAuth login
   googleLogin: async (): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/auth/google');
+    const token = await api.post<string>('/api/v1/auth/google');
+    
+    const response: AuthResponse = {
+      token,
+      user: {
+        id: 'temp-id',
+        email: '',
+        firstName: '',
+        lastName: '',
+      }
+    };
     
     // Store token in localStorage
     localStorage.setItem('authToken', response.token);
@@ -62,7 +95,7 @@ export const authService = {
   // Logout
   logout: async (): Promise<void> => {
     try {
-      await api.post('/auth/logout');
+      await api.post('/api/v1/auth/logout');
     } finally {
       // Always clear local storage
       localStorage.removeItem('authToken');
