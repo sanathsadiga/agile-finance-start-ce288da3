@@ -1,4 +1,3 @@
-
 import { api } from './api';
 
 export interface LoginRequest {
@@ -12,6 +11,20 @@ export interface SignupRequest {
   email: string;
   password: string;
   companyName?: string;
+}
+
+export interface SignupEmailRequest {
+  email: string;
+}
+
+export interface SignupDetailsRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  businessName?: string;
+  otp: string;
 }
 
 export interface AuthResponse {
@@ -73,7 +86,78 @@ export const authService = {
     }
   },
 
-  // Register new user
+  // Step 1: Register with email only (generates OTP)
+  signupWithEmail: async (email: string): Promise<void> => {
+    try {
+      console.log('Sending signup email:', { email });
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/v1/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Signup failed: ${response.statusText}`);
+      }
+
+      console.log('OTP sent successfully');
+    } catch (error) {
+      console.error('Signup email error:', error);
+      throw error;
+    }
+  },
+
+  // Step 2: Verify OTP and complete signup
+  verifyOtpAndCompleteSignup: async (userData: SignupDetailsRequest): Promise<AuthResponse> => {
+    try {
+      console.log('Verifying OTP and completing signup:', { email: userData.email });
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/v1/auth/verify-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`OTP verification failed: ${response.statusText}`);
+      }
+
+      // Get the response as text first to handle plain token response
+      const responseText = await response.text();
+      console.log('Raw OTP verification response:', responseText);
+      
+      // The backend returns just the token as plain text
+      const token = responseText.trim();
+      
+      const authResponse: AuthResponse = {
+        token,
+        user: {
+          id: 'temp-id',
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          companyName: userData.businessName,
+        }
+      };
+      
+      // Store token in localStorage
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('user', JSON.stringify(authResponse.user));
+      
+      console.log('Signup completed successfully, token stored');
+      return authResponse;
+    } catch (error) {
+      console.error('OTP verification error:', error);
+      throw error;
+    }
+  },
+
+  // Register new user (legacy - keeping for compatibility)
   signup: async (userData: SignupRequest): Promise<AuthResponse> => {
     const token = await api.post<string>('/api/v1/auth/signup', userData);
     

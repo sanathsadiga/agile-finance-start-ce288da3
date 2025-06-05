@@ -23,6 +23,7 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<{ error?: string }>;
   signup: (userData: SignupData) => Promise<{ error?: string }>;
+  signupWithEmail: (email: string) => Promise<{ error?: string }>;
   signInWithGoogle: () => Promise<{ error?: string }>;
   logout: () => Promise<void>;
   loading: boolean;
@@ -62,7 +63,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       const response = await authService.login({ email, password });
-      setUser(response.user);
+      setUser(response.user || null);
       return {};
     } catch (error: any) {
       return { error: error.message || 'Login failed' };
@@ -75,10 +76,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       const response = await authService.signup(userData);
-      setUser(response.user);
+      setUser(response.user || null);
       return {};
     } catch (error: any) {
       return { error: error.message || 'Signup failed' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signupWithEmail = async (email: string) => {
+    try {
+      setLoading(true);
+      await authService.signupWithEmail(email);
+      return {};
+    } catch (error: any) {
+      return { error: error.message || 'Failed to send OTP' };
     } finally {
       setLoading(false);
     }
@@ -88,7 +101,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       const response = await authService.googleLogin();
-      setUser(response.user);
+      setUser(response.user || null);
       return {};
     } catch (error: any) {
       return { error: error.message || 'Google sign-in failed' };
@@ -117,6 +130,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     login,
     signup,
+    signupWithEmail,
     signInWithGoogle,
     logout,
     loading,

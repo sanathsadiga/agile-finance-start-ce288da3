@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import SignupDetails from "./pages/SignupDetails";
 import Invoices from "./pages/Invoices";
 import InvoiceDetail from "./pages/InvoiceDetail";
 import InvoiceTemplateEditor from "./pages/InvoiceTemplateEditor";
@@ -53,6 +54,7 @@ const App = () => {
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/signup/details" element={<SignupDetails />} />
               <Route
                 path="/dashboard"
                 element={
