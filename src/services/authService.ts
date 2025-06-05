@@ -28,25 +28,49 @@ export interface AuthResponse {
 export const authService = {
   // Login with email and password
   login: async (credentials: LoginRequest): Promise<AuthResponse> => {
-    // The backend returns just a token string, so we need to handle this
-    const token = await api.post<string>('/api/v1/auth/login', credentials);
-    
-    // Since backend only returns token, we create a minimal user object
-    const response: AuthResponse = {
-      token,
-      user: {
-        id: 'temp-id', // You might want to decode JWT or fetch user data separately
-        email: credentials.email,
-        firstName: '',
-        lastName: '',
+    try {
+      console.log('Attempting login with:', { email: credentials.email });
+      
+      // Make the API call and handle potential response formats
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Login failed: ${response.statusText}`);
       }
-    };
-    
-    // Store token in localStorage
-    localStorage.setItem('authToken', response.token);
-    localStorage.setItem('user', JSON.stringify(response.user));
-    
-    return response;
+
+      // Get the response as text first to handle plain token response
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+      
+      // The backend returns just the token as plain text
+      const token = responseText.trim();
+      
+      const authResponse: AuthResponse = {
+        token,
+        user: {
+          id: 'temp-id',
+          email: credentials.email,
+          firstName: '',
+          lastName: '',
+        }
+      };
+      
+      // Store token in localStorage
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('user', JSON.stringify(authResponse.user));
+      
+      console.log('Login successful, token stored');
+      return authResponse;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   },
 
   // Register new user
