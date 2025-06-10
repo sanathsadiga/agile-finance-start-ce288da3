@@ -1,3 +1,4 @@
+
 import { api } from './api';
 
 export interface LoginRequest {
@@ -51,13 +52,28 @@ export interface ProfileResponse {
   website: string | null;
 }
 
+// Helper function to decode JWT token and extract user info
+const decodeJWT = (token: string) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Error decoding JWT:', error);
+    return null;
+  }
+};
+
 export const authService = {
   // Login with email and password
   login: async (credentials: LoginRequest): Promise<AuthResponse> => {
     try {
       console.log('Attempting login with:', { email: credentials.email });
       
-      // Make the API call and handle potential response formats
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/v1/auth/login`, {
         method: 'POST',
         headers: {
@@ -70,17 +86,35 @@ export const authService = {
         throw new Error(`Login failed: ${response.statusText}`);
       }
 
-      // Get the response as text first to handle plain token response
       const responseText = await response.text();
       console.log('Raw response:', responseText);
       
-      // The backend returns just the token as plain text
       const token = responseText.trim();
+      
+      // Decode JWT to get user information
+      const decodedToken = decodeJWT(token);
+      console.log('Decoded token:', decodedToken);
+      
+      // Extract user ID from token - the 'sub' field typically contains the user identifier
+      let userId = 'temp-id';
+      if (decodedToken && decodedToken.sub) {
+        // If the sub contains an email, we'll need to make an API call to get the actual user ID
+        // For now, let's try to extract any numeric ID from the token
+        if (decodedToken.userId) {
+          userId = decodedToken.userId.toString();
+        } else if (decodedToken.id) {
+          userId = decodedToken.id.toString();
+        } else {
+          // If no numeric ID is found in token, we'll need to call a "me" endpoint
+          console.warn('No user ID found in token, using email as identifier for now');
+          userId = decodedToken.sub; // This might be the email
+        }
+      }
       
       const authResponse: AuthResponse = {
         token,
         user: {
-          id: 'temp-id',
+          id: userId,
           email: credentials.email,
           firstName: '',
           lastName: '',
@@ -91,12 +125,50 @@ export const authService = {
       localStorage.setItem('authToken', token);
       localStorage.setItem('user', JSON.stringify(authResponse.user));
       
-      console.log('Login successful, token stored');
+      console.log('Login successful, token stored, user ID:', userId);
       return authResponse;
     } catch (error) {
       console.error('Login error:', error);
       throw error;
     }
+  },
+
+  // Get current user info from token
+  getCurrentUserFromToken: async (): Promise<{ id: string; email: string } | null> => {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) return null;
+
+      // Try to call a "me" endpoint to get the current user's info including numeric ID
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/v1/auth/me`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        console.log('User data from /me endpoint:', userData);
+        return {
+          id: userData.id ? userData.id.toString() : 'temp-id',
+          email: userData.email || '',
+        };
+      } else {
+        // Fallback to decoding JWT
+        const decodedToken = decodeJWT(token);
+        if (decodedToken) {
+          return {
+            id: decodedToken.userId?.toString() || decodedToken.id?.toString() || 'temp-id',
+            email: decodedToken.sub || '',
+          };
+        }
+      }
+    } catch (error) {
+      console.error('Error getting user from token:', error);
+    }
+    return null;
   },
 
   // Step 1: Register with email only (generates OTP)
@@ -140,17 +212,30 @@ export const authService = {
         throw new Error(`OTP verification failed: ${response.statusText}`);
       }
 
-      // Get the response as text first to handle plain token response
       const responseText = await response.text();
       console.log('Raw OTP verification response:', responseText);
       
-      // The backend returns just the token as plain text
       const token = responseText.trim();
+      
+      // Decode JWT to get user information
+      const decodedToken = decodeJWT(token);
+      console.log('Decoded signup token:', decodedToken);
+      
+      let userId = 'temp-id';
+      if (decodedToken && decodedToken.sub) {
+        if (decodedToken.userId) {
+          userId = decodedToken.userId.toString();
+        } else if (decodedToken.id) {
+          userId = decodedToken.id.toString();
+        } else {
+          userId = decodedToken.sub;
+        }
+      }
       
       const authResponse: AuthResponse = {
         token,
         user: {
-          id: 'temp-id',
+          id: userId,
           email: userData.email,
           firstName: userData.firstName,
           lastName: userData.lastName,
@@ -162,7 +247,7 @@ export const authService = {
       localStorage.setItem('authToken', token);
       localStorage.setItem('user', JSON.stringify(authResponse.user));
       
-      console.log('Signup completed successfully, token stored');
+      console.log('Signup completed successfully, token stored, user ID:', userId);
       return authResponse;
     } catch (error) {
       console.error('OTP verification error:', error);
@@ -174,6 +259,18 @@ export const authService = {
   fetchProfile: async (userId: string): Promise<ProfileResponse> => {
     try {
       console.log('Fetching profile for user:', userId);
+      
+      // If userId is still "temp-id", try to get the real user ID first
+      if (userId === 'temp-id') {
+        const currentUser = await authService.getCurrentUserFromToken();
+        if (currentUser && currentUser.id !== 'temp-id') {
+          userId = currentUser.id;
+          // Update localStorage with the real user ID
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          user.id = userId;
+          localStorage.setItem('user', JSON.stringify(user));
+        }
+      }
       
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/v1/profile/${userId}`, {
         method: 'GET',

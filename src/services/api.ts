@@ -28,13 +28,26 @@ async function apiRequest<T>(
     ...options,
   };
 
-  const response = await fetch(url, config);
-  
-  if (!response.ok) {
-    throw new ApiError(response.status, `API request failed: ${response.statusText}`);
+  console.log('Making API request to:', url, 'with config:', config);
+
+  try {
+    const response = await fetch(url, config);
+    
+    if (!response.ok) {
+      throw new ApiError(response.status, `API request failed: ${response.statusText}`);
+    }
+    
+    // Handle empty responses
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      return response.json();
+    } else {
+      return response.text() as unknown as T;
+    }
+  } catch (error) {
+    console.error('API request failed:', error);
+    throw error;
   }
-  
-  return response.json();
 }
 
 export const api = {
