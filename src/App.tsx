@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -27,6 +26,7 @@ import Documentation from "./pages/Documentation";
 import ScrollToTop from './components/ScrollToTop';
 import PricingPage from './pages/pricingpage';
 import FeaturesPage from './pages/features';
+import Customers from "./pages/Customers";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,6 +60,14 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard/customers"
+                element={
+                  <ProtectedRoute>
+                    <Customers />
                   </ProtectedRoute>
                 }
               />

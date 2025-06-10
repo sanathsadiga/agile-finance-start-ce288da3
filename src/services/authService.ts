@@ -38,6 +38,19 @@ export interface AuthResponse {
   };
 }
 
+export interface ProfileResponse {
+  id: number;
+  businessName: string;
+  currency: string | null;
+  address: string | null;
+  phoneNumber: string | null;
+  country: string | null;
+  state: string | null;
+  city: string | null;
+  zipCode: string | null;
+  website: string | null;
+}
+
 export const authService = {
   // Login with email and password
   login: async (credentials: LoginRequest): Promise<AuthResponse> => {
@@ -153,6 +166,33 @@ export const authService = {
       return authResponse;
     } catch (error) {
       console.error('OTP verification error:', error);
+      throw error;
+    }
+  },
+
+  // Fetch user profile
+  fetchProfile: async (userId: string): Promise<ProfileResponse> => {
+    try {
+      console.log('Fetching profile for user:', userId);
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8080'}/api/v1/profile/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Profile fetch failed: ${response.statusText}`);
+      }
+
+      const profileData = await response.json();
+      console.log('Profile data received:', profileData);
+      
+      return profileData;
+    } catch (error) {
+      console.error('Profile fetch error:', error);
       throw error;
     }
   },

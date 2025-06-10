@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, X, LogOut, Settings, Home, FileText, CreditCard, BarChart } from "lucide-react";
+import { Menu, X, LogOut, Settings, Home, FileText, CreditCard, BarChart, Users } from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -17,11 +17,12 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const DashboardHeader = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, logout } = useAuth();  // Changed from signOut to logout
+  const { user, logout } = useAuth();
   const location = useLocation();
 
   const navLinks = [
     { name: 'Dashboard', href: '/dashboard', icon: <Home className="w-4 h-4 mr-2" /> },
+    { name: 'Customers', href: '/dashboard/customers', icon: <Users className="w-4 h-4 mr-2" /> },
     { name: 'Invoices', href: '/invoices', icon: <FileText className="w-4 h-4 mr-2" /> },
     { name: 'Expenses', href: '/dashboard/expenses', icon: <CreditCard className="w-4 h-4 mr-2" /> },
     { name: 'Reports', href: '/reports', icon: <BarChart className="w-4 h-4 mr-2" /> },
@@ -39,7 +40,7 @@ const DashboardHeader = () => {
 
   const handleSignOut = async () => {
     try {
-      await logout();  // Changed from signOut to logout
+      await logout();
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -79,7 +80,6 @@ const DashboardHeader = () => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
-                  {/* Removed avatarUrl since it doesn't exist in the User type */}
                   <AvatarImage alt={user?.firstName} />
                   <AvatarFallback>{getInitials()}</AvatarFallback>
                 </Avatar>

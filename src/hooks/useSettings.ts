@@ -1,5 +1,7 @@
 
 import { useState, useEffect } from 'react';
+import { authService, ProfileResponse } from '@/services/authService';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface AccountSettings {
   first_name: string;
@@ -44,6 +46,8 @@ export interface TaxSettings {
 }
 
 export const useSettings = () => {
+  const { user } = useAuth();
+  
   const [accountSettings, setAccountSettings] = useState<AccountSettings>({
     first_name: '',
     last_name: '',
@@ -89,27 +93,72 @@ export const useSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Mock data for now - will be replaced with API calls
+  // Load settings from API when component mounts
   useEffect(() => {
-    // Load settings from localStorage or set defaults
-    const savedAccountSettings = localStorage.getItem('accountSettings');
-    const savedBusinessSettings = localStorage.getItem('businessSettings');
-    const savedInvoiceSettings = localStorage.getItem('invoiceSettings');
-    const savedTaxSettings = localStorage.getItem('taxSettings');
+    const loadSettingsFromApi = async () => {
+      if (!user?.id) return;
+      
+      setIsLoading(true);
+      try {
+        console.log('Loading profile from API for user:', user.id);
+        const profileData = await authService.fetchProfile(user.id);
+        
+        // Map API response to business settings
+        const mappedBusinessSettings: BusinessSettings = {
+          company_name: profileData.businessName || '',
+          business_phone: profileData.phoneNumber || '',
+          business_website: profileData.website || '',
+          business_address: profileData.address || '',
+          business_city: profileData.city || '',
+          business_state: profileData.state || '',
+          business_postal_code: profileData.zipCode || '',
+          business_country: profileData.country || '',
+          default_currency: profileData.currency || 'usd', // Default to USD if null
+        };
+        
+        setBusinessSettings(mappedBusinessSettings);
+        
+        // Set account settings from user context
+        if (user) {
+          setAccountSettings({
+            first_name: user.firstName || '',
+            last_name: user.lastName || '',
+            email: user.email || '',
+          });
+        }
+        
+      } catch (error) {
+        console.error('Error loading profile from API:', error);
+        // Fallback to localStorage if API fails
+        loadSettingsFromLocalStorage();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    const loadSettingsFromLocalStorage = () => {
+      const savedAccountSettings = localStorage.getItem('accountSettings');
+      const savedBusinessSettings = localStorage.getItem('businessSettings');
+      const savedInvoiceSettings = localStorage.getItem('invoiceSettings');
+      const savedTaxSettings = localStorage.getItem('taxSettings');
 
-    if (savedAccountSettings) {
-      setAccountSettings(JSON.parse(savedAccountSettings));
-    }
-    if (savedBusinessSettings) {
-      setBusinessSettings(JSON.parse(savedBusinessSettings));
-    }
-    if (savedInvoiceSettings) {
-      setInvoiceSettings(JSON.parse(savedInvoiceSettings));
-    }
-    if (savedTaxSettings) {
-      setTaxSettings(JSON.parse(savedTaxSettings));
-    }
-  }, []);
+      if (savedAccountSettings) {
+        setAccountSettings(JSON.parse(savedAccountSettings));
+      }
+      if (savedBusinessSettings) {
+        setBusinessSettings(JSON.parse(savedBusinessSettings));
+      }
+      if (savedInvoiceSettings) {
+        setInvoiceSettings(JSON.parse(savedInvoiceSettings));
+      }
+      if (savedTaxSettings) {
+        setTaxSettings(JSON.parse(savedTaxSettings));
+      }
+    };
+
+    // Try to load from API first, fallback to localStorage
+    loadSettingsFromApi();
+  }, [user?.id]);
 
   const saveAccountSettings = async (settings: AccountSettings) => {
     setIsSaving(true);
