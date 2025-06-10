@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -33,21 +32,10 @@ const Settings = () => {
     fetchTaxSettings
   } = useSettings();
 
-  const [emailConfirmed, setEmailConfirmed] = useState<boolean>(true); // Mock as confirmed for now
-  const [lastLoadTime, setLastLoadTime] = useState<Date>(new Date());
+  const [emailConfirmed, setEmailConfirmed] = useState<boolean>(true);
 
-  const [businessData, setBusinessData] = useState<BusinessSettings>({
-    company_name: '',
-    business_phone: '',
-    business_website: '',
-    business_address: '',
-    business_city: '',
-    business_state: '',
-    business_postal_code: '',
-    business_country: '',
-    default_currency: 'usd'
-  });
-
+  // Use the settings directly from the hook instead of maintaining separate state
+  const [businessData, setBusinessData] = useState<BusinessSettings>({});
   const [accountData, setAccountData] = useState<AccountSettings>({
     first_name: '',
     last_name: '',
@@ -68,57 +56,26 @@ const Settings = () => {
     tax_registration_number: ''
   });
 
-  // Fix infinite loop by only loading settings once or when user changes
+  // Update local state when settings from hook change
   useEffect(() => {
-    const loadUserSettings = async () => {
-      if (!user?.id) return;
-      
-      console.log('[SETTINGS] Loading user settings');
-      
+    console.log('Business settings updated from hook:', businessSettings);
+    setBusinessData(businessSettings);
+  }, [businessSettings]);
+
+  useEffect(() => {
+    setAccountData(accountSettings);
+  }, [accountSettings]);
+
+  // Remove the complex useEffect that was causing issues and just sync with hook data
+  useEffect(() => {
+    if (!user?.id) return;
+    
+    console.log('[SETTINGS] User loaded, settings will be fetched by useSettings hook');
+    setEmailConfirmed(true);
+    
+    // Load other settings
+    const loadOtherSettings = async () => {
       try {
-        // Mock email confirmation as true for now
-        setEmailConfirmed(true);
-        
-        // Load user profile data
-        const profile = await fetchUserProfile();
-        
-        if (profile) {
-          // Update business data
-          setBusinessData({
-            company_name: businessSettings.company_name || '',
-            business_phone: businessSettings.business_phone || '',
-            business_website: businessSettings.business_website || '',
-            business_address: businessSettings.business_address || '',
-            business_city: businessSettings.business_city || '',
-            business_state: businessSettings.business_state || '',
-            business_postal_code: businessSettings.business_postal_code || '',
-            business_country: businessSettings.business_country || '',
-            default_currency: businessSettings.default_currency || 'usd'
-          });
-          
-          // Update account data
-          setAccountData({
-            first_name: accountSettings.first_name,
-            last_name: accountSettings.last_name,
-            email: accountSettings.email
-          });
-        } else if (user) {
-          // Fallback to user context if we can't fetch from database
-          setAccountData({
-            first_name: user.firstName,
-            last_name: user.lastName,
-            email: user.email
-          });
-          
-          if (user.companyName) {
-            setBusinessData({
-              ...businessData,
-              company_name: user.companyName
-            });
-          }
-        }
-        
-        // Load invoice settings
         const invoiceSettingsData = await fetchInvoiceSettings();
         if (invoiceSettingsData) {
           setInvoiceData({
@@ -131,7 +88,6 @@ const Settings = () => {
           });
         }
         
-        // Load tax settings
         const taxSettingsData = await fetchTaxSettings();
         if (taxSettingsData) {
           setTaxData({
@@ -141,20 +97,13 @@ const Settings = () => {
             tax_registration_number: taxSettingsData.tax_registration_number || ''
           });
         }
-        
-        setLastLoadTime(new Date());
       } catch (error) {
-        console.error('[SETTINGS] Error loading settings:', error);
-        toast({
-          title: 'Error loading settings',
-          description: 'There was a problem loading your settings. Please try again.',
-          variant: 'destructive'
-        });
+        console.error('[SETTINGS] Error loading other settings:', error);
       }
     };
 
-    loadUserSettings();
-  }, [user?.id]); // Only load when user ID changes
+    loadOtherSettings();
+  }, [user?.id]);
 
   const handleBusinessChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -392,3 +341,5 @@ const Settings = () => {
 };
 
 export default Settings;
+
+}

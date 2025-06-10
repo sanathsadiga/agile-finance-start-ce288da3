@@ -102,8 +102,9 @@ export const useSettings = () => {
       try {
         console.log('Loading profile from API for user:', user.id);
         const profileData = await authService.fetchProfile(user.id);
+        console.log('Profile data received:', profileData);
         
-        // Map API response to business settings
+        // Map API response to business settings - fix the mapping here
         const mappedBusinessSettings: BusinessSettings = {
           company_name: profileData.businessName || '',
           business_phone: profileData.phoneNumber || '',
@@ -113,9 +114,10 @@ export const useSettings = () => {
           business_state: profileData.state || '',
           business_postal_code: profileData.zipCode || '',
           business_country: profileData.country || '',
-          default_currency: profileData.currency || 'usd', // Default to USD if null
+          default_currency: profileData.currency || 'usd',
         };
         
+        console.log('Mapped business settings:', mappedBusinessSettings);
         setBusinessSettings(mappedBusinessSettings);
         
         // Set account settings from user context
