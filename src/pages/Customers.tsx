@@ -1,18 +1,24 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import DashboardHeader from '@/components/layout/DashboardHeader';
 import { Button } from "@/components/ui/button";
 import { Plus, Mail, Phone, MapPin } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCustomers } from '@/hooks/useCustomers';
+import AddCustomerDialog from '@/components/customers/AddCustomerDialog';
 
 const Customers = () => {
-  const { customers, isLoading, error } = useCustomers();
+  const { customers, isLoading, error, refetch } = useCustomers();
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   const handleCreateNewCustomer = () => {
     console.log('Create new customer clicked');
-    // This will be implemented later with backend integration
+    setIsAddDialogOpen(true);
+  };
+
+  const handleCustomerAdded = () => {
+    refetch();
   };
 
   if (error) {
@@ -108,6 +114,12 @@ const Customers = () => {
             )}
           </CardContent>
         </Card>
+
+        <AddCustomerDialog
+          open={isAddDialogOpen}
+          onOpenChange={setIsAddDialogOpen}
+          onCustomerAdded={handleCustomerAdded}
+        />
       </div>
     </div>
   );
