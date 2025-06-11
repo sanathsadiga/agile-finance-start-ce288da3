@@ -60,7 +60,7 @@ const AddCustomerDialog = ({ open, onOpenChange, onCustomerAdded }: AddCustomerD
     setIsLoading(true);
     try {
       console.log('Creating customer with data:', data);
-      await customerService.createCustomer(user.id, data);
+      await customerService.createCustomer(Number(user.id), data);
       toast.success('Customer added successfully');
       form.reset();
       onOpenChange(false);
