@@ -8,8 +8,7 @@ import { Calendar, CalendarCheck } from "lucide-react";
 import AOS from "aos";
 import "aos/dist/aos.css";
 import FAQ from '@/components/faq';
-
-
+import { Helmet } from 'react-helmet-async';
 
 const monthlyPlans = [
     {
@@ -148,8 +147,84 @@ const PricingPage = () => {
     const [billingPeriod, setBillingPeriod] = useState('monthly');
     const plans = billingPeriod === 'monthly' ? monthlyPlans : yearlyPlans;
 
+    const pricingStructuredData = {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": "FinanceFlow Financial Management Software",
+        "description": "Professional financial management software with flexible pricing for businesses of all sizes",
+        "brand": {
+            "@type": "Brand",
+            "name": "FinanceFlow"
+        },
+        "offers": [
+            {
+                "@type": "Offer",
+                "name": "Starter Plan",
+                "price": "0",
+                "priceCurrency": "USD",
+                "priceValidUntil": "2025-12-31",
+                "availability": "https://schema.org/InStock",
+                "url": "https://financeflow.com/pricing"
+            },
+            {
+                "@type": "Offer", 
+                "name": "Professional Plan",
+                "price": "15",
+                "priceCurrency": "USD",
+                "priceValidUntil": "2025-12-31",
+                "availability": "https://schema.org/InStock",
+                "url": "https://financeflow.com/pricing"
+            },
+            {
+                "@type": "Offer",
+                "name": "Business Plan", 
+                "price": "29",
+                "priceCurrency": "USD",
+                "priceValidUntil": "2025-12-31",
+                "availability": "https://schema.org/InStock",
+                "url": "https://financeflow.com/pricing"
+            }
+        ]
+    };
+
     return (
         <div className="bg-white">
+            <Helmet>
+                <title>FinanceFlow Pricing - Affordable Financial Management Plans | Free Trial Available</title>
+                <meta name="description" content="Choose the perfect FinanceFlow plan for your business. Start FREE with unlimited invoices, expense tracking, and reporting. Professional plans from $15/month. 14-day free trial on all paid plans. No credit card required." />
+                <meta name="keywords" content="financial software pricing, invoice software cost, business accounting plans, small business finance pricing, freelancer invoicing plans, expense tracking pricing, financial management cost, business software pricing" />
+                
+                {/* Open Graph / Facebook */}
+                <meta property="og:type" content="website" />
+                <meta property="og:url" content="https://financeflow.com/pricing" />
+                <meta property="og:title" content="FinanceFlow Pricing - Affordable Financial Management Plans" />
+                <meta property="og:description" content="Choose the perfect plan for your business. Start FREE or upgrade to Professional ($15/month) or Business ($29/month). 14-day free trial included." />
+                <meta property="og:image" content="https://financeflow.com/images/og-pricing.jpg" />
+                <meta property="og:image:width" content="1200" />
+                <meta property="og:image:height" content="630" />
+                
+                {/* Twitter */}
+                <meta property="twitter:card" content="summary_large_image" />
+                <meta property="twitter:url" content="https://financeflow.com/pricing" />
+                <meta property="twitter:title" content="FinanceFlow Pricing - Start Free, Scale Smart" />
+                <meta property="twitter:description" content="Transparent pricing for financial management. Start FREE, upgrade when ready. Plans from $15/month with 14-day free trial." />
+                <meta property="twitter:image" content="https://financeflow.com/images/twitter-pricing.jpg" />
+                
+                {/* Additional SEO */}
+                <meta name="robots" content="index, follow" />
+                <link rel="canonical" href="https://financeflow.com/pricing" />
+                
+                {/* Structured Data */}
+                <script type="application/ld+json">
+                    {JSON.stringify(pricingStructuredData)}
+                </script>
+                
+                {/* Marketing Meta Tags */}
+                <meta name="price_range" content="$0-$29" />
+                <meta name="business_type" content="SaaS" />
+                <meta name="target_audience" content="small business, freelancers, startups" />
+            </Helmet>
+
             <Navbar />
             {/* Hero Section */}
             <section id="pricing" className="py-20 bg-gradient-to-b from-purple-50 to-white">

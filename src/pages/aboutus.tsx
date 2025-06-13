@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { Check } from "lucide-react";
 import { Helmet } from 'react-helmet-async';
@@ -14,17 +15,75 @@ const teamMembers = [
 ];
 
 export default function AboutUsPage() {
+    const aboutStructuredData = {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "FinanceFlow",
+        "url": "https://financeflow.com",
+        "logo": "https://financeflow.com/images/logo.png",
+        "description": "FinanceFlow revolutionizes financial management for small businesses with intelligent automation, reducing manual tasks and improving efficiency.",
+        "foundingDate": "2023",
+        "founder": {
+            "@type": "Person",
+            "name": "Sarah Nelson"
+        },
+        "numberOfEmployees": "6-10",
+        "industry": "Financial Technology",
+        "address": {
+            "@type": "PostalAddress",
+            "addressCountry": "US"
+        },
+        "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer service",
+            "url": "https://financeflow.com/contact"
+        },
+        "sameAs": [
+            "https://twitter.com/financeflow",
+            "https://linkedin.com/company/financeflow",
+            "https://facebook.com/financeflow"
+        ]
+    };
+
     return (
         <main className="bg-gradient-to-b from-white to-purple-50 text-gray-800">
             <Helmet>
-                <title>FinanceFlow - Simplify Your Financial Management</title>
-                <meta name="description" content="Take control of your business finances with our all-in-one platform for invoicing, expense tracking, and financial insights." />
-                <meta name="keywords" content="finance, invoicing, expense tracking, small business, financial management" />
-                <meta property="og:title" content="FinanceFlow - About us" />
-                <meta property="og:description" content="Take control of your business finances with our all-in-one platform for invoicing, expense tracking, and financial insights." />
+                <title>About FinanceFlow - Our Mission to Simplify Business Financial Management</title>
+                <meta name="description" content="Learn about FinanceFlow's mission to revolutionize financial management for small businesses. Meet our team of experts dedicated to building intelligent automation tools that reduce manual work and improve efficiency." />
+                <meta name="keywords" content="about financeflow, financial software company, business automation team, fintech startup, small business solutions, financial management experts, company mission, team" />
+                
+                {/* Open Graph / Facebook */}
                 <meta property="og:type" content="website" />
+                <meta property="og:url" content="https://financeflow.com/aboutus" />
+                <meta property="og:title" content="About FinanceFlow - Revolutionizing Business Financial Management" />
+                <meta property="og:description" content="Meet the team behind FinanceFlow's intelligent financial automation platform. Learn our mission to help small businesses focus on growth, not paperwork." />
+                <meta property="og:image" content="https://financeflow.com/images/og-about.jpg" />
+                <meta property="og:image:width" content="1200" />
+                <meta property="og:image:height" content="630" />
+                
+                {/* Twitter */}
+                <meta property="twitter:card" content="summary_large_image" />
+                <meta property="twitter:url" content="https://financeflow.com/aboutus" />
+                <meta property="twitter:title" content="About FinanceFlow - Building the Future of Business Finance" />
+                <meta property="twitter:description" content="Meet our team of financial technology experts dedicated to simplifying business financial management through intelligent automation." />
+                <meta property="twitter:image" content="https://financeflow.com/images/twitter-about.jpg" />
+                
+                {/* Additional SEO */}
+                <meta name="robots" content="index, follow" />
                 <link rel="canonical" href="https://financeflow.com/aboutus" />
+                
+                {/* Structured Data */}
+                <script type="application/ld+json">
+                    {JSON.stringify(aboutStructuredData)}
+                </script>
+                
+                {/* Company Info Meta Tags */}
+                <meta name="company" content="FinanceFlow" />
+                <meta name="industry" content="Financial Technology" />
+                <meta name="founded" content="2023" />
+                <meta name="company_size" content="6-10 employees" />
             </Helmet>
+
             <Navbar />
             {/* Hero */}
             <section className="py-20 text-center animate-fade-up">

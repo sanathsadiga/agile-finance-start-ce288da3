@@ -13,6 +13,7 @@ import {
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { motion } from "framer-motion";
+import { Helmet } from 'react-helmet-async';
 
 const tools = [
     { icon: "🟣", name: "Stripe" },
@@ -21,7 +22,6 @@ const tools = [
     { icon: "🟡", name: "Google Sheets" },
     { icon: "🔴", name: "Slack" },
 ];
-
 
 // Fluid rotate and scale effect
 const rotateIn = {
@@ -91,8 +91,68 @@ const FeatureCard = ({ Icon, title, description, tag }) => (
 );
 
 const FeaturesPage = () => {
+    const featuresStructuredData = {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "FinanceFlow Features",
+        "applicationCategory": "BusinessApplication",
+        "description": "Comprehensive financial management features including invoicing, expense tracking, reporting, team collaboration, and integrations.",
+        "featureList": [
+            "Interactive Dashboard with Real-time Analytics",
+            "Professional Invoice Generation & Management", 
+            "Automated Expense Tracking with Receipt Upload",
+            "Advanced Financial Reporting & P&L Statements",
+            "Team Collaboration with Permission Management",
+            "Custom Business Configuration & Tax Settings",
+            "Integration with Popular Business Tools",
+            "24/7 Customer Support"
+        ],
+        "operatingSystem": "Web",
+        "url": "https://financeflow.com/features",
+        "screenshot": "https://financeflow.com/images/dashboard-screenshot.png",
+        "softwareVersion": "2.0",
+        "releaseNotes": "Enhanced reporting features and new integrations"
+    };
+
     return (
         <main className="bg-white text-gray-800">
+            <Helmet>
+                <title>FinanceFlow Features - Complete Financial Management Tools for Modern Businesses</title>
+                <meta name="description" content="Explore FinanceFlow's powerful features: Interactive dashboards, smart invoicing, expense tracking, financial reporting, team collaboration, and integrations. Everything you need to manage business finances efficiently." />
+                <meta name="keywords" content="financial management features, invoice software features, expense tracking tools, business dashboard, financial reporting, team collaboration, business integrations, accounting software features, cash flow management" />
+                
+                {/* Open Graph / Facebook */}
+                <meta property="og:type" content="website" />
+                <meta property="og:url" content="https://financeflow.com/features" />
+                <meta property="og:title" content="FinanceFlow Features - Complete Financial Management Toolkit" />
+                <meta property="og:description" content="Discover all the powerful features that make FinanceFlow the #1 choice for business financial management. From smart invoicing to advanced reporting." />
+                <meta property="og:image" content="https://financeflow.com/images/og-features.jpg" />
+                <meta property="og:image:width" content="1200" />
+                <meta property="og:image:height" content="630" />
+                
+                {/* Twitter */}
+                <meta property="twitter:card" content="summary_large_image" />
+                <meta property="twitter:url" content="https://financeflow.com/features" />
+                <meta property="twitter:title" content="FinanceFlow Features - Everything You Need for Business Finance" />
+                <meta property="twitter:description" content="Explore comprehensive features: Smart invoicing, expense tracking, financial reporting, team tools, and integrations. See why 10,000+ businesses choose FinanceFlow." />
+                <meta property="twitter:image" content="https://financeflow.com/images/twitter-features.jpg" />
+                
+                {/* Additional SEO */}
+                <meta name="robots" content="index, follow" />
+                <link rel="canonical" href="https://financeflow.com/features" />
+                
+                {/* Structured Data */}
+                <script type="application/ld+json">
+                    {JSON.stringify(featuresStructuredData)}
+                </script>
+                
+                {/* Feature-specific Meta Tags */}
+                <meta name="software_type" content="Financial Management Software" />
+                <meta name="primary_features" content="invoicing, expense tracking, reporting, dashboard, team collaboration" />
+                <meta name="integration_support" content="Stripe, PayPal, QuickBooks, Google Sheets, Slack" />
+                <meta name="target_users" content="freelancers, small businesses, startups, agencies" />
+            </Helmet>
+
             <Navbar />
             {/* Hero */}
             <section className="py-24 bg-gradient-to-b from-purple-50 via-white to-white text-center">
