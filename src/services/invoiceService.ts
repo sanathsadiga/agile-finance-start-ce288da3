@@ -1,4 +1,3 @@
-
 import { api } from './api';
 
 export interface Invoice {
@@ -67,6 +66,11 @@ export const invoiceService = {
   // Get all invoices by profile ID
   getInvoicesByProfile: async (profileId: number): Promise<CreateInvoiceResponse[]> => {
     return api.get<CreateInvoiceResponse[]>(`/api/invoices/profile/${profileId}`);
+  },
+
+  // Search invoice by invoice number
+  searchInvoiceByNumber: async (invoiceNumber: string): Promise<CreateInvoiceResponse> => {
+    return api.get<CreateInvoiceResponse>(`/api/invoices/search?invoiceNumber=${invoiceNumber}`);
   },
 
   // Get all invoices (fallback)

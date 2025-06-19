@@ -1,9 +1,9 @@
-
 import React, { useEffect, useState } from 'react';
 import DashboardHeader from '@/components/layout/DashboardHeader';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { FileEdit, FileText, Plus } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { FileEdit, FileText, Plus, Search, X } from 'lucide-react';
 import { useInvoices, Invoice } from '@/hooks/useInvoices';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -17,21 +17,44 @@ import { CreateInvoiceResponse } from '@/services/invoiceService';
 
 const Invoices = () => {
   const navigate = useNavigate();
-  const { invoices, rawInvoices, isLoading, fetchInvoices, addInvoice } = useInvoices();
+  const { rawInvoices, isLoading, fetchInvoices, addInvoice, searchInvoice, searchResults, isSearching, clearSearch } = useInvoices();
   const { invoiceSettings, businessSettings } = useSettings();
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
 
   const itemsPerPage = 6;
-  const totalPages = Math.ceil(rawInvoices.length / itemsPerPage);
+  
+  // Use search results if available, otherwise use all invoices
+  const displayInvoices = searchResults ? [searchResults] : rawInvoices;
+  const totalPages = Math.ceil(displayInvoices.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentInvoices = rawInvoices.slice(startIndex, endIndex);
+  const currentInvoices = displayInvoices.slice(startIndex, endIndex);
 
   useEffect(() => {
     fetchInvoices();
   }, [fetchInvoices]);
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      // Format the search query to match backend expectation (INV-XXXXX)
+      const formattedQuery = searchQuery.toUpperCase().startsWith('INV-') 
+        ? searchQuery.toUpperCase() 
+        : `INV-${searchQuery}`;
+      
+      await searchInvoice(formattedQuery);
+      setCurrentPage(1); // Reset to first page when searching
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    clearSearch();
+    setCurrentPage(1);
+  };
 
   const handleCreateInvoice = async (invoiceData: any) => {
     try {
@@ -120,7 +143,37 @@ const Invoices = () => {
           </div>
         </div>
 
-        {isLoading ? (
+        {/* Search Bar */}
+        <div className="mb-6">
+          <form onSubmit={handleSearch} className="flex gap-2 max-w-md">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search by invoice number (e.g., INV-14890)"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+                disabled={isSearching}
+              />
+            </div>
+            <Button type="submit" disabled={isSearching || !searchQuery.trim()}>
+              {isSearching ? 'Searching...' : 'Search'}
+            </Button>
+            {searchResults && (
+              <Button type="button" variant="outline" onClick={handleClearSearch}>
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </form>
+          {searchResults && (
+            <p className="text-sm text-gray-600 mt-2">
+              Found 1 result for "{searchQuery}"
+            </p>
+          )}
+        </div>
+
+        {isLoading || isSearching ? (
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
           </div>
@@ -209,7 +262,9 @@ const Invoices = () => {
         ) : (
           <div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg border border-dashed border-gray-300">
             <Plus className="h-12 w-12 text-gray-400" />
-            <p className="mt-4 text-gray-500">No invoices yet. Create your first invoice!</p>
+            <p className="mt-4 text-gray-500">
+              {searchResults === null ? 'No invoices yet. Create your first invoice!' : 'No invoice found with that number.'}
+            </p>
           </div>
         )}
       </div>

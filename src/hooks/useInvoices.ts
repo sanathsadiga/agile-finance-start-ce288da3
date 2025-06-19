@@ -26,6 +26,8 @@ export const useInvoices = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [rawInvoices, setRawInvoices] = useState<CreateInvoiceResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchResults, setSearchResults] = useState<CreateInvoiceResponse | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
   const { toast } = useToast();
   const { profileId } = useBusinessProfile();
 
@@ -58,6 +60,33 @@ export const useInvoices = () => {
       setIsLoading(false);
     }
   }, [toast, profileId]);
+
+  const searchInvoice = useCallback(async (invoiceNumber: string) => {
+    if (!invoiceNumber.trim()) {
+      setSearchResults(null);
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      const result = await invoiceService.searchInvoiceByNumber(invoiceNumber);
+      setSearchResults(result);
+    } catch (error: any) {
+      console.error('Error searching invoice:', error);
+      setSearchResults(null);
+      toast({
+        title: 'Invoice not found',
+        description: error.message || 'Could not find invoice with that number',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  }, [toast]);
+
+  const clearSearch = useCallback(() => {
+    setSearchResults(null);
+  }, []);
 
   useEffect(() => {
     fetchInvoices();
@@ -230,6 +259,8 @@ export const useInvoices = () => {
     invoices,
     rawInvoices,
     isLoading,
+    searchResults,
+    isSearching,
     fetchInvoices,
     addInvoice,
     updateInvoice,
@@ -240,5 +271,7 @@ export const useInvoices = () => {
     printInvoice,
     handleConfirmDelete,
     getInvoiceDetails,
+    searchInvoice,
+    clearSearch,
   };
 };
