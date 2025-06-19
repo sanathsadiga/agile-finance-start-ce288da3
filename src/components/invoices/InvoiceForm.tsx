@@ -12,9 +12,11 @@ import { CalendarIcon, Plus, Trash2, LayoutTemplate } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useInvoiceTemplates, InvoiceTemplate } from '@/hooks/useInvoiceTemplates';
 import { useSettings } from '@/hooks/useSettings';
+import { useBusinessProfile } from '@/hooks/useBusinessProfile';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import InvoiceTemplateManager from './InvoiceTemplateManager';
+import CustomerSelector from './CustomerSelector';
 
 interface InvoiceItem {
   id: number;
@@ -34,9 +36,9 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
   const navigate = useNavigate();
   const { templates, getDefaultTemplate, isLoading: templatesLoading } = useInvoiceTemplates();
   const { invoiceSettings, taxSettings, businessSettings } = useSettings();
+  const { profileId, isLoading: profileLoading, error: profileError } = useBusinessProfile();
 
-  const [customer, setCustomer] = useState('');
-  const [email, setEmail] = useState('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [issueDate, setIssueDate] = useState<Date | undefined>(new Date());
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [items, setItems] = useState<InvoiceItem[]>([]);
@@ -206,27 +208,32 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
     e.preventDefault();
     console.log('InvoiceForm: Submitting form');
     
+    if (!profileId) {
+      console.error('No profile ID available');
+      return;
+    }
+
+    if (!selectedCustomerId) {
+      console.error('No customer selected');
+      return;
+    }
+
+    // Format the request according to backend API
     const invoiceData = {
-      customer,
-      email,
-      date: issueDate ? format(issueDate, 'yyyy-MM-dd') : null,
-      dueDate: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
-      items,
-      subtotal,
-      discount: {
-        type: discountType,
-        value: discountValue,
-        amount: discountAmount
-      },
-      taxAmount,
-      total,
-      notes,
-      status,
-      template_id: selectedTemplate?.id,
-      currency: businessSettings?.default_currency || 'USD'
+      profileId,
+      customerId: selectedCustomerId,
+      date: issueDate ? format(issueDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+      dueDate: dueDate ? format(dueDate, 'yyyy-MM-dd') : format(addDays(new Date(), 30), 'yyyy-MM-dd'),
+      notes: notes || undefined,
+      lines: items.map(item => ({
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.rate,
+        taxRate: taxSettings?.tax_enabled ? (taxSettings?.default_tax_rate || 0) : 0
+      }))
     };
     
-    console.log('InvoiceForm: Prepared invoice data:', invoiceData);
+    console.log('InvoiceForm: Prepared invoice data for backend:', invoiceData);
     onSave(invoiceData);
   };
 
@@ -244,6 +251,24 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
     });
     return formatter.format(amount);
   };
+
+  if (profileLoading) {
+    return (
+      <div className="flex justify-center items-center h-32">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+        <span className="ml-2">Loading business profile...</span>
+      </div>
+    );
+  }
+
+  if (profileError || !profileId) {
+    return (
+      <div className="text-center text-red-600 p-4">
+        <p>Error: {profileError || 'Business profile not found'}</p>
+        <p className="text-sm mt-2">Please ensure your business profile is set up correctly.</p>
+      </div>
+    );
+  }
 
   // Debug rendering
   console.log('InvoiceForm: Rendering with items:', items.length);
@@ -265,28 +290,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="customer">Customer/Business Name</Label>
-          <Input 
-            id="customer" 
-            value={customer} 
-            onChange={(e) => setCustomer(e.target.value)} 
-            required
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="email">Email Address</Label>
-          <Input 
-            id="email" 
-            type="email" 
-            value={email} 
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-      </div>
+      <CustomerSelector
+        selectedCustomerId={selectedCustomerId}
+        onCustomerSelect={setSelectedCustomerId}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -421,39 +428,6 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
           <span>{formatCurrency(subtotal)}</span>
         </div>
         
-        {/* Discount section */}
-        <div className="w-full md:w-1/3 flex flex-col gap-2">
-          <div className="flex justify-between">
-            <span className="text-sm font-medium">Discount:</span>
-            <div className="flex items-center gap-2">
-              <Select 
-                value={discountType} 
-                onValueChange={(value) => setDiscountType(value as 'percentage' | 'fixed')}
-              >
-                <SelectTrigger className="w-[100px]">
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="percentage">%</SelectItem>
-                  <SelectItem value="fixed">{businessSettings?.default_currency || '$'}</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={discountValue}
-                onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)}
-                className="w-[80px] text-right"
-              />
-            </div>
-          </div>
-          <div className="flex justify-between text-sm text-gray-600">
-            <span>Discount amount:</span>
-            <span>-{formatCurrency(discountAmount)}</span>
-          </div>
-        </div>
-        
         {taxSettings?.tax_enabled && (
           <div className="w-full md:w-1/3 flex justify-between">
             <span className="text-sm font-medium">{taxSettings.tax_name} ({taxSettings.default_tax_rate}%):</span>
@@ -464,21 +438,6 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
           <span>Total:</span>
           <span>{formatCurrency(total)}</span>
         </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="status">Status</Label>
-        <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="unpaid">Unpaid</SelectItem>
-            <SelectItem value="paid">Paid</SelectItem>
-            <SelectItem value="overdue">Overdue</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       <div className="space-y-2">
@@ -494,7 +453,9 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
       
       <DialogFooter className="sticky bottom-0 pt-4 bg-white border-t -mx-6 px-6">
         <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
-        <Button type="submit">Save Invoice</Button>
+        <Button type="submit" disabled={!selectedCustomerId}>
+          Save Invoice
+        </Button>
       </DialogFooter>
 
       {/* Template Manager Dialog */}

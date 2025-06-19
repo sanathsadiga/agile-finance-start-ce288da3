@@ -22,6 +22,47 @@ export interface Invoice {
   currency?: string;
 }
 
+export interface CreateInvoiceRequest {
+  profileId: number;
+  customerId: number;
+  date: string;
+  dueDate: string;
+  notes?: string;
+  lines: {
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    taxRate: number;
+  }[];
+}
+
+export interface CreateInvoiceResponse {
+  publicId: string;
+  invoiceNumber: string;
+  date: string;
+  dueDate: string;
+  status: string;
+  subtotal: number;
+  tax: number;
+  total: number;
+  notes?: string;
+  lines: {
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    taxRate: number;
+  }[];
+  customer: {
+    id: number | null;
+    name: string;
+    email: string;
+    phone: string;
+    address: string | null;
+    createdByUserId: number | null;
+    businessId: number | null;
+  };
+}
+
 export const invoiceService = {
   // Get all invoices
   getInvoices: async (): Promise<Invoice[]> => {
@@ -33,9 +74,9 @@ export const invoiceService = {
     return api.get<Invoice>(`/invoices/${id}`);
   },
 
-  // Create new invoice
-  createInvoice: async (invoice: Omit<Invoice, 'id'>): Promise<Invoice> => {
-    return api.post<Invoice>('/invoices', invoice);
+  // Create new invoice with backend integration
+  createInvoice: async (invoiceData: CreateInvoiceRequest): Promise<CreateInvoiceResponse> => {
+    return api.post<CreateInvoiceResponse>('/api/invoices', invoiceData);
   },
 
   // Update invoice
