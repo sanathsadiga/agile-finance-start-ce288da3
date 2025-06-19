@@ -8,7 +8,7 @@ export interface Invoice {
   customer?: string;
   email?: string;
   amount: number;
-  status: 'paid' | 'pending' | 'overdue' | 'draft' | 'unpaid';
+  status: 'paid' | 'pending' | 'overdue' | 'draft' | 'unpaid' | 'sent';
   description?: string;
   items?: any[];
   notes?: string;
@@ -64,14 +64,19 @@ export interface CreateInvoiceResponse {
 }
 
 export const invoiceService = {
-  // Get all invoices
+  // Get all invoices by profile ID
+  getInvoicesByProfile: async (profileId: number): Promise<CreateInvoiceResponse[]> => {
+    return api.get<CreateInvoiceResponse[]>(`/api/invoices/profile/${profileId}`);
+  },
+
+  // Get all invoices (fallback)
   getInvoices: async (): Promise<Invoice[]> => {
     return api.get<Invoice[]>('/invoices');
   },
 
-  // Get invoice by ID
-  getInvoice: async (id: string): Promise<Invoice> => {
-    return api.get<Invoice>(`/invoices/${id}`);
+  // Get invoice by public ID
+  getInvoice: async (publicId: string): Promise<CreateInvoiceResponse> => {
+    return api.get<CreateInvoiceResponse>(`/api/invoices/${publicId}`);
   },
 
   // Create new invoice with backend integration

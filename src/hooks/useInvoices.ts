@@ -1,7 +1,7 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { invoiceService, Invoice, CreateInvoiceRequest, CreateInvoiceResponse } from '@/services/invoiceService';
 import { useToast } from '@/hooks/use-toast';
+import { useBusinessProfile } from '@/hooks/useBusinessProfile';
 
 export type { Invoice } from '@/services/invoiceService';
 
@@ -24,15 +24,28 @@ const convertResponseToInvoice = (response: CreateInvoiceResponse): Invoice => {
 
 export const useInvoices = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [rawInvoices, setRawInvoices] = useState<CreateInvoiceResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { profileId } = useBusinessProfile();
 
   const fetchInvoices = useCallback(async () => {
     try {
       setIsLoading(true);
-      const data = await invoiceService.getInvoices();
-      setInvoices(data);
-      return data;
+      
+      if (profileId) {
+        // Fetch invoices by profile ID
+        const rawData = await invoiceService.getInvoicesByProfile(profileId);
+        setRawInvoices(rawData);
+        const convertedData = rawData.map(convertResponseToInvoice);
+        setInvoices(convertedData);
+        return convertedData;
+      } else {
+        // Fallback to old method if no profile ID
+        const data = await invoiceService.getInvoices();
+        setInvoices(data);
+        return data;
+      }
     } catch (error: any) {
       console.error('Error fetching invoices:', error);
       toast({
@@ -44,7 +57,7 @@ export const useInvoices = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, profileId]);
 
   useEffect(() => {
     fetchInvoices();
@@ -55,6 +68,7 @@ export const useInvoices = () => {
       const response = await invoiceService.createInvoice(invoiceData);
       const newInvoice = convertResponseToInvoice(response);
       setInvoices(prev => [newInvoice, ...prev]);
+      setRawInvoices(prev => [response, ...prev]);
       toast({
         title: 'Invoice created',
         description: 'Your invoice has been created successfully.',
@@ -199,8 +213,22 @@ export const useInvoices = () => {
     }
   }, [deleteInvoice]);
 
+  const getInvoiceDetails = useCallback(async (publicId: string) => {
+    try {
+      return await invoiceService.getInvoice(publicId);
+    } catch (error: any) {
+      toast({
+        title: 'Failed to load invoice',
+        description: error.message || 'Could not load invoice details',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  }, [toast]);
+
   return {
     invoices,
+    rawInvoices,
     isLoading,
     fetchInvoices,
     addInvoice,
@@ -211,5 +239,6 @@ export const useInvoices = () => {
     generatePDF,
     printInvoice,
     handleConfirmDelete,
+    getInvoiceDetails,
   };
 };

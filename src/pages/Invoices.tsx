@@ -8,17 +8,26 @@ import { useInvoices, Invoice } from '@/hooks/useInvoices';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import InvoiceForm from '@/components/invoices/InvoiceForm';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useSettings } from '@/hooks/useSettings';
+import { CreateInvoiceResponse } from '@/services/invoiceService';
 
 const Invoices = () => {
   const navigate = useNavigate();
-  const { invoices, isLoading, fetchInvoices, addInvoice } = useInvoices();
+  const { invoices, rawInvoices, isLoading, fetchInvoices, addInvoice } = useInvoices();
   const { invoiceSettings, businessSettings } = useSettings();
   const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
+
+  const itemsPerPage = 6;
+  const totalPages = Math.ceil(rawInvoices.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentInvoices = rawInvoices.slice(startIndex, endIndex);
 
   useEffect(() => {
     fetchInvoices();
@@ -28,7 +37,7 @@ const Invoices = () => {
     try {
       const newInvoice = await addInvoice({
         ...invoiceData,
-        amount: invoiceData.total, // Use total (which includes tax) as the invoice amount
+        amount: invoiceData.total,
       });
       setIsCreatingInvoice(false);
       toast({
@@ -36,7 +45,6 @@ const Invoices = () => {
         description: "Your invoice has been created successfully.",
       });
       
-      // Navigate to the new invoice
       if (newInvoice && newInvoice.id) {
         navigate(`/dashboard/invoices/${newInvoice.id}`);
       }
@@ -50,10 +58,10 @@ const Invoices = () => {
     }
   };
 
-  const handleInvoiceClick = (invoiceId: string) => {
-    if (invoiceId) {
-      console.log("Navigating to invoice detail:", invoiceId);
-      navigate(`/dashboard/invoices/${invoiceId}`);
+  const handleInvoiceClick = (publicId: string) => {
+    if (publicId) {
+      console.log("Navigating to invoice detail:", publicId);
+      navigate(`/dashboard/invoices/${publicId}`);
     } else {
       console.error("Invalid invoice ID");
       toast({
@@ -65,9 +73,11 @@ const Invoices = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'paid':
         return <Badge className="bg-green-500">Paid</Badge>;
+      case 'sent':
+        return <Badge className="bg-blue-500">Sent</Badge>;
       case 'unpaid':
         return <Badge className="bg-yellow-500">Unpaid</Badge>;
       case 'overdue':
@@ -79,7 +89,6 @@ const Invoices = () => {
     }
   };
 
-  // Format currency based on invoice's currency or user's default
   const formatCurrency = (amount: number, currencyCode: string = businessSettings?.default_currency || 'USD') => {
     const formatter = new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -115,40 +124,88 @@ const Invoices = () => {
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
           </div>
-        ) : invoices.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {invoices.map((invoice: Invoice) => (
-              <div 
-                key={invoice.id}
-                onClick={() => handleInvoiceClick(invoice.id)}
-                className="cursor-pointer transition-transform hover:scale-[1.02]"
-              >
-                <Card className="h-full transition-shadow hover:shadow-md">
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-bold text-lg">
-                          {invoice.invoice_number || `INV-${invoice.id.substring(0, 6)}`}
-                        </h3>
-                        <p className="text-sm text-gray-500">{invoice.customer || 'No customer'}</p>
+        ) : currentInvoices.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {currentInvoices.map((invoice: CreateInvoiceResponse) => (
+                <div 
+                  key={invoice.publicId}
+                  onClick={() => handleInvoiceClick(invoice.publicId)}
+                  className="cursor-pointer transition-transform hover:scale-[1.02]"
+                >
+                  <Card className="h-full transition-shadow hover:shadow-md">
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="font-bold text-lg">
+                            {invoice.invoiceNumber}
+                          </h3>
+                          <p className="text-sm text-gray-500">{invoice.customer.name}</p>
+                        </div>
+                        <div>
+                          {getStatusBadge(invoice.status)}
+                        </div>
                       </div>
-                      <div>
-                        {getStatusBadge(invoice.status)}
+                      
+                      <div className="space-y-2 mb-4">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">Email:</span>
+                          <span className="truncate ml-2">{invoice.customer.email}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">Phone:</span>
+                          <span>{invoice.customer.phone}</span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="mt-4 flex justify-between border-t pt-4">
-                      <div className="text-sm text-gray-500">
-                        {invoice.date ? format(new Date(invoice.date), 'MMM d, yyyy') : 'No date'}
+                      
+                      <div className="flex justify-between items-end border-t pt-4">
+                        <div className="text-sm text-gray-500">
+                          {format(new Date(invoice.date), 'MMM d, yyyy')}
+                        </div>
+                        <div className="font-bold text-lg">
+                          {formatCurrency(invoice.total)}
+                        </div>
                       </div>
-                      <div className="font-bold">
-                        {formatCurrency(invoice.amount, invoice.currency)}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </div>
+              ))}
+            </div>
+            
+            {totalPages > 1 && (
+              <div className="mt-8">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(page)}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         ) : (
           <div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg border border-dashed border-gray-300">
             <Plus className="h-12 w-12 text-gray-400" />

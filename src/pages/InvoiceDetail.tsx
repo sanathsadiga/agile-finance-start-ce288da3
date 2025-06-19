@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DashboardHeader from '@/components/layout/DashboardHeader';
@@ -8,13 +7,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import InvoiceForm from '@/components/invoices/InvoiceForm';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { CreateInvoiceResponse } from '@/services/invoiceService';
 
 const InvoiceDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { invoices, fetchInvoices, updateInvoice, deleteInvoice, sendInvoice, generatePDF, printInvoice, handleConfirmDelete } = useInvoices();
+  const { updateInvoice, deleteInvoice, sendInvoice, generatePDF, printInvoice, handleConfirmDelete, getInvoiceDetails } = useInvoices();
   const [isLoading, setIsLoading] = useState(true);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [rawInvoice, setRawInvoice] = useState<CreateInvoiceResponse | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
@@ -34,38 +35,27 @@ const InvoiceDetail = () => {
 
       setIsLoading(true);
       try {
-        console.log("Loading invoice with ID:", id);
+        console.log("Loading invoice with publicId:", id);
         
-        // First fetch all invoices to ensure we have the latest data
-        const invoicesData = await fetchInvoices();
+        const invoiceData = await getInvoiceDetails(id);
+        setRawInvoice(invoiceData);
         
-        if (!invoicesData || invoicesData.length === 0) {
-          console.error("Failed to fetch invoices");
-          toast({
-            title: "Error",
-            description: "Failed to load invoices data.",
-            variant: "destructive",
-          });
-          navigate('/dashboard/invoices');
-          return;
-        }
+        // Convert to Invoice format for the InvoiceView component
+        const convertedInvoice: Invoice = {
+          id: invoiceData.publicId,
+          date: invoiceData.date,
+          dueDate: invoiceData.dueDate,
+          customer: invoiceData.customer.name,
+          email: invoiceData.customer.email,
+          amount: invoiceData.total,
+          status: invoiceData.status.toLowerCase() as Invoice['status'],
+          description: invoiceData.notes,
+          items: invoiceData.lines,
+          notes: invoiceData.notes,
+          invoice_number: invoiceData.invoiceNumber,
+        };
         
-        // Now check for the specific invoice in the updated invoices array
-        const foundInvoice = invoicesData.find(inv => inv.id === id);
-        
-        if (foundInvoice) {
-          console.log("Found invoice:", foundInvoice);
-          setInvoice(foundInvoice);
-        } else {
-          console.error("Invoice not found after fetching");
-          toast({
-            title: "Error",
-            description: "Invoice not found",
-            variant: "destructive",
-          });
-          // Navigate back if invoice not found
-          navigate('/dashboard/invoices');
-        }
+        setInvoice(convertedInvoice);
       } catch (error) {
         console.error('Error loading invoice:', error);
         toast({
@@ -73,13 +63,14 @@ const InvoiceDetail = () => {
           description: "Failed to load invoice details",
           variant: "destructive",
         });
+        navigate('/dashboard/invoices');
       } finally {
         setIsLoading(false);
       }
     };
 
     loadInvoice();
-  }, [id, fetchInvoices, navigate, toast]);
+  }, [id, getInvoiceDetails, navigate, toast]);
 
   const handleGoBack = () => {
     navigate('/dashboard/invoices');
@@ -189,7 +180,7 @@ const InvoiceDetail = () => {
     );
   }
 
-  if (!invoice) {
+  if (!invoice || !rawInvoice) {
     return (
       <div className="min-h-screen bg-gray-50">
         <DashboardHeader />
@@ -197,7 +188,7 @@ const InvoiceDetail = () => {
           <div className="text-center py-12">
             <h2 className="text-2xl font-bold text-gray-700">Invoice not found</h2>
             <button 
-              onClick={handleGoBack}
+              onClick={() => navigate('/dashboard/invoices')}
               className="mt-4 text-primary hover:underline"
             >
               Go back to invoices
@@ -214,12 +205,12 @@ const InvoiceDetail = () => {
       <div className="container mx-auto px-4 py-8">
         <InvoiceView 
           invoice={invoice} 
-          onBack={handleGoBack} 
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onSend={handleSend}
-          onDownload={handleDownload}
-          onPrint={handlePrint}
+          onBack={() => navigate('/dashboard/invoices')} 
+          onEdit={() => setIsEditing(true)}
+          onDelete={() => setIsDeleting(true)}
+          onSend={(invoiceId) => sendInvoice(invoiceId)}
+          onDownload={(invoiceId) => generatePDF(invoiceId)}
+          onPrint={(invoiceId) => printInvoice(invoiceId)}
         />
       </div>
 
@@ -232,7 +223,27 @@ const InvoiceDetail = () => {
           {invoice && (
             <InvoiceForm 
               invoice={invoice}
-              onSave={handleSaveEdit}
+              onSave={async (updatedData) => {
+                try {
+                  await updateInvoice({
+                    ...invoice,
+                    ...updatedData,
+                    amount: updatedData.total,
+                  });
+                  setIsEditing(false);
+                  toast({
+                    title: "Success",
+                    description: "Invoice updated successfully",
+                  });
+                } catch (error) {
+                  console.error('Error updating invoice:', error);
+                  toast({
+                    title: "Error",
+                    description: "Failed to update invoice",
+                    variant: "destructive",
+                  });
+                }
+              }}
               onCancel={() => setIsEditing(false)}
             />
           )}
@@ -250,7 +261,27 @@ const InvoiceDetail = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDeleteLocal} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction 
+              onClick={async () => {
+                if (!invoice) return;
+                try {
+                  const success = await handleConfirmDelete(invoice.id);
+                  if (success) {
+                    navigate('/dashboard/invoices');
+                  }
+                } catch (error) {
+                  console.error('Error deleting invoice:', error);
+                  toast({
+                    title: "Error",
+                    description: "Failed to delete invoice",
+                    variant: "destructive",
+                  });
+                } finally {
+                  setIsDeleting(false);
+                }
+              }} 
+              className="bg-red-600 hover:bg-red-700"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
