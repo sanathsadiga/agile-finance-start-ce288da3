@@ -20,55 +20,55 @@ const InvoiceDetail = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
+  const loadInvoice = async () => {
+    if (!id) {
+      console.error("No invoice ID provided");
+      toast({
+        title: "Error",
+        description: "Invoice ID is missing. Redirecting to invoices page.",
+        variant: "destructive",
+      });
+      navigate('/dashboard/invoices');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      console.log("Loading invoice with publicId:", id);
+      
+      const invoiceData = await getInvoiceDetails(id);
+      setRawInvoice(invoiceData);
+      
+      // Convert to Invoice format for the InvoiceView component
+      const convertedInvoice: Invoice = {
+        id: invoiceData.publicId,
+        date: invoiceData.date,
+        dueDate: invoiceData.dueDate,
+        customer: invoiceData.customer.name,
+        email: invoiceData.customer.email,
+        amount: invoiceData.total,
+        status: invoiceData.status.toLowerCase() as Invoice['status'],
+        description: invoiceData.notes,
+        items: invoiceData.lines,
+        notes: invoiceData.notes,
+        invoice_number: invoiceData.invoiceNumber,
+      };
+      
+      setInvoice(convertedInvoice);
+    } catch (error) {
+      console.error('Error loading invoice:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load invoice details",
+        variant: "destructive",
+      });
+      navigate('/dashboard/invoices');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadInvoice = async () => {
-      if (!id) {
-        console.error("No invoice ID provided");
-        toast({
-          title: "Error",
-          description: "Invoice ID is missing. Redirecting to invoices page.",
-          variant: "destructive",
-        });
-        navigate('/dashboard/invoices');
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        console.log("Loading invoice with publicId:", id);
-        
-        const invoiceData = await getInvoiceDetails(id);
-        setRawInvoice(invoiceData);
-        
-        // Convert to Invoice format for the InvoiceView component
-        const convertedInvoice: Invoice = {
-          id: invoiceData.publicId,
-          date: invoiceData.date,
-          dueDate: invoiceData.dueDate,
-          customer: invoiceData.customer.name,
-          email: invoiceData.customer.email,
-          amount: invoiceData.total,
-          status: invoiceData.status.toLowerCase() as Invoice['status'],
-          description: invoiceData.notes,
-          items: invoiceData.lines,
-          notes: invoiceData.notes,
-          invoice_number: invoiceData.invoiceNumber,
-        };
-        
-        setInvoice(convertedInvoice);
-      } catch (error) {
-        console.error('Error loading invoice:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load invoice details",
-          variant: "destructive",
-        });
-        navigate('/dashboard/invoices');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     loadInvoice();
   }, [id, getInvoiceDetails, navigate, toast]);
 
@@ -119,8 +119,8 @@ const InvoiceDetail = () => {
         title: "Success",
         description: "Invoice updated successfully",
       });
-      // Re-fetch to get updated data
-      fetchInvoices();
+      // Re-load the invoice to get updated data
+      await loadInvoice();
     } catch (error) {
       console.error('Error updating invoice:', error);
       toast({
@@ -235,6 +235,8 @@ const InvoiceDetail = () => {
                     title: "Success",
                     description: "Invoice updated successfully",
                   });
+                  // Re-load the invoice to get updated data
+                  await loadInvoice();
                 } catch (error) {
                   console.error('Error updating invoice:', error);
                   toast({
