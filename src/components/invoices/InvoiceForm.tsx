@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -120,8 +121,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({ invoice, onCancel, onSave }) 
       console.log('InvoiceForm: Performing initial setup');
       if (invoice) {
         console.log('InvoiceForm: Setting up from existing invoice:', invoice);
-        setCustomer(invoice.customer || '');
-        setEmail(invoice.email || '');
+        setSelectedCustomerId(invoice.customerId || null);
         setStatus(invoice.status || 'draft');
         setNotes(invoice.notes || '');
         

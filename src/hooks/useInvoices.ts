@@ -1,9 +1,26 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { invoiceService, Invoice } from '@/services/invoiceService';
+import { invoiceService, Invoice, CreateInvoiceRequest, CreateInvoiceResponse } from '@/services/invoiceService';
 import { useToast } from '@/hooks/use-toast';
 
 export type { Invoice } from '@/services/invoiceService';
+
+// Helper function to convert CreateInvoiceResponse to Invoice format
+const convertResponseToInvoice = (response: CreateInvoiceResponse): Invoice => {
+  return {
+    id: response.publicId,
+    date: response.date,
+    dueDate: response.dueDate,
+    customer: response.customer.name,
+    email: response.customer.email,
+    amount: response.total,
+    status: response.status.toLowerCase() as Invoice['status'],
+    description: response.notes,
+    items: response.lines,
+    notes: response.notes,
+    invoice_number: response.invoiceNumber,
+  };
+};
 
 export const useInvoices = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -33,9 +50,10 @@ export const useInvoices = () => {
     fetchInvoices();
   }, [fetchInvoices]);
 
-  const addInvoice = useCallback(async (invoice: Omit<Invoice, 'id'>) => {
+  const addInvoice = useCallback(async (invoiceData: CreateInvoiceRequest) => {
     try {
-      const newInvoice = await invoiceService.createInvoice(invoice);
+      const response = await invoiceService.createInvoice(invoiceData);
+      const newInvoice = convertResponseToInvoice(response);
       setInvoices(prev => [newInvoice, ...prev]);
       toast({
         title: 'Invoice created',
