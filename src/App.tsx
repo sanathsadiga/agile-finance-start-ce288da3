@@ -27,6 +27,9 @@ import ScrollToTop from './components/ScrollToTop';
 import PricingPage from './pages/pricingpage';
 import FeaturesPage from './pages/features';
 import Customers from "./pages/Customers";
+import InvoicePayment from "./pages/InvoicePayment";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentFailed from "./pages/PaymentFailed";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -55,6 +58,12 @@ const App = () => {
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/signup/details" element={<SignupDetails />} />
+              
+              {/* Payment routes - public access */}
+              <Route path="/payment/pay/invoice/:publicId" element={<InvoicePayment />} />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
+              <Route path="/payment-failed" element={<PaymentFailed />} />
+              
               <Route
                 path="/dashboard"
                 element={
