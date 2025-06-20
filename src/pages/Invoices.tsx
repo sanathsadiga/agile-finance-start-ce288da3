@@ -24,7 +24,7 @@ const Invoices = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
 
-  const itemsPerPage = 6;
+  const itemsPerPage = 10;
   
   // Use search results if available, otherwise use all invoices
   const displayInvoices = searchResults ? [searchResults] : rawInvoices;

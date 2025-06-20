@@ -61,8 +61,8 @@ const App = () => {
               
               {/* Payment routes - public access */}
               <Route path="/payment/pay/invoice/:publicId" element={<InvoicePayment />} />
-              <Route path="/payment-success" element={<PaymentSuccess />} />
-              <Route path="/payment-failed" element={<PaymentFailed />} />
+              <Route path="/payment/pay/invoice/:publicId/received/payment-success" element={<PaymentSuccess />} />
+              <Route path="/payment/pay/invoice/:publicId/failed/payment-failed" element={<PaymentFailed />} />
               
               <Route
                 path="/dashboard"
