@@ -21,6 +21,7 @@ const InvoicePayment = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [invoice, setInvoice] = useState<CreateInvoiceResponse | null>(null);
+  const [actualPublicId, setActualPublicId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
@@ -46,6 +47,8 @@ const InvoicePayment = () => {
       // Use the new secure payment endpoint
       const invoiceData = await invoiceService.getInvoiceForPayment(publicId);
       setInvoice(invoiceData);
+      // Store the actual public ID from the response for payment processing
+      setActualPublicId(invoiceData.publicId);
     } catch (error: any) {
       console.error('Error loading invoice:', error);
       toast({
@@ -72,13 +75,13 @@ const InvoicePayment = () => {
   };
 
   const handlePayNow = async () => {
-    if (!publicId || !invoice) return;
+    if (!actualPublicId || !invoice) return;
 
     try {
       setIsProcessingPayment(true);
       
-      // Create Razorpay order
-      const orderData = await paymentService.createOrder(publicId);
+      // Create Razorpay order using the actual public ID from the invoice response
+      const orderData = await paymentService.createOrder(actualPublicId);
       
       if (!window.Razorpay) {
         toast({
@@ -102,7 +105,7 @@ const InvoicePayment = () => {
               paymentId: response.razorpay_payment_id,
               orderId: response.razorpay_order_id,
               signature: response.razorpay_signature,
-              publicId: publicId!,
+              publicId: actualPublicId,
             };
             
             await paymentService.confirmPayment(payload);
