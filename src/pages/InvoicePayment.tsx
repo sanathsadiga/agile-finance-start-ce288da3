@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,7 +43,8 @@ const InvoicePayment = () => {
       setIsLoading(true);
       if (!publicId) return;
       
-      const invoiceData = await invoiceService.getInvoice(publicId);
+      // Use the new secure payment endpoint
+      const invoiceData = await invoiceService.getInvoiceForPayment(publicId);
       setInvoice(invoiceData);
     } catch (error: any) {
       console.error('Error loading invoice:', error);
@@ -106,10 +106,10 @@ const InvoicePayment = () => {
             };
             
             await paymentService.confirmPayment(payload);
-            navigate('/payment-success');
+            navigate(`/payment/pay/invoice/${publicId}/received/payment-success`);
           } catch (error: any) {
             console.error('Payment confirmation failed:', error);
-            navigate('/payment-failed');
+            navigate(`/payment/pay/invoice/${publicId}/failed/payment-failed`);
           }
         },
         prefill: {

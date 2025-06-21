@@ -1,3 +1,4 @@
+
 import { api } from './api';
 
 export interface Invoice {
@@ -78,9 +79,14 @@ export const invoiceService = {
     return api.get<Invoice[]>('/invoices');
   },
 
-  // Get invoice by public ID
+  // Get invoice by public ID - updated for secure payment endpoint
   getInvoice: async (publicId: string): Promise<CreateInvoiceResponse> => {
     return api.get<CreateInvoiceResponse>(`/api/invoices/${publicId}`);
+  },
+
+  // Get invoice for payment using secure token
+  getInvoiceForPayment: async (secureToken: string): Promise<CreateInvoiceResponse> => {
+    return api.get<CreateInvoiceResponse>(`/api/invoices/payment/pay/invoice/secure/${secureToken}`);
   },
 
   // Create new invoice with backend integration
