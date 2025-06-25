@@ -188,7 +188,15 @@ const PricingPage = () => {
     };
 
     return (
-        <div className="bg-white">
+        <div className="min-h-screen bg-gradient-to-b from-purple-50/30 via-white to-purple-50/30 relative overflow-hidden">
+            {/* Background decorations */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-20 left-10 w-3 h-3 bg-brand-purple/20 rotate-45 animate-spin" style={{animationDuration: '8s'}}></div>
+                <div className="absolute bottom-20 right-20 w-4 h-4 bg-brand-tertiary-purple/30 rounded-full animate-bounce" style={{animationDuration: '4s'}}></div>
+                <div className="absolute top-1/2 left-1/4 w-2 h-2 bg-purple-400/25 rotate-45 animate-pulse"></div>
+                <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-brand-purple/40 rounded-full animate-ping"></div>
+            </div>
+
             <Helmet>
                 <title>FinanceFlow Pricing - Affordable Financial Management Plans | Free Trial Available</title>
                 <meta name="description" content="Choose the perfect FinanceFlow plan for your business. Start FREE with unlimited invoices, expense tracking, and reporting. Professional plans from $15/month. 14-day free trial on all paid plans. No credit card required." />
@@ -226,72 +234,50 @@ const PricingPage = () => {
             </Helmet>
 
             <Navbar />
-            {/* Hero Section */}
-            <section id="pricing" className="py-20 bg-gradient-to-b from-purple-50 to-white">
+            
+            {/* Modern Hero Section */}
+            <section className="py-20 bg-gradient-to-b from-white/50 to-purple-50/50 backdrop-blur-sm relative z-10">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
                         <div className="max-w-5xl mx-auto text-center py-20 px-6">
-                            <h2 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-gray-900 relative inline-block">
-                                Flexible plans for  <span className="text-primary relative inline-block">
+                            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-gray-900 relative inline-block mb-6">
+                                Flexible plans for{" "}
+                                <span className="bg-gradient-to-r from-brand-purple via-brand-tertiary-purple to-brand-purple bg-clip-text text-transparent animate-gradient bg-300% relative inline-block">
                                     every stage
-                                    <svg
-                                        className="absolute bottom-0 left-0 w-full h-6"
-                                        viewBox="0 0 300 20"
-                                        fill="none"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        preserveAspectRatio="none"
-                                    >
-                                        <path
-                                            d="M0 18 C 50 20, 250 0, 300 18"
-                                            stroke="#00BFF3"
-                                            strokeWidth="4"
-                                            fill="none"
-                                        />
-                                        <path
-                                            d="M0 20 C 50 22, 250 2, 300 20"
-                                            stroke="#00BFF3"
-                                            strokeWidth="4"
-                                            fill="none"
-                                        />
-                                    </svg>
-
-
-
+                                    <div className="absolute -bottom-3 left-0 right-0 h-2 bg-gradient-to-r from-brand-purple via-brand-tertiary-purple to-brand-purple rounded-full transform scale-x-0 animate-scale-x opacity-80"></div>
                                 </span>
-                            </h2>
-                            <p className="mt-6 text-lg sm:text-xl text-gray-600 font-medium">
-                                Simple pricing, powerful features — built for every stage.
+                            </h1>
+                            <p className="mt-6 text-modern-lg text-gray-600 font-medium max-w-2xl mx-auto">
+                                Simple pricing, powerful features — built for every stage of your business journey.
                             </p>
 
-                            <div className="mt-10 flex justify-center flex-wrap gap-8 text-base sm:text-lg text-gray-800">
-    <div className="flex items-center gap-3 text-gray-700">
-        <span className="text-primary text-xl">✓</span>
-        <span>Reliable and secure platform</span>
-    </div>
-    <div className="flex items-center gap-3 text-gray-700">
-        <span className="text-primary text-xl">✓</span>
-        <span>Zero commitment — leave when you want</span>
-    </div>
-    <div className="flex items-center gap-3 text-gray-700">
-        <span className="text-primary text-xl">✓</span>
-        <span>24/7 online support</span>
-    </div>
-</div>
-
+                            <div className="mt-10 flex justify-center flex-wrap gap-6 text-modern-base text-gray-700">
+                                <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm border border-gray-200/50">
+                                    <span className="text-brand-purple text-lg">✓</span>
+                                    <span>Reliable and secure platform</span>
+                                </div>
+                                <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm border border-gray-200/50">
+                                    <span className="text-brand-purple text-lg">✓</span>
+                                    <span>Zero commitment — leave when you want</span>
+                                </div>
+                                <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm border border-gray-200/50">
+                                    <span className="text-brand-purple text-lg">✓</span>
+                                    <span>24/7 online support</span>
+                                </div>
+                            </div>
                         </div>
 
-
-
-                        {/* Toggle */}
-                        <div className="inline-flex mt-8 bg-gray-100 rounded-full p-1">
+                        {/* Modern Toggle */}
+                        <div className="inline-flex mt-8 bg-white/80 backdrop-blur-sm rounded-full p-1 border border-gray-200/50 shadow-lg">
                             {["monthly", "yearly"].map((period) => (
                                 <button
                                     key={period}
                                     onClick={() => setBillingPeriod(period)}
-                                    className={`flex items-center gap-2 px-6 py-2 text-sm rounded-full transition-all ${billingPeriod === period
-                                        ? "bg-brand-purple text-white shadow-md"
-                                        : "text-gray-500 hover:text-gray-900"
-                                        }`}
+                                    className={`flex items-center gap-2 px-6 py-3 text-modern-sm rounded-full transition-all duration-300 ${
+                                        billingPeriod === period
+                                            ? "bg-gradient-to-r from-brand-purple to-brand-tertiary-purple text-white shadow-lg transform scale-105"
+                                            : "text-gray-500 hover:text-gray-900 hover:bg-white/50"
+                                    }`}
                                 >
                                     {period === "monthly" ? <Calendar className="w-4 h-4" /> : <CalendarCheck className="w-4 h-4" />}
                                     {period === "monthly" ? "Monthly" : "Yearly (Save 15%)"}
@@ -300,68 +286,85 @@ const PricingPage = () => {
                         </div>
                     </div>
 
-                    {/* Pricing Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+                    {/* Modern Pricing Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
                         {plans.map((plan, idx) => (
                             <div
                                 key={idx}
-                                className={`flex flex-col transition-all transform hover:scale-105 duration-300 ease-in-out rounded-2xl shadow-lg overflow-hidden relative ${plan.highlight ? "bg-gradient-to-r from-purple-100 to-purple-50 ring-2 ring-brand-purple" : "bg-white"}`}
+                                className={`flex flex-col rounded-3xl border overflow-hidden relative group transition-all duration-500 hover:scale-105 ${
+                                    plan.highlight
+                                        ? "bg-white/90 backdrop-blur-lg ring-2 ring-brand-purple shadow-2xl shadow-brand-purple/20"
+                                        : "bg-white/70 backdrop-blur-sm border-gray-200/50 shadow-xl hover:shadow-2xl"
+                                }`}
                             >
                                 {plan.highlight && (
-                                    <span className="absolute top-0 left-0 bg-gradient-to-r from-purple-500 to-purple-700 text-white text-xs font-semibold px-6 py-2 rounded-br-xl shadow-lg">
+                                    <div className="absolute -top-1 left-0 right-0 h-1 bg-gradient-to-r from-brand-purple to-brand-tertiary-purple rounded-t-3xl"></div>
+                                )}
+                                
+                                {plan.highlight && (
+                                    <span className="absolute top-3 left-0 bg-gradient-to-r from-brand-purple to-brand-tertiary-purple text-white text-modern-xs font-bold px-3 py-1 rounded-r-full shadow-lg">
                                         Most Popular
                                     </span>
                                 )}
 
-                                <div className="p-8 flex-grow flex flex-col">
-                                    <h3 className="text-2xl font-semibold text-gray-900 mb-2">{plan.name}</h3>
-                                    <div className="flex items-baseline mb-4">
-                                        <span className="text-5xl font-bold text-gray-900">{plan.price}</span>
-                                        {plan.period && <span className="text-gray-500 ml-2 text-xl">{plan.period}</span>}
+                                <div className="p-6 flex-grow">
+                                    <h3 className="text-modern-xl font-bold mb-2 text-gray-900">{plan.name}</h3>
+                                    <div className="flex items-baseline mb-3">
+                                        <span className="text-responsive-3xl font-black text-gray-900">{plan.price}</span>
+                                        {plan.period && <span className="text-modern-sm text-gray-500 ml-1">{plan.period}</span>}
                                     </div>
-                                    <p className="text-gray-700 mb-6 text-lg">{plan.description}</p>
+                                    <p className="text-modern-sm text-gray-600 mb-6 leading-relaxed">{plan.description}</p>
 
-                                    <Link to="/signup" className="block mt-auto">
+                                    <Link to="/signup" className="block">
                                         <Button
                                             variant={plan.buttonVariant as "default" | "outline"}
-                                            className={`w-full py-3 text-lg font-semibold rounded-md ${plan.highlight ? "bg-brand-purple text-white hover:bg-brand-tertiary-purple" : "bg-gray-200 text-gray-800 hover:bg-gray-300"}`}
+                                            className={`w-full transition-all duration-300 hover:scale-105 ${
+                                                plan.highlight 
+                                                    ? "bg-gradient-to-r from-brand-purple to-brand-tertiary-purple text-white hover:from-brand-tertiary-purple hover:to-brand-purple shadow-lg" 
+                                                    : "border-brand-purple/30 hover:border-brand-purple/60 hover:bg-brand-purple/10"
+                                            }`}
                                         >
                                             {plan.buttonText}
                                         </Button>
                                     </Link>
                                 </div>
 
-                                <div className="border-t border-gray-100 bg-gray-50 p-6">
-                                    <ul className="space-y-4">
+                                <div className="border-t border-gray-100/50 bg-gray-50/30 backdrop-blur-sm p-6">
+                                    <ul className="space-y-2">
                                         {plan.features.map((feature, i) => (
-                                            <li key={i} className="flex items-center text-sm text-gray-700">
-                                                <Check className="w-5 h-5 text-brand-purple mr-3" />
-                                                {feature}
+                                            <li key={i} className="flex items-start text-modern-sm text-gray-700">
+                                                <Check className="w-4 h-4 text-brand-purple mr-2 mt-0.5 flex-shrink-0" />
+                                                <span className="leading-relaxed">{feature}</span>
                                             </li>
                                         ))}
                                     </ul>
                                 </div>
+
+                                {/* Hover overlay */}
+                                <div className={`absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none ${
+                                    plan.highlight 
+                                        ? "bg-gradient-to-br from-brand-purple/5 via-transparent to-brand-tertiary-purple/5"
+                                        : "bg-gradient-to-br from-gray-100/20 via-transparent to-gray-100/20"
+                                }`}></div>
                             </div>
                         ))}
                     </div>
 
-
-                    {/* Notes */}
+                    {/* Modern Notes */}
                     <div className="text-center mt-16">
-                        <p className="text-lg text-gray-700 mb-6 font-medium">Need a custom plan? Contact us for enterprise pricing.</p>
-                        <div className="flex flex-wrap justify-center gap-6">
+                        <p className="text-modern-base text-gray-600 mb-6">Need a custom plan? Contact us for enterprise pricing.</p>
+                        <div className="flex flex-wrap justify-center gap-3">
                             {["No credit card required", "Cancel anytime", "14-day free trial"].map((msg, idx) => (
                                 <div
                                     key={idx}
-                                    className="flex items-center space-x-3 bg-gradient-to-r from-purple-50 to-purple-100 px-6 py-3 rounded-full shadow-md hover:shadow-xl transition duration-300 ease-in-out transform hover:scale-105"
+                                    className="flex items-center space-x-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full hover:bg-white transition border border-gray-200/50 shadow-sm hover:shadow-md"
                                 >
-                                    <Check className="h-5 w-5 text-brand-purple" />
-                                    <span className="text-base font-semibold text-gray-800">{msg}</span>
+                                    <Check className="h-3 w-3 text-brand-purple" />
+                                    <span className="text-modern-sm font-medium text-gray-700">{msg}</span>
                                 </div>
                             ))}
                         </div>
                     </div>
-
                 </div>
             </section>
 
