@@ -1,0 +1,43 @@
+
+/* Modern typography with better hierarchy */
+.text-xs { font-size: 0.75rem; line-height: 1rem; }
+.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+.text-base { font-size: 1rem; line-height: 1.5rem; }
+.text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+.text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+.text-2xl { font-size: 1.5rem; line-height: 2rem; }
+.text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+.text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+.text-5xl { font-size: 3rem; line-height: 1; }
+.text-6xl { font-size: 3.75rem; line-height: 1; }
+
+/* Modern text sizes for better hierarchy */
+.text-modern-xs { font-size: 0.7rem; line-height: 1rem; }
+.text-modern-sm { font-size: 0.8rem; line-height: 1.2rem; }
+.text-modern-base { font-size: 0.9rem; line-height: 1.4rem; }
+.text-modern-lg { font-size: 1rem; line-height: 1.5rem; }
+.text-modern-xl { font-size: 1.1rem; line-height: 1.6rem; }
+.text-modern-2xl { font-size: 1.3rem; line-height: 1.8rem; }
+.text-modern-3xl { font-size: 1.6rem; line-height: 2rem; }
+.text-modern-4xl { font-size: 2rem; line-height: 2.2rem; }
+.text-modern-5xl { font-size: 2.5rem; line-height: 1; }
+.text-modern-6xl { font-size: 3rem; line-height: 1; }
+
+/* Responsive typography */
+@media (max-width: 640px) {
+  .text-responsive-xl { font-size: 1.125rem; line-height: 1.75rem; }
+  .text-responsive-2xl { font-size: 1.25rem; line-height: 1.75rem; }
+  .text-responsive-3xl { font-size: 1.5rem; line-height: 2rem; }
+  .text-responsive-4xl { font-size: 1.875rem; line-height: 2.25rem; }
+  .text-responsive-5xl { font-size: 2.25rem; line-height: 2.5rem; }
+  .text-responsive-6xl { font-size: 2.5rem; line-height: 1; }
+}
+
+@media (min-width: 768px) {
+  .text-responsive-xl { font-size: 1.25rem; line-height: 1.75rem; }
+  .text-responsive-2xl { font-size: 1.5rem; line-height: 2rem; }
+  .text-responsive-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+  .text-responsive-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+  .text-responsive-5xl { font-size: 3rem; line-height: 1; }
+  .text-responsive-6xl { font-size: 3.75rem; line-height: 1; }
+}

@@ -139,101 +139,121 @@ const PricingPlans = () => {
   const plans = billingPeriod === 'monthly' ? monthlyPlans : yearlyPlans;
 
   return (
-    <section id="pricing" className="py-20 bg-gradient-to-b from-purple-50 to-white">
-  <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-    <div className="text-center mb-16">
-      <h2 className="text-4xl font-bold text-gray-900 tracking-tight mb-4">Simple, Transparent Pricing</h2>
-      <p className="text-lg text-gray-600 max-w-xl mx-auto">
-        Choose the plan that fits your business. All come with a 14-day free trial.
-      </p>
-
-      {/* Toggle */}
-      <div className="inline-flex mt-8 bg-gray-100 rounded-full p-1">
-        {["monthly", "yearly"].map((period) => (
-          <button
-            key={period}
-            onClick={() => setBillingPeriod(period)}
-            className={`px-6 py-2 text-sm rounded-full transition-all ${
-              billingPeriod === period
-                ? "bg-brand-purple text-white shadow-md"
-                : "text-gray-500 hover:text-gray-900"
-            }`}
-          >
-            {period === "monthly" ? "Monthly" : "Yearly (Save 15%)"}
-          </button>
-        ))}
+    <section id="pricing" className="py-16 bg-gradient-to-b from-purple-50/50 via-white to-white relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-3 h-3 bg-brand-purple/20 rotate-45 animate-spin" style={{animationDuration: '8s'}}></div>
+        <div className="absolute bottom-20 right-20 w-4 h-4 bg-brand-tertiary-purple/30 rounded-full animate-bounce" style={{animationDuration: '4s'}}></div>
+        <div className="absolute top-1/2 left-1/4 w-2 h-2 bg-purple-400/25 rotate-45 animate-pulse"></div>
       </div>
-    </div>
 
-    {/* Pricing Cards */}
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-      {plans.map((plan, idx) => (
-        <div
-          key={idx}
-          className={`flex flex-col rounded-2xl border border-gray-200 shadow-lg overflow-hidden relative ${
-            plan.highlight
-              ? "bg-white/70 backdrop-blur-md ring-2 ring-brand-purple"
-              : "bg-white"
-          }`}
-        >
-          {plan.highlight && (
-            <span className="absolute top-0 left-0 bg-brand-purple text-white text-xs font-semibold px-4 py-1 rounded-br-xl">
-              Most Popular
-            </span>
-          )}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="text-center mb-12">
+          <h2 className="text-responsive-4xl font-bold text-gray-900 tracking-tight mb-3">Simple, Transparent Pricing</h2>
+          <p className="text-modern-lg text-gray-600 max-w-xl mx-auto">
+            Choose the plan that fits your business. All come with a 14-day free trial.
+          </p>
 
-          <div className="p-6 flex-grow">
-            <h3 className="text-xl font-semibold mb-2">{plan.name}</h3>
-            <div className="flex items-baseline mb-4">
-              <span className="text-4xl font-bold text-gray-900">{plan.price}</span>
-              {plan.period && <span className="text-gray-500 ml-1">{plan.period}</span>}
-            </div>
-            <p className="text-gray-600 mb-6">{plan.description}</p>
-
-            <Link to="/signup" className="block mt-auto">
-              <Button
-                variant={plan.buttonVariant as "default" | "outline"}
-                className={`w-full ${plan.highlight ? "bg-brand-purple text-white hover:bg-brand-tertiary-purple" : ""}`}
+          {/* Modern Toggle */}
+          <div className="inline-flex mt-6 bg-gray-100/80 backdrop-blur-sm rounded-full p-1 border border-gray-200/50 shadow-lg">
+            {["monthly", "yearly"].map((period) => (
+              <button
+                key={period}
+                onClick={() => setBillingPeriod(period)}
+                className={`px-5 py-2 text-modern-sm rounded-full transition-all duration-300 ${
+                  billingPeriod === period
+                    ? "bg-brand-purple text-white shadow-lg transform scale-105"
+                    : "text-gray-500 hover:text-gray-900 hover:bg-white/50"
+                }`}
               >
-                {plan.buttonText}
-              </Button>
-            </Link>
-          </div>
-
-          <div className="border-t border-gray-100 bg-gray-50 p-6">
-            <ul className="space-y-3">
-              {plan.features.map((feature, i) => (
-                <li key={i} className="flex items-start text-sm text-gray-700">
-                  <Check className="w-4 h-4 text-brand-purple mr-2 mt-1" />
-                  {feature}
-                </li>
-              ))}
-            </ul>
+                {period === "monthly" ? "Monthly" : "Yearly (Save 15%)"}
+              </button>
+            ))}
           </div>
         </div>
-      ))}
-    </div>
 
-    {/* Notes */}
-    <div className="text-center mt-12">
-      <p className="text-gray-600 mb-4">Need a custom plan? Contact us for enterprise pricing.</p>
-      <div className="flex flex-wrap justify-center gap-4">
-        {["No credit card required", "Cancel anytime", "14-day free trial"].map((msg, idx) => (
-          <div
-            key={idx}
-            className="flex items-center space-x-2 bg-gray-100 px-4 py-2 rounded-full hover:bg-gray-200 transition"
-          >
-            <Check className="h-4 w-4 text-brand-purple" />
-            <span className="text-sm">{msg}</span>
+        {/* Modern Pricing Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
+          {plans.map((plan, idx) => (
+            <div
+              key={idx}
+              className={`flex flex-col rounded-3xl border overflow-hidden relative group transition-all duration-500 hover:scale-105 ${
+                plan.highlight
+                  ? "bg-white/90 backdrop-blur-lg ring-2 ring-brand-purple shadow-2xl shadow-brand-purple/20"
+                  : "bg-white/70 backdrop-blur-sm border-gray-200/50 shadow-xl hover:shadow-2xl"
+              }`}
+            >
+              {plan.highlight && (
+                <div className="absolute -top-1 left-0 right-0 h-1 bg-gradient-to-r from-brand-purple to-brand-tertiary-purple rounded-t-3xl"></div>
+              )}
+              
+              {plan.highlight && (
+                <span className="absolute top-3 left-0 bg-gradient-to-r from-brand-purple to-brand-tertiary-purple text-white text-modern-xs font-bold px-3 py-1 rounded-r-full shadow-lg">
+                  Most Popular
+                </span>
+              )}
+
+              <div className="p-6 flex-grow">
+                <h3 className="text-modern-xl font-bold mb-2 text-gray-900">{plan.name}</h3>
+                <div className="flex items-baseline mb-3">
+                  <span className="text-responsive-3xl font-black text-gray-900">{plan.price}</span>
+                  {plan.period && <span className="text-modern-sm text-gray-500 ml-1">{plan.period}</span>}
+                </div>
+                <p className="text-modern-sm text-gray-600 mb-6 leading-relaxed">{plan.description}</p>
+
+                <Link to="/signup" className="block">
+                  <Button
+                    variant={plan.buttonVariant as "default" | "outline"}
+                    className={`w-full transition-all duration-300 hover:scale-105 ${
+                      plan.highlight 
+                        ? "bg-gradient-to-r from-brand-purple to-brand-tertiary-purple text-white hover:from-brand-tertiary-purple hover:to-brand-purple shadow-lg" 
+                        : "border-brand-purple/30 hover:border-brand-purple/60 hover:bg-brand-purple/10"
+                    }`}
+                  >
+                    {plan.buttonText}
+                  </Button>
+                </Link>
+              </div>
+
+              <div className="border-t border-gray-100/50 bg-gray-50/30 backdrop-blur-sm p-6">
+                <ul className="space-y-2">
+                  {plan.features.map((feature, i) => (
+                    <li key={i} className="flex items-start text-modern-sm text-gray-700">
+                      <Check className="w-4 h-4 text-brand-purple mr-2 mt-0.5 flex-shrink-0" />
+                      <span className="leading-relaxed">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Hover overlay */}
+              <div className={`absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none ${
+                plan.highlight 
+                  ? "bg-gradient-to-br from-brand-purple/5 via-transparent to-brand-tertiary-purple/5"
+                  : "bg-gradient-to-br from-gray-100/20 via-transparent to-gray-100/20"
+              }`}></div>
+            </div>
+          ))}
+        </div>
+
+        {/* Modern Notes Section */}
+        <div className="text-center mt-12">
+          <p className="text-modern-base text-gray-600 mb-6">Need a custom plan? Contact us for enterprise pricing.</p>
+          <div className="flex flex-wrap justify-center gap-3">
+            {["No credit card required", "Cancel anytime", "14-day free trial"].map((msg, idx) => (
+              <div
+                key={idx}
+                className="flex items-center space-x-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full hover:bg-white transition border border-gray-200/50 shadow-sm hover:shadow-md"
+              >
+                <Check className="h-3 w-3 text-brand-purple" />
+                <span className="text-modern-sm font-medium text-gray-700">{msg}</span>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
-    </div>
-  </div>
-</section>
-
+    </section>
   );
-  
 };
 
 export default PricingPlans;

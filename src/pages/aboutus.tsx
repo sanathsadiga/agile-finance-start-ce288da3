@@ -1,6 +1,5 @@
-
 import { Link } from "react-router-dom";
-import { Check } from "lucide-react";
+import { Check, Sparkles, Zap, ArrowRight, Heart } from "lucide-react";
 import { Helmet } from 'react-helmet-async';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -46,7 +45,7 @@ export default function AboutUsPage() {
     };
 
     return (
-        <main className="bg-gradient-to-b from-white to-purple-50 text-gray-800">
+        <main className="bg-gradient-to-b from-white via-purple-50/30 to-white text-gray-800 overflow-hidden">
             <Helmet>
                 <title>About FinanceFlow - Meet the Team Behind Smart Financial Management Software</title>
                 <meta name="description" content="Discover FinanceFlow's mission to revolutionize small business financial management. Meet our expert team of engineers, designers, and financial technology specialists building the future of automated business finance." />
@@ -133,86 +132,124 @@ export default function AboutUsPage() {
             </Helmet>
 
             <Navbar />
-            {/* Hero */}
-            <section className="py-20 text-center animate-fade-up">
-                <div className="container mx-auto px-4">
-                    <h1 className="text-5xl font-bold text-gray-900 mb-4">About FinanceFlow</h1>
-                    <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            
+            {/* Modern Hero */}
+            <section className="py-16 text-center animate-fade-up relative">
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div className="absolute top-20 left-20 w-3 h-3 bg-brand-purple/20 rotate-45 animate-spin" style={{animationDuration: '8s'}}></div>
+                    <div className="absolute bottom-40 right-20 w-4 h-4 bg-brand-tertiary-purple/30 rounded-full animate-bounce" style={{animationDuration: '4s'}}></div>
+                </div>
+                <div className="container mx-auto px-4 relative z-10">
+                    <div className="inline-flex items-center gap-3 bg-gradient-to-r from-brand-purple/15 via-white/70 to-brand-tertiary-purple/15 px-6 py-3 rounded-full border border-brand-purple/30 mb-6 backdrop-blur-lg shadow-lg">
+                        <Heart className="h-5 w-5 text-brand-purple animate-pulse" />
+                        <span className="text-modern-base font-black text-brand-purple tracking-wide">About Our Journey</span>
+                    </div>
+                    <h1 className="text-responsive-4xl md:text-responsive-5xl font-black text-gray-900 mb-4 leading-tight">About FinanceFlow</h1>
+                    <p className="text-modern-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
                         FinanceFlow is more than just software — we're your financial automation ally. Discover who we are, why we build, and how we help businesses grow.
                     </p>
                 </div>
             </section>
 
-            {/* Mission & Vision */}
-            <section className="py-16">
-                <div className="container mx-auto px-4 max-w-6xl grid md:grid-cols-2 gap-12">
-                    <div className="p-8 bg-white rounded-2xl shadow-md hover:shadow-xl transition animate-fade-up">
-                        <h3 className="text-2xl font-bold text-brand-purple mb-4">Our Mission</h3>
-                        <p className="text-gray-700 leading-relaxed">
+            {/* Modern Mission & Vision */}
+            <section className="py-12">
+                <div className="container mx-auto px-4 max-w-6xl grid md:grid-cols-2 gap-8">
+                    <div className="group p-6 bg-white/90 backdrop-blur-lg rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 animate-fade-up border border-gray-100/50 hover:scale-105">
+                        <div className="relative mb-4">
+                            <div className="absolute -inset-2 bg-gradient-to-r from-brand-purple/20 to-brand-tertiary-purple/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                            <div className="relative w-16 h-16 bg-gradient-to-br from-brand-purple/15 via-white/80 to-brand-tertiary-purple/15 rounded-2xl flex items-center justify-center border border-brand-purple/30 shadow-lg">
+                                <Sparkles className="h-8 w-8 text-brand-purple" />
+                            </div>
+                        </div>
+                        <h3 className="text-modern-2xl font-black text-brand-purple mb-3">Our Mission</h3>
+                        <p className="text-gray-700 leading-relaxed text-modern-base">
                             To revolutionize financial management using intelligent automation — reducing manual tasks, improving efficiency, and enabling businesses to focus on what matters most: growth and innovation.
                         </p>
                     </div>
-                    <div className="p-8 bg-white rounded-2xl shadow-md hover:shadow-xl transition animate-fade-up delay-100">
-                        <h3 className="text-2xl font-bold text-brand-purple mb-4">Our Vision</h3>
-                        <p className="text-gray-700 leading-relaxed">
+                    <div className="group p-6 bg-white/90 backdrop-blur-lg rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 animate-fade-up delay-100 border border-gray-100/50 hover:scale-105">
+                        <div className="relative mb-4">
+                            <div className="absolute -inset-2 bg-gradient-to-r from-brand-purple/20 to-brand-tertiary-purple/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                            <div className="relative w-16 h-16 bg-gradient-to-br from-brand-purple/15 via-white/80 to-brand-tertiary-purple/15 rounded-2xl flex items-center justify-center border border-brand-purple/30 shadow-lg">
+                                <Zap className="h-8 w-8 text-brand-purple" />
+                            </div>
+                        </div>
+                        <h3 className="text-modern-2xl font-black text-brand-purple mb-3">Our Vision</h3>
+                        <p className="text-gray-700 leading-relaxed text-modern-base">
                             To become the most trusted financial automation platform, empowering businesses of all sizes to manage finances, track performance, and scale operations — securely and seamlessly.
                         </p>
                     </div>
                 </div>
             </section>
 
-            {/* Core Values */}
-            <section className="py-16 text-center bg-white animate-fade-up">
+            {/* Modern Core Values */}
+            <section className="py-12 text-center bg-white/50 backdrop-blur-sm animate-fade-up">
                 <div className="container mx-auto px-4">
-                    <h2 className="text-3xl font-bold text-gray-900 mb-6">What Drives Us</h2>
-                    <p className="text-gray-600 max-w-xl mx-auto mb-12">
+                    <h2 className="text-responsive-3xl font-black text-gray-900 mb-4">What Drives Us</h2>
+                    <p className="text-gray-600 max-w-xl mx-auto mb-10 text-modern-base leading-relaxed">
                         These values guide our decisions, shape our culture, and define how we serve our customers.
                     </p>
 
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
                         {["Trust & Transparency", "Innovation with Purpose", "User-First Thinking", "Security & Integrity", "Simplicity", "Sustainable Growth"].map((value, idx) => (
-                            <div key={idx} className="bg-gray-100 rounded-xl p-6 hover:bg-gray-200 transition">
-                                <Check className="w-5 h-5 text-brand-purple mb-2" />
-                                <p className="text-sm font-medium text-gray-700">{value}</p>
+                            <div key={idx} className="group bg-white/80 backdrop-blur-sm rounded-2xl p-5 hover:bg-white transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl border border-gray-100/50">
+                                <div className="relative mb-3">
+                                    <Check className="w-5 h-5 text-brand-purple group-hover:scale-110 transition-transform duration-300 mx-auto" />
+                                    <div className="absolute inset-0 bg-brand-purple/20 rounded-full blur opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                </div>
+                                <p className="text-modern-sm font-bold text-gray-700 group-hover:text-brand-purple transition-colors duration-300">{value}</p>
                             </div>
                         ))}
                     </div>
                 </div>
             </section>
 
-            {/* Team Section */}
-            <section className="py-20">
+            {/* Modern Team Section */}
+            <section className="py-16">
                 <div className="container mx-auto px-4 text-center">
-                    <h2 className="text-3xl font-bold text-gray-900 mb-4 animate-fade-up">Meet Our Team</h2>
-                    <p className="text-gray-600 max-w-xl mx-auto mb-12 animate-fade-up">
+                    <div className="inline-flex items-center gap-3 bg-gradient-to-r from-brand-purple/15 via-white/70 to-brand-tertiary-purple/15 px-6 py-3 rounded-full border border-brand-purple/30 mb-6 backdrop-blur-lg shadow-lg">
+                        <Sparkles className="h-5 w-5 text-brand-purple animate-pulse" />
+                        <span className="text-modern-base font-black text-brand-purple tracking-wide">Our Amazing Team</span>
+                    </div>
+                    <h2 className="text-responsive-3xl font-black text-gray-900 mb-3 animate-fade-up">Meet Our Team</h2>
+                    <p className="text-gray-600 max-w-xl mx-auto mb-10 animate-fade-up text-modern-base leading-relaxed">
                         A diverse team of creators, engineers, and problem-solvers who are passionate about building the future of financial technology and business automation.
                     </p>
 
-                    <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-10 max-w-6xl mx-auto animate-fade-up delay-100">
+                    <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-6xl mx-auto animate-fade-up delay-100">
                         {teamMembers.map((member, idx) => (
                             <div
                                 key={idx}
-                                className="text-center bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition"
+                                className="group text-center bg-white/90 backdrop-blur-lg rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 border border-gray-100/50"
                             >
-                                <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-brand-purple to-brand-tertiary-purple flex items-center justify-center text-white text-2xl font-bold">
-                                    {member.initial}
+                                <div className="relative mb-4">
+                                    <div className="absolute -inset-2 bg-gradient-to-r from-brand-purple/30 to-brand-tertiary-purple/30 rounded-full blur opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                                    <div className="relative w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-brand-purple to-brand-tertiary-purple flex items-center justify-center text-white text-modern-xl font-bold shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                        {member.initial}
+                                    </div>
                                 </div>
-                                <h4 className="mt-4 text-lg font-semibold text-gray-900">{member.name}</h4>
-                                <p className="text-sm text-gray-600">{member.role}</p>
+                                <h4 className="text-modern-lg font-bold text-gray-900 group-hover:text-brand-purple transition-colors duration-300">{member.name}</h4>
+                                <p className="text-modern-sm text-gray-600">{member.role}</p>
                             </div>
                         ))}
                     </div>
                 </div>
             </section>
 
-            {/* CTA */}
-            <section className="py-16 bg-gradient-to-r from-brand-purple to-brand-tertiary-purple text-white text-center">
-                <div className="container mx-auto px-4">
-                    <h3 className="text-3xl font-bold mb-4 animate-fade-up">Let's Build Something Together</h3>
-                    <p className="text-lg mb-8 animate-fade-up delay-100">We're always open to collaboration, feedback, or just a quick hello.</p>
+            {/* Modern CTA */}
+            <section className="py-12 bg-gradient-to-r from-brand-purple via-brand-tertiary-purple to-brand-purple text-white text-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-brand-purple/90 to-brand-tertiary-purple/90"></div>
+                <div className="container mx-auto px-4 relative z-10">
+                    <h3 className="text-responsive-3xl font-black mb-3 animate-fade-up flex items-center justify-center gap-3">
+                        <Heart className="h-8 w-8 animate-pulse" />
+                        Let's Build Something Together
+                    </h3>
+                    <p className="text-modern-lg mb-6 animate-fade-up delay-100 max-w-2xl mx-auto">We're always open to collaboration, feedback, or just a quick hello.</p>
                     <Link to="/contact">
-                        <button className="bg-white text-brand-purple px-6 py-3 rounded-full font-semibold shadow hover:bg-gray-100 transition animate-fade-up delay-200">
-                            Contact Us
+                        <button className="group relative bg-white text-brand-purple px-8 py-4 rounded-2xl font-bold shadow-xl hover:shadow-2xl transition-all duration-300 animate-fade-up delay-200 hover:scale-105">
+                            <span className="flex items-center gap-2">
+                                Contact Us
+                                <ArrowRight className="h-5 w-5 group-hover:translate-x-2 transition-transform duration-300" />
+                            </span>
                         </button>
                     </Link>
                 </div>

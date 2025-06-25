@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import { 
   BarChart3, 
@@ -113,48 +112,45 @@ const Features = () => {
   };
 
   return (
-    <section id="features" className="relative py-32 md:py-40 bg-gradient-to-b from-white via-gray-50/20 to-white overflow-hidden">
-      {/* Ultra-modern background decorations */}
+    <section id="features" className="relative py-20 md:py-24 bg-gradient-to-b from-white via-gray-50/20 to-white overflow-hidden">
+      {/* Modern background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Geometric shapes */}
-        <div className="absolute top-20 left-10 w-4 h-4 bg-brand-purple/20 rotate-45 animate-spin" style={{animationDuration: '10s'}}></div>
-        <div className="absolute top-40 right-20 w-6 h-6 bg-brand-tertiary-purple/30 rounded-full animate-bounce" style={{animationDuration: '3s'}}></div>
-        <div className="absolute bottom-40 left-20 w-3 h-3 bg-purple-400/25 rotate-45 animate-pulse"></div>
+        <div className="absolute top-20 left-10 w-3 h-3 bg-brand-purple/20 rotate-45 animate-spin" style={{animationDuration: '8s'}}></div>
+        <div className="absolute top-40 right-20 w-4 h-4 bg-brand-tertiary-purple/30 rounded-full animate-bounce" style={{animationDuration: '3s'}}></div>
+        <div className="absolute bottom-40 left-20 w-2 h-2 bg-purple-400/25 rotate-45 animate-pulse"></div>
         
-        {/* Enhanced gradient orbs */}
-        <div className="absolute top-1/4 -left-1/3 w-[500px] h-[500px] bg-gradient-to-r from-brand-purple/8 to-brand-tertiary-purple/8 rounded-full blur-3xl opacity-60"></div>
-        <div className="absolute bottom-1/4 -right-1/3 w-[500px] h-[500px] bg-gradient-to-r from-brand-tertiary-purple/6 to-purple-200/15 rounded-full blur-3xl opacity-50"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-r from-brand-purple/5 to-brand-tertiary-purple/5 rounded-full blur-2xl animate-pulse"></div>
+        <div className="absolute top-1/4 -left-1/3 w-[400px] h-[400px] bg-gradient-to-r from-brand-purple/6 to-brand-tertiary-purple/6 rounded-full blur-3xl opacity-60"></div>
+        <div className="absolute bottom-1/4 -right-1/3 w-[400px] h-[400px] bg-gradient-to-r from-brand-tertiary-purple/4 to-purple-200/10 rounded-full blur-3xl opacity-50"></div>
       </div>
 
       <div className="container mx-auto px-4 md:px-6 relative z-10">
-        {/* Revolutionary header design */}
-        <div className="text-center mb-24">
-          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-brand-purple/15 via-white/70 to-brand-tertiary-purple/15 px-8 py-4 rounded-full border border-brand-purple/30 mb-8 backdrop-blur-lg shadow-lg hover:scale-105 transition-transform duration-300">
+        {/* Modern header design */}
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-brand-purple/15 via-white/70 to-brand-tertiary-purple/15 px-6 py-3 rounded-full border border-brand-purple/30 mb-6 backdrop-blur-lg shadow-lg hover:scale-105 transition-transform duration-300">
             <div className="relative">
-              <Sparkles className="h-6 w-6 text-brand-purple animate-pulse" />
+              <Sparkles className="h-5 w-5 text-brand-purple animate-pulse" />
               <div className="absolute inset-0 bg-brand-purple/30 rounded-full blur animate-ping"></div>
             </div>
-            <span className="text-lg font-black text-brand-purple tracking-wide">Revolutionary Features</span>
-            <Zap className="h-5 w-5 text-brand-tertiary-purple animate-bounce" />
+            <span className="text-modern-base font-black text-brand-purple tracking-wide">Revolutionary Features</span>
+            <Zap className="h-4 w-4 text-brand-tertiary-purple animate-bounce" />
           </div>
           
-          <h2 className="text-5xl md:text-6xl lg:text-7xl font-black mb-8 tracking-tight leading-[0.9]">
+          <h2 className="text-responsive-4xl md:text-responsive-5xl lg:text-responsive-6xl font-black mb-6 tracking-tight leading-[0.9]">
             <span className="block">Everything you need to</span>
             <span className="block bg-gradient-to-r from-brand-purple via-brand-tertiary-purple via-purple-600 to-brand-purple bg-clip-text text-transparent animate-gradient bg-300%">
               dominate your finances
             </span>
           </h2>
           
-          <p className="text-2xl md:text-3xl text-gray-600 max-w-4xl mx-auto leading-relaxed font-light">
+          <p className="text-modern-xl md:text-modern-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed font-light">
             Experience the future of financial management with our 
             <span className="font-bold text-brand-purple"> AI-powered platform</span> designed for 
             modern businesses who demand excellence.
           </p>
         </div>
         
-        {/* Revolutionary features grid */}
-        <div ref={featuresRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-12">
+        {/* Modern features grid */}
+        <div ref={featuresRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-10">
           {features.map((feature, index) => (
             <div 
               key={index} 
@@ -164,87 +160,83 @@ const Features = () => {
               <div className={`absolute -inset-2 bg-gradient-to-br ${feature.gradient} rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-xl`}></div>
               <div className="absolute -inset-1 bg-gradient-to-br from-white/50 to-gray-100/50 rounded-3xl opacity-0 group-hover:opacity-60 transition-opacity duration-500 blur"></div>
               
-              <div className="relative bg-white/95 backdrop-blur-xl p-10 rounded-3xl border border-gray-200/50 hover:border-brand-purple/30 transition-all duration-700 hover:scale-105 group-hover:bg-white/98 shadow-xl hover:shadow-3xl group-hover:shadow-brand-purple/20">
-                {/* Enhanced icon with multiple effects */}
-                <div className="relative mb-8">
+              <div className="relative bg-white/95 backdrop-blur-xl p-8 rounded-3xl border border-gray-200/50 hover:border-brand-purple/30 transition-all duration-700 hover:scale-105 group-hover:bg-white/98 shadow-xl hover:shadow-3xl group-hover:shadow-brand-purple/20">
+                {/* Enhanced icon */}
+                <div className="relative mb-6">
                   <div className="absolute -inset-3 bg-gradient-to-r from-brand-purple/20 to-brand-tertiary-purple/20 rounded-3xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-700 animate-pulse"></div>
-                  <div className="absolute -inset-1 bg-gradient-to-r from-brand-purple/10 to-brand-tertiary-purple/10 rounded-2xl opacity-0 group-hover:opacity-60 transition-opacity duration-500"></div>
-                  <div className="relative w-24 h-24 bg-gradient-to-br from-brand-purple/15 via-white/80 to-brand-tertiary-purple/15 rounded-3xl flex items-center justify-center group-hover:scale-110 transition-transform duration-700 border border-brand-purple/30 shadow-lg">
+                  <div className="relative w-20 h-20 bg-gradient-to-br from-brand-purple/15 via-white/80 to-brand-tertiary-purple/15 rounded-3xl flex items-center justify-center group-hover:scale-110 transition-transform duration-700 border border-brand-purple/30 shadow-lg">
                     {feature.icon}
-                    <div className="absolute top-2 right-2 w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-lg"></div>
+                    <div className="absolute top-2 right-2 w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-lg"></div>
                   </div>
                 </div>
                 
                 {/* Content with enhanced typography */}
-                <div className="space-y-6">
+                <div className="space-y-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="text-2xl font-black text-gray-800 group-hover:text-brand-purple transition-colors duration-300 mb-2 leading-tight">
+                      <h3 className="text-modern-xl font-black text-gray-800 group-hover:text-brand-purple transition-colors duration-300 mb-2 leading-tight">
                         {feature.title}
                       </h3>
-                      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold ${getAccentClass(feature.accentColor)} border mb-4`}>
+                      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-modern-xs font-bold ${getAccentClass(feature.accentColor)} border mb-3`}>
                         <Target className="h-3 w-3" />
                         {feature.stats}
                       </div>
                     </div>
-                    <ArrowRight className="h-6 w-6 text-brand-purple opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300 mt-1" />
+                    <ArrowRight className="h-5 w-5 text-brand-purple opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300 mt-1" />
                   </div>
                   
-                  <p className="text-gray-600 leading-relaxed text-lg font-light">
+                  <p className="text-gray-600 leading-relaxed text-modern-base font-light">
                     {feature.description}
                   </p>
                   
                   {/* Enhanced highlight badge */}
                   <div className="flex items-center justify-between">
-                    <div className="inline-flex items-center gap-3 bg-gradient-to-r from-brand-purple/15 via-white/70 to-brand-tertiary-purple/15 px-5 py-3 rounded-full border border-brand-purple/30 backdrop-blur-sm shadow-inner">
+                    <div className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-purple/15 via-white/70 to-brand-tertiary-purple/15 px-4 py-2 rounded-full border border-brand-purple/30 backdrop-blur-sm shadow-inner">
                       <div className="relative">
-                        <div className="w-3 h-3 bg-brand-purple rounded-full animate-pulse"></div>
+                        <div className="w-2 h-2 bg-brand-purple rounded-full animate-pulse"></div>
                         <div className="absolute inset-0 bg-brand-purple/50 rounded-full blur animate-ping"></div>
                       </div>
-                      <span className="text-sm font-bold text-brand-purple">{feature.highlight}</span>
+                      <span className="text-modern-xs font-bold text-brand-purple">{feature.highlight}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-400">
-                      <Clock className="h-4 w-4" />
-                      <span className="text-xs font-medium">Live</span>
+                    <div className="flex items-center gap-1 text-gray-400">
+                      <Clock className="h-3 w-3" />
+                      <span className="text-modern-xs font-medium">Live</span>
                     </div>
                   </div>
                 </div>
                 
-                {/* Enhanced hover overlay */}
-                <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-brand-purple/8 via-transparent to-brand-tertiary-purple/8 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
-                
                 {/* Corner accent */}
-                <div className="absolute top-4 right-4 w-8 h-8 bg-gradient-to-br from-brand-purple/20 to-brand-tertiary-purple/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
-                  <Shield className="h-4 w-4 text-brand-purple" />
+                <div className="absolute top-4 right-4 w-6 h-6 bg-gradient-to-br from-brand-purple/20 to-brand-tertiary-purple/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center">
+                  <Shield className="h-3 w-3 text-brand-purple" />
                 </div>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Ultra-modern call to action */}
-        <div className="text-center mt-32">
-          <div className="relative inline-flex flex-col sm:flex-row items-center gap-8 bg-gradient-to-r from-brand-purple/10 via-white/80 to-brand-tertiary-purple/10 p-12 rounded-3xl border border-brand-purple/30 backdrop-blur-xl shadow-2xl hover:scale-105 transition-transform duration-500">
+        {/* Modern call to action */}
+        <div className="text-center mt-20">
+          <div className="relative inline-flex flex-col sm:flex-row items-center gap-6 bg-gradient-to-r from-brand-purple/10 via-white/80 to-brand-tertiary-purple/10 p-8 rounded-3xl border border-brand-purple/30 backdrop-blur-xl shadow-2xl hover:scale-105 transition-transform duration-500">
             {/* Background glow */}
-            <div className="absolute -inset-6 bg-gradient-to-r from-brand-purple/20 to-brand-tertiary-purple/20 rounded-3xl blur-2xl opacity-30 animate-pulse"></div>
+            <div className="absolute -inset-4 bg-gradient-to-r from-brand-purple/20 to-brand-tertiary-purple/20 rounded-3xl blur-2xl opacity-30 animate-pulse"></div>
             
             <div className="relative flex flex-col text-center sm:text-left z-10">
-              <h3 className="text-3xl font-black text-gray-800 mb-3 flex items-center gap-3">
-                <Sparkles className="h-8 w-8 text-brand-purple animate-spin" style={{animationDuration: '3s'}} />
+              <h3 className="text-modern-2xl font-black text-gray-800 mb-2 flex items-center gap-2">
+                <Sparkles className="h-6 w-6 text-brand-purple animate-spin" style={{animationDuration: '3s'}} />
                 Ready to revolutionize your business?
               </h3>
-              <p className="text-xl text-gray-600 font-light">Join thousands of forward-thinking businesses already using FinanceFlow</p>
+              <p className="text-modern-lg text-gray-600 font-light">Join thousands of forward-thinking businesses already using FinanceFlow</p>
             </div>
-            <div className="relative flex gap-4 z-10">
+            <div className="relative flex gap-3 z-10">
               <div className="group relative">
                 <div className="absolute -inset-1 bg-gradient-to-r from-brand-purple to-brand-tertiary-purple rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-300"></div>
-                <button className="relative px-8 py-4 bg-gradient-to-r from-brand-purple to-brand-tertiary-purple text-white rounded-2xl font-bold hover:scale-105 transition-transform duration-300 shadow-xl text-lg">
-                  <Zap className="inline h-5 w-5 mr-2 animate-pulse" />
+                <button className="relative px-6 py-3 bg-gradient-to-r from-brand-purple to-brand-tertiary-purple text-white rounded-2xl font-bold hover:scale-105 transition-transform duration-300 shadow-xl text-modern-base">
+                  <Zap className="inline h-4 w-4 mr-2 animate-pulse" />
                   Start Free Trial
                 </button>
               </div>
-              <button className="px-8 py-4 border-2 border-brand-purple/30 text-brand-purple rounded-2xl font-bold hover:bg-brand-purple/10 transition-colors duration-300 hover:scale-105 transform text-lg backdrop-blur-sm">
-                <Shield className="inline h-5 w-5 mr-2" />
+              <button className="px-6 py-3 border-2 border-brand-purple/30 text-brand-purple rounded-2xl font-bold hover:bg-brand-purple/10 transition-colors duration-300 hover:scale-105 transform text-modern-base backdrop-blur-sm">
+                <Shield className="inline h-4 w-4 mr-2" />
                 View Demo
               </button>
             </div>
