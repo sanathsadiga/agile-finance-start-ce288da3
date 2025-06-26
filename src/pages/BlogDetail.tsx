@@ -35,7 +35,8 @@ const BlogDetail = () => {
       const related = allBlogs
         .filter(b => b.id !== blogData.id && (
           b.category === blogData.category ||
-          b.tags.some(tag => blogData.tags.includes(tag))
+          (blogData.tags && Array.isArray(blogData.tags) && b.tags && Array.isArray(b.tags) && 
+           b.tags.some(tag => blogData.tags.includes(tag)))
         ))
         .slice(0, 3);
       setRelatedBlogs(related);
@@ -101,7 +102,7 @@ const BlogDetail = () => {
       <Helmet>
         <title>{blog.title} | FinanceFlow Blog</title>
         <meta name="description" content={blog.excerpt} />
-        <meta name="keywords" content={blog.tags.join(', ')} />
+        <meta name="keywords" content={blog.tags && Array.isArray(blog.tags) ? blog.tags.join(', ') : ''} />
         
         {/* Open Graph */}
         <meta property="og:title" content={blog.title} />
@@ -120,7 +121,7 @@ const BlogDetail = () => {
         <meta property="article:published_time" content={blog.published_at} />
         <meta property="article:author" content={blog.author_name} />
         <meta property="article:section" content={blog.category} />
-        {blog.tags.map(tag => (
+        {blog.tags && Array.isArray(blog.tags) && blog.tags.map(tag => (
           <meta key={tag} property="article:tag" content={tag} />
         ))}
 
@@ -239,7 +240,7 @@ const BlogDetail = () => {
               </Card>
 
               {/* Tags */}
-              {blog.tags.length > 0 && (
+              {blog.tags && Array.isArray(blog.tags) && blog.tags.length > 0 && (
                 <div className="mt-8">
                   <div className="flex items-center gap-2 mb-4">
                     <Tag className="h-4 w-4 text-gray-500" />
