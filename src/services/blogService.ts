@@ -20,17 +20,17 @@ export interface Blog {
 export const blogService = {
   // Get all published blogs
   getBlogs: async (): Promise<Blog[]> => {
-    return api.get<Blog[]>('/blogs');
+    return api.get<Blog[]>('/api/blogs');
   },
 
   // Get blog by slug
   getBlogBySlug: async (slug: string): Promise<Blog> => {
-    return api.get<Blog>(`/blogs/${slug}`);
+    return api.get<Blog>(`/api/blogs/${slug}`);
   },
 
   // Admin endpoints
   getAllBlogs: async (): Promise<Blog[]> => {
-    return api.get<Blog[]>('/admin/blogs');
+    return api.get<Blog[]>('/api/blogs/');
   },
 
   createBlog: async (blog: Omit<Blog, 'id' | 'created_at' | 'updated_at'>): Promise<Blog> => {
@@ -38,10 +38,10 @@ export const blogService = {
   },
 
   updateBlog: async (id: string, blog: Partial<Blog>): Promise<Blog> => {
-    return api.put<Blog>(`/admin/blogs/${id}`, blog);
+    return api.put<Blog>(`/api/blogs/${id}`, blog);
   },
 
   deleteBlog: async (id: string): Promise<void> => {
-    return api.delete(`/admin/blogs/${id}`);
+    return api.delete(`/api/blogs/${id}`);
   },
 };
