@@ -34,7 +34,7 @@ export const blogService = {
   },
 
   createBlog: async (blog: Omit<Blog, 'id' | 'created_at' | 'updated_at'>): Promise<Blog> => {
-    return api.post<Blog>('/admin/blogs', blog);
+    return api.post<Blog>('/api/blogs', blog);
   },
 
   updateBlog: async (id: string, blog: Partial<Blog>): Promise<Blog> => {
