@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -21,6 +22,8 @@ import Aboutus from "./pages/aboutus";
 import NotFound from "./pages/NotFound";
 import ContactUs from "./pages/ContactUsPage";
 import Blog from "./pages/BlogPage";
+import BlogDetail from "./pages/BlogDetail";
+import BlogEditor from "./pages/BlogEditor";
 import Community from "./pages/Community";
 import Documentation from "./pages/Documentation";
 import ScrollToTop from './components/ScrollToTop';
@@ -147,8 +150,13 @@ const App = () => {
               />
               <Route path="/aboutus" element={<Aboutus />} />
               <Route path="/contactus" element={<ContactUs />} />
+              
+              {/* Blog routes */}
               <Route path="/blog" element={<Blog />} />
-              <Route path="/blog/:slug" element={<Blog />} />
+              <Route path="/blog/:slug" element={<BlogDetail />} />
+              <Route path="/editor/blogs/new" element={<BlogEditor />} />
+              <Route path="/editor/blogs/:id" element={<BlogEditor />} />
+              
               <Route path="/community" element={<Community />} />
               <Route path="/documentation" element={<Documentation />} />
               <Route path="/pricing" element={<PricingPage />} />
