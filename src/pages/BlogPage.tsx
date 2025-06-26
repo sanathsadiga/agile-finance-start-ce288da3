@@ -43,6 +43,7 @@ const BlogPage = () => {
     try {
       setIsLoading(true);
       const blogsData = await blogService.getBlogs();
+      console.log('Loaded blogs:', blogsData);
       setBlogs(blogsData);
       setFilteredBlogs(blogsData);
     } catch (error: any) {
@@ -66,9 +67,9 @@ const BlogPage = () => {
 
     if (searchTerm) {
       filtered = filtered.filter(blog =>
-        blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        blog.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        blog.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+        blog.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        blog.excerpt?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (blog.tags && Array.isArray(blog.tags) && blog.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
       );
     }
 
@@ -220,7 +221,7 @@ const BlogPage = () => {
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2 text-sm text-gray-500">
                         <Calendar className="h-4 w-4" />
-                        {new Date(blog.published_at).toLocaleDateString()}
+                        {blog.published_at ? new Date(blog.published_at).toLocaleDateString() : 'Draft'}
                         {blog.author_name && (
                           <>
                             <span>•</span>
@@ -280,12 +281,12 @@ const BlogPage = () => {
                   <CardContent>
                     <div className="flex items-center justify-between">
                       <div className="flex flex-wrap gap-1">
-                        {blog.tags.slice(0, 2).map((tag) => (
+                        {blog.tags && Array.isArray(blog.tags) && blog.tags.slice(0, 2).map((tag) => (
                           <Badge key={tag} variant="secondary" className="text-xs">
                             {tag}
                           </Badge>
                         ))}
-                        {blog.tags.length > 2 && (
+                        {blog.tags && Array.isArray(blog.tags) && blog.tags.length > 2 && (
                           <Badge variant="secondary" className="text-xs">
                             +{blog.tags.length - 2}
                           </Badge>
