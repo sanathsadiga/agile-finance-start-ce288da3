@@ -99,7 +99,7 @@ const BlogEditor = () => {
         title: blog.title,
         metaDescription: blog.metaDescription,
         content: blog.content || '',
-        status: statusOverride || blog.status || 'DRAFT',
+        status: (statusOverride || blog.status || 'DRAFT') as Blog['status'],
         imageUrls: blog.imageUrls || [],
       };
 

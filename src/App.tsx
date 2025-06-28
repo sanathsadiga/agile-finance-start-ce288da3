@@ -24,6 +24,7 @@ import ContactUs from "./pages/ContactUsPage";
 import Blog from "./pages/BlogPage";
 import BlogDetail from "./pages/BlogDetail";
 import BlogEditor from "./pages/BlogEditor";
+import BlogAdmin from "./pages/BlogAdmin";
 import Community from "./pages/Community";
 import Documentation from "./pages/Documentation";
 import ScrollToTop from './components/ScrollToTop';
