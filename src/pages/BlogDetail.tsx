@@ -7,8 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Calendar, User, Tag, Share2, Edit } from 'lucide-react';
+import { ArrowLeft, Calendar, Share2 } from 'lucide-react';
 import Footer from '@/components/Footer';
 
 const BlogDetail = () => {
@@ -30,14 +29,10 @@ const BlogDetail = () => {
       const blogData = await blogService.getBlogBySlug(blogSlug);
       setBlog(blogData);
       
-      // Load related blogs (same category or similar tags)
-      const allBlogs = await blogService.getBlogs();
+      // Load related blogs
+      const allBlogs = await blogService.getPublishedBlogs();
       const related = allBlogs
-        .filter(b => b.id !== blogData.id && (
-          b.category === blogData.category ||
-          (blogData.tags && Array.isArray(blogData.tags) && b.tags && Array.isArray(b.tags) && 
-           b.tags.some(tag => blogData.tags.includes(tag)))
-        ))
+        .filter(b => b.id !== blogData.id)
         .slice(0, 3);
       setRelatedBlogs(related);
     } catch (error: any) {
@@ -55,7 +50,7 @@ const BlogDetail = () => {
     if (navigator.share) {
       navigator.share({
         title: blog?.title,
-        text: blog?.excerpt,
+        text: blog?.metaDescription,
         url: window.location.href,
       });
     } else {
@@ -95,35 +90,33 @@ const BlogDetail = () => {
     );
   }
 
-  const publishedDate = new Date(blog.published_at);
+  const publishedDate = new Date(blog.createdAt);
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Helmet>
         <title>{blog.title} | FinanceFlow Blog</title>
-        <meta name="description" content={blog.excerpt} />
-        <meta name="keywords" content={blog.tags && Array.isArray(blog.tags) ? blog.tags.join(', ') : ''} />
+        <meta name="description" content={blog.metaDescription} />
         
         {/* Open Graph */}
         <meta property="og:title" content={blog.title} />
-        <meta property="og:description" content={blog.excerpt} />
-        <meta property="og:image" content={blog.featured_image} />
+        <meta property="og:description" content={blog.metaDescription} />
+        {blog.imageUrls && blog.imageUrls.length > 0 && (
+          <meta property="og:image" content={blog.imageUrls[0]} />
+        )}
         <meta property="og:url" content={window.location.href} />
         <meta property="og:type" content="article" />
         
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={blog.title} />
-        <meta name="twitter:description" content={blog.excerpt} />
-        <meta name="twitter:image" content={blog.featured_image} />
+        <meta name="twitter:description" content={blog.metaDescription} />
+        {blog.imageUrls && blog.imageUrls.length > 0 && (
+          <meta name="twitter:image" content={blog.imageUrls[0]} />
+        )}
         
         {/* Article metadata */}
-        <meta property="article:published_time" content={blog.published_at} />
-        <meta property="article:author" content={blog.author_name} />
-        <meta property="article:section" content={blog.category} />
-        {blog.tags && Array.isArray(blog.tags) && blog.tags.map(tag => (
-          <meta key={tag} property="article:tag" content={tag} />
-        ))}
+        <meta property="article:published_time" content={blog.createdAt} />
 
         {/* Structured data */}
         <script type="application/ld+json">
@@ -131,22 +124,14 @@ const BlogDetail = () => {
             "@context": "https://schema.org",
             "@type": "BlogPosting",
             "headline": blog.title,
-            "description": blog.excerpt,
-            "image": blog.featured_image,
-            "author": {
-              "@type": "Person",
-              "name": blog.author_name
-            },
+            "description": blog.metaDescription,
+            "image": blog.imageUrls && blog.imageUrls.length > 0 ? blog.imageUrls[0] : undefined,
             "publisher": {
               "@type": "Organization",
               "name": "FinanceFlow",
-              "logo": {
-                "@type": "ImageObject",
-                "url": "https://financeflow.com/images/logo.png"
-              }
             },
-            "datePublished": blog.published_at,
-            "dateModified": blog.updated_at,
+            "datePublished": blog.createdAt,
+            "dateModified": blog.updatedAt,
             "mainEntityOfPage": {
               "@type": "WebPage",
               "@id": window.location.href
@@ -167,43 +152,27 @@ const BlogDetail = () => {
                 </Button>
               </Link>
               
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleShare}>
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share
-                </Button>
-                <Link to={`/editor/blogs/${blog.id}`}>
-                  <Button variant="outline" size="sm">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                </Link>
-              </div>
+              <Button variant="outline" size="sm" onClick={handleShare}>
+                <Share2 className="h-4 w-4 mr-2" />
+                Share
+              </Button>
             </div>
 
             {/* Blog Header */}
             <div className="text-center mb-8">
-              {blog.category && (
-                <Badge variant="secondary" className="mb-4">
-                  {blog.category}
-                </Badge>
-              )}
+              <Badge variant="secondary" className="mb-4">
+                {blog.status}
+              </Badge>
               
               <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
                 {blog.title}
               </h1>
               
               <p className="text-xl text-gray-600 mb-6 leading-relaxed">
-                {blog.excerpt}
+                {blog.metaDescription}
               </p>
 
               <div className="flex items-center justify-center gap-6 text-sm text-gray-500">
-                {blog.author_name && (
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    {blog.author_name}
-                  </div>
-                )}
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
                   {publishedDate.toLocaleDateString('en-US', {
@@ -216,10 +185,10 @@ const BlogDetail = () => {
             </div>
 
             {/* Featured Image */}
-            {blog.featured_image && (
+            {blog.imageUrls && blog.imageUrls.length > 0 && (
               <div className="rounded-2xl overflow-hidden shadow-xl mb-8">
                 <img
-                  src={blog.featured_image}
+                  src={blog.imageUrls[0]}
                   alt={blog.title}
                   className="w-full h-96 object-cover"
                 />
@@ -238,23 +207,6 @@ const BlogDetail = () => {
                   />
                 </CardContent>
               </Card>
-
-              {/* Tags */}
-              {blog.tags && Array.isArray(blog.tags) && blog.tags.length > 0 && (
-                <div className="mt-8">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Tag className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-700">Tags</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {blog.tags.map((tag) => (
-                      <Badge key={tag} variant="outline">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Sidebar */}
@@ -272,9 +224,9 @@ const BlogDetail = () => {
                           className="block group"
                         >
                           <div className="space-y-2">
-                            {relatedBlog.featured_image && (
+                            {relatedBlog.imageUrls && relatedBlog.imageUrls.length > 0 && (
                               <img
-                                src={relatedBlog.featured_image}
+                                src={relatedBlog.imageUrls[0]}
                                 alt={relatedBlog.title}
                                 className="w-full h-24 object-cover rounded-lg"
                               />
@@ -283,7 +235,7 @@ const BlogDetail = () => {
                               {relatedBlog.title}
                             </h4>
                             <p className="text-xs text-gray-500">
-                              {new Date(relatedBlog.published_at).toLocaleDateString()}
+                              {new Date(relatedBlog.createdAt).toLocaleDateString()}
                             </p>
                           </div>
                         </Link>

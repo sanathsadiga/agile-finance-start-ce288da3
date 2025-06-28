@@ -6,35 +6,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { blogService, Blog } from '@/services/blogService';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Calendar, User, ArrowRight, ChevronLeft, ChevronRight, Plus, Edit, Trash2 } from 'lucide-react';
+import { Search, Calendar, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import Footer from '@/components/Footer';
 
 const BlogPage = () => {
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [filteredBlogs, setFilteredBlogs] = useState<Blog[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const { toast } = useToast();
   
   const blogsPerPage = 6;
 
-  // Load blogs from API
+  // Load published blogs from API
   useEffect(() => {
     loadBlogs();
   }, []);
@@ -42,8 +29,8 @@ const BlogPage = () => {
   const loadBlogs = async () => {
     try {
       setIsLoading(true);
-      const blogsData = await blogService.getBlogs();
-      console.log('Loaded blogs:', blogsData);
+      const blogsData = await blogService.getPublishedBlogs();
+      console.log('Loaded published blogs:', blogsData);
       setBlogs(blogsData);
       setFilteredBlogs(blogsData);
     } catch (error: any) {
@@ -58,28 +45,20 @@ const BlogPage = () => {
     }
   };
 
-  // Get unique categories
-  const categories = ['All', ...new Set(blogs.map(blog => blog.category).filter(Boolean))];
-
-  // Filter blogs based on search and category
+  // Filter blogs based on search
   useEffect(() => {
     let filtered = blogs;
 
     if (searchTerm) {
       filtered = filtered.filter(blog =>
         blog.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        blog.excerpt?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (blog.tags && Array.isArray(blog.tags) && blog.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
+        blog.metaDescription?.toLowerCase().includes(searchTerm.toLowerCase())
       );
-    }
-
-    if (selectedCategory !== 'All') {
-      filtered = filtered.filter(blog => blog.category === selectedCategory);
     }
 
     setFilteredBlogs(filtered);
     setCurrentPage(1); // Reset to first page when filtering
-  }, [searchTerm, selectedCategory, blogs]);
+  }, [searchTerm, blogs]);
 
   // Pagination
   const totalPages = Math.ceil(filteredBlogs.length / blogsPerPage);
@@ -89,29 +68,6 @@ const BlogPage = () => {
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleDeleteBlog = async (blogId: string) => {
-    try {
-      setDeletingId(blogId);
-      await blogService.deleteBlog(blogId);
-      
-      toast({
-        title: 'Blog deleted',
-        description: 'The blog post has been successfully deleted.',
-      });
-      
-      // Refresh the blog list
-      await loadBlogs();
-    } catch (error: any) {
-      toast({
-        title: 'Error deleting blog',
-        description: error.message || 'Failed to delete the blog post',
-        variant: 'destructive',
-      });
-    } finally {
-      setDeletingId(null);
-    }
   };
 
   if (isLoading) {
@@ -143,9 +99,9 @@ const BlogPage = () => {
               Insights, tips, and best practices for managing your business finances
             </p>
             
-            {/* Search and Create Button */}
-            <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-              <div className="relative flex-1">
+            {/* Search */}
+            <div className="max-w-md mx-auto">
+              <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   type="text"
@@ -155,12 +111,6 @@ const BlogPage = () => {
                   className="pl-10"
                 />
               </div>
-              <Link to="/editor/blogs/new">
-                <Button className="bg-gradient-to-r from-brand-purple to-brand-tertiary-purple whitespace-nowrap">
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Post
-                </Button>
-              </Link>
             </div>
           </div>
         </div>
@@ -168,49 +118,29 @@ const BlogPage = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
-          {/* Categories */}
-          <div className="flex flex-wrap gap-2 mb-8 justify-center">
-            {categories.map((category) => (
-              <Button
-                key={category}
-                variant={selectedCategory === category ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedCategory(category)}
-                className="mb-2"
-              >
-                {category}
-              </Button>
-            ))}
-          </div>
-
           {/* Blog Grid */}
           {currentBlogs.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-600 text-lg mb-4">No blog posts found.</p>
-              {searchTerm ? (
+              <p className="text-gray-600 text-lg mb-4">
+                {searchTerm ? 'No blog posts found matching your search.' : 'No blog posts available.'}
+              </p>
+              {searchTerm && (
                 <Button
                   variant="outline"
                   onClick={() => setSearchTerm('')}
-                  className="mr-4"
                 >
                   Clear Search
                 </Button>
-              ) : null}
-              <Link to="/editor/blogs/new">
-                <Button className="bg-gradient-to-r from-brand-purple to-brand-tertiary-purple">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create First Post
-                </Button>
-              </Link>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
               {currentBlogs.map((blog) => (
                 <Card key={blog.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
-                  {blog.featured_image && (
+                  {blog.imageUrls && blog.imageUrls.length > 0 && (
                     <div className="aspect-video overflow-hidden">
                       <img
-                        src={blog.featured_image}
+                        src={blog.imageUrls[0]}
                         alt={blog.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
@@ -218,53 +148,9 @@ const BlogPage = () => {
                   )}
                   
                   <CardHeader>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <Calendar className="h-4 w-4" />
-                        {blog.published_at ? new Date(blog.published_at).toLocaleDateString() : 'Draft'}
-                        {blog.author_name && (
-                          <>
-                            <span>•</span>
-                            <User className="h-4 w-4" />
-                            {blog.author_name}
-                          </>
-                        )}
-                      </div>
-                      
-                      {/* Action Buttons */}
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Link to={`/editor/blogs/${blog.id}`}>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Blog Post</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete "{blog.title}"? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteBlog(blog.id)}
-                                disabled={deletingId === blog.id}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                {deletingId === blog.id ? 'Deleting...' : 'Delete'}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+                      <Calendar className="h-4 w-4" />
+                      {new Date(blog.createdAt).toLocaleDateString()}
                     </div>
                     
                     <CardTitle className="line-clamp-2 hover:text-brand-purple transition-colors">
@@ -274,24 +160,15 @@ const BlogPage = () => {
                     </CardTitle>
                     
                     <CardDescription className="line-clamp-3">
-                      {blog.excerpt}
+                      {blog.metaDescription}
                     </CardDescription>
                   </CardHeader>
 
                   <CardContent>
                     <div className="flex items-center justify-between">
-                      <div className="flex flex-wrap gap-1">
-                        {blog.tags && Array.isArray(blog.tags) && blog.tags.slice(0, 2).map((tag) => (
-                          <Badge key={tag} variant="secondary" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                        {blog.tags && Array.isArray(blog.tags) && blog.tags.length > 2 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{blog.tags.length - 2}
-                          </Badge>
-                        )}
-                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        {blog.status}
+                      </Badge>
                       
                       <Link to={`/blog/${blog.slug}`}>
                         <Button variant="ghost" size="sm" className="p-0 h-auto">

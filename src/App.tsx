@@ -151,11 +151,14 @@ const App = () => {
               <Route path="/aboutus" element={<Aboutus />} />
               <Route path="/contactus" element={<ContactUs />} />
               
-              {/* Blog routes */}
+              {/* Public Blog routes */}
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogDetail />} />
-              <Route path="/editor/blogs/new" element={<BlogEditor />} />
-              <Route path="/editor/blogs/:id" element={<BlogEditor />} />
+              
+              {/* Admin Blog routes */}
+              <Route path="/blog/editor/blog" element={<BlogAdmin />} />
+              <Route path="/blog/editor/blog/add" element={<BlogEditor />} />
+              <Route path="/blog/editor/blog/:id/edit" element={<BlogEditor />} />
               
               <Route path="/community" element={<Community />} />
               <Route path="/documentation" element={<Documentation />} />

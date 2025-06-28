@@ -9,11 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { blogService, Blog } from '@/services/blogService';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Save, Eye, Upload, X } from 'lucide-react';
+import { ArrowLeft, Save, Eye, X } from 'lucide-react';
 import Footer from '@/components/Footer';
 
 const BlogEditor = () => {
@@ -24,141 +24,102 @@ const BlogEditor = () => {
 
   const [blog, setBlog] = useState<Partial<Blog>>({
     title: '',
-    slug: '',
-    excerpt: '',
+    metaDescription: '',
     content: '',
-    author_name: '',
-    featured_image: '',
-    category: '',
-    tags: [],
-    published: false,
+    status: 'DRAFT',
+    imageUrls: [],
   });
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setSaving] = useState(false);
-  const [tagInput, setTagInput] = useState('');
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>('');
+  const [imageUrl, setImageUrl] = useState('');
 
-  // Load blog for editing
   useEffect(() => {
-    if (isEditing && id) {
+    if (isEditing && id && id !== 'add') {
       loadBlog(id);
     }
   }, [id, isEditing]);
 
-  // Generate slug from title
-  useEffect(() => {
-    if (!isEditing && blog.title && !blog.slug) {
-      const generatedSlug = blog.title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
-      setBlog(prev => ({ ...prev, slug: generatedSlug }));
-    }
-  }, [blog.title, isEditing]);
-
   const loadBlog = async (blogId: string) => {
     try {
       setIsLoading(true);
-      const blogData = await blogService.getBlogBySlug(blogId);
-      setBlog(blogData);
-      setImagePreview(blogData.featured_image || '');
+      // For editing, we need to get by ID, but the API uses slug
+      // We'll need to get all blogs and find by ID for now
+      const allBlogs = await blogService.getAllBlogs();
+      const blogData = allBlogs.find(b => b.id === blogId);
+      if (blogData) {
+        setBlog(blogData);
+        setImageUrl(blogData.imageUrls && blogData.imageUrls.length > 0 ? blogData.imageUrls[0] : '');
+      } else {
+        throw new Error('Blog not found');
+      }
     } catch (error: any) {
       toast({
         title: 'Error loading blog',
         description: error.message,
         variant: 'destructive',
       });
+      navigate('/blog/editor/blog');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleImageUpload = async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const response = await fetch('/api/blogs/upload-image', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to upload image');
-      }
-
-      const imagePath = await response.text();
-      return imagePath;
-    } catch (error) {
-      console.error('Image upload failed:', error);
-      throw error;
-    }
-  };
-
-  const handleFeaturedImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleAddTag = () => {
-    if (tagInput.trim() && !blog.tags?.includes(tagInput.trim())) {
+  const handleAddImage = () => {
+    if (imageUrl.trim()) {
       setBlog(prev => ({
         ...prev,
-        tags: [...(prev.tags || []), tagInput.trim()]
+        imageUrls: [...(prev.imageUrls || []), imageUrl.trim()]
       }));
-      setTagInput('');
+      setImageUrl('');
     }
   };
 
-  const handleRemoveTag = (tagToRemove: string) => {
+  const handleRemoveImage = (indexToRemove: number) => {
     setBlog(prev => ({
       ...prev,
-      tags: prev.tags?.filter(tag => tag !== tagToRemove) || []
+      imageUrls: prev.imageUrls?.filter((_, index) => index !== indexToRemove) || []
     }));
   };
 
-  const handleSave = async (publish: boolean = false) => {
+  const handleSave = async (statusOverride?: string) => {
+    if (!blog.title || !blog.metaDescription) {
+      toast({
+        title: 'Missing required fields',
+        description: 'Please fill in the title and meta description.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       setSaving(true);
 
-      let featuredImageUrl = blog.featured_image || '';
-
-      // Upload featured image if new file selected
-      if (imageFile) {
-        featuredImageUrl = await handleImageUpload(imageFile);
-      }
-
       const blogData = {
-        ...blog,
-        featured_image: featuredImageUrl,
-        published: publish,
+        title: blog.title,
+        metaDescription: blog.metaDescription,
+        content: blog.content || '',
+        status: statusOverride || blog.status || 'DRAFT',
+        imageUrls: blog.imageUrls || [],
       };
 
       let savedBlog: Blog;
-      if (isEditing && id) {
+      if (isEditing && id && id !== 'add') {
         savedBlog = await blogService.updateBlog(id, blogData);
       } else {
-        savedBlog = await blogService.createBlog(blogData as Omit<Blog, 'id' | 'created_at' | 'updated_at'>);
+        savedBlog = await blogService.createBlog(blogData);
       }
 
       toast({
         title: 'Success',
-        description: `Blog ${publish ? 'published' : 'saved'} successfully`,
+        description: `Blog ${statusOverride === 'PUBLISHED' ? 'published' : 'saved'} successfully`,
       });
 
-      if (!isEditing) {
-        navigate(`/editor/blogs/${savedBlog.id}`);
+      if (!isEditing || id === 'add') {
+        navigate(`/blog/editor/blog/${savedBlog.id}/edit`);
+      } else {
+        // Reload the blog to get updated data
+        setBlog(savedBlog);
       }
     } catch (error: any) {
       toast({
@@ -200,29 +161,28 @@ const BlogEditor = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Helmet>
-        <title>{isEditing ? 'Edit Blog' : 'Create New Blog'} | FinanceFlow</title>
+        <title>{isEditing && id !== 'add' ? 'Edit Blog' : 'Create New Blog'} | FinanceFlow</title>
         <meta name="description" content="Create and edit blog posts for FinanceFlow" />
       </Helmet>
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate('/blog')}
+                onClick={() => navigate('/blog/editor/blog')}
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Blogs
+                Back to Blog Management
               </Button>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
-                  {isEditing ? 'Edit Blog Post' : 'Create New Blog Post'}
+                  {isEditing && id !== 'add' ? 'Edit Blog Post' : 'Create New Blog Post'}
                 </h1>
                 <p className="text-gray-600">
-                  {isEditing ? 'Update your blog post' : 'Write and publish your new blog post'}
+                  {isEditing && id !== 'add' ? 'Update your blog post' : 'Write and publish your new blog post'}
                 </p>
               </div>
             </div>
@@ -230,14 +190,14 @@ const BlogEditor = () => {
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={() => handleSave(false)}
+                onClick={() => handleSave()}
                 disabled={isSaving}
               >
                 <Save className="h-4 w-4 mr-2" />
                 Save Draft
               </Button>
               <Button
-                onClick={() => handleSave(true)}
+                onClick={() => handleSave('PUBLISHED')}
                 disabled={isSaving}
                 className="bg-gradient-to-r from-brand-purple to-brand-tertiary-purple"
               >
@@ -248,9 +208,7 @@ const BlogEditor = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Basic Info */}
               <Card>
                 <CardHeader>
                   <CardTitle>Basic Information</CardTitle>
@@ -269,25 +227,11 @@ const BlogEditor = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="slug">URL Slug</Label>
-                    <Input
-                      id="slug"
-                      value={blog.slug}
-                      onChange={(e) => setBlog(prev => ({ ...prev, slug: e.target.value }))}
-                      placeholder="auto-generated-from-title"
-                      className="mt-1"
-                    />
-                    <p className="text-sm text-gray-500 mt-1">
-                      URL: financeflow.com/blog/{blog.slug || 'your-slug'}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="excerpt">Excerpt</Label>
+                    <Label htmlFor="metaDescription">Meta Description *</Label>
                     <Textarea
-                      id="excerpt"
-                      value={blog.excerpt}
-                      onChange={(e) => setBlog(prev => ({ ...prev, excerpt: e.target.value }))}
+                      id="metaDescription"
+                      value={blog.metaDescription}
+                      onChange={(e) => setBlog(prev => ({ ...prev, metaDescription: e.target.value }))}
                       placeholder="Brief description for search engines and previews..."
                       className="mt-1"
                       rows={3}
@@ -296,7 +240,6 @@ const BlogEditor = () => {
                 </CardContent>
               </Card>
 
-              {/* Content Editor */}
               <Card>
                 <CardHeader>
                   <CardTitle>Content</CardTitle>
@@ -314,127 +257,73 @@ const BlogEditor = () => {
               </Card>
             </div>
 
-            {/* Sidebar */}
             <div className="space-y-6">
-              {/* Featured Image */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Featured Image</CardTitle>
+                  <CardTitle>Images</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {imagePreview && (
-                    <div className="relative">
-                      <img
-                        src={imagePreview}
-                        alt="Featured image preview"
-                        className="w-full h-48 object-cover rounded-lg"
-                      />
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="absolute top-2 right-2"
-                        onClick={() => {
-                          setImagePreview('');
-                          setImageFile(null);
-                          setBlog(prev => ({ ...prev, featured_image: '' }));
-                        }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                  {blog.imageUrls && blog.imageUrls.length > 0 && (
+                    <div className="space-y-2">
+                      {blog.imageUrls.map((url, index) => (
+                        <div key={index} className="relative">
+                          <img
+                            src={url}
+                            alt={`Image ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-lg"
+                          />
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="absolute top-2 right-2"
+                            onClick={() => handleRemoveImage(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
                     </div>
                   )}
 
-                  <div>
-                    <Label htmlFor="featured-image">Upload Image</Label>
+                  <div className="flex gap-2">
                     <Input
-                      id="featured-image"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFeaturedImageChange}
-                      className="mt-1"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      placeholder="Image URL"
                     />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="image-url">Or Image URL</Label>
-                    <Input
-                      id="image-url"
-                      value={blog.featured_image}
-                      onChange={(e) => {
-                        setBlog(prev => ({ ...prev, featured_image: e.target.value }));
-                        setImagePreview(e.target.value);
-                      }}
-                      placeholder="https://example.com/image.jpg"
-                      className="mt-1"
-                    />
+                    <Button type="button" onClick={handleAddImage} size="sm" disabled={!imageUrl.trim()}>
+                      Add
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Metadata */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Metadata</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="author">Author</Label>
-                    <Input
-                      id="author"
-                      value={blog.author_name}
-                      onChange={(e) => setBlog(prev => ({ ...prev, author_name: e.target.value }))}
-                      placeholder="Author name"
-                      className="mt-1"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="category">Category</Label>
-                    <Input
-                      id="category"
-                      value={blog.category}
-                      onChange={(e) => setBlog(prev => ({ ...prev, category: e.target.value }))}
-                      placeholder="e.g., Finance, Business, Tips"
-                      className="mt-1"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="tags">Tags</Label>
-                    <div className="flex gap-2 mt-1">
-                      <Input
-                        id="tags"
-                        value={tagInput}
-                        onChange={(e) => setTagInput(e.target.value)}
-                        placeholder="Add tag..."
-                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                      />
-                      <Button type="button" onClick={handleAddTag} size="sm">
-                        Add
-                      </Button>
-                    </div>
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {blog.tags?.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="flex items-center gap-1">
-                          {tag}
-                          <X className="h-3 w-3 cursor-pointer" onClick={() => handleRemoveTag(tag)} />
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Status */}
               <Card>
                 <CardHeader>
                   <CardTitle>Status</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="status">Publication Status</Label>
+                    <Select
+                      value={blog.status}
+                      onValueChange={(value) => setBlog(prev => ({ ...prev, status: value as Blog['status'] }))}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="DRAFT">Draft</SelectItem>
+                        <SelectItem value="PUBLISHED">Published</SelectItem>
+                        <SelectItem value="ARCHIVED">Archived</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Publication Status</span>
-                    <Badge variant={blog.published ? "default" : "secondary"}>
-                      {blog.published ? "Published" : "Draft"}
+                    <span className="text-sm font-medium">Current Status</span>
+                    <Badge variant={blog.status === 'PUBLISHED' ? "default" : "secondary"}>
+                      {blog.status || 'DRAFT'}
                     </Badge>
                   </div>
                 </CardContent>
