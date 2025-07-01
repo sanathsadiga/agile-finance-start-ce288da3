@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -34,6 +33,8 @@ import Customers from "./pages/Customers";
 import InvoicePayment from "./pages/InvoicePayment";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailed from "./pages/PaymentFailed";
+import AdminLogin from "./pages/AdminLogin";
+import AdminOperations from "./pages/AdminOperations";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,6 +63,10 @@ const App = () => {
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/signup/details" element={<SignupDetails />} />
+              
+              {/* Admin routes */}
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/admin/operations" element={<AdminOperations />} />
               
               {/* Payment routes - public access */}
               <Route path="/payment/pay/invoice/:publicId" element={<InvoicePayment />} />
