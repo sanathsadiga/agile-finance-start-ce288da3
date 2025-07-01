@@ -67,6 +67,9 @@ const App = () => {
               {/* Admin routes */}
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin/operations" element={<AdminOperations />} />
+              <Route path="/admin/blog" element={<BlogAdmin />} />
+              <Route path="/admin/blog/add" element={<BlogEditor />} />
+              <Route path="/admin/blog/:id/edit" element={<BlogEditor />} />
               
               {/* Payment routes - public access */}
               <Route path="/payment/pay/invoice/:publicId" element={<InvoicePayment />} />
@@ -160,11 +163,6 @@ const App = () => {
               {/* Public Blog routes */}
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogDetail />} />
-              
-              {/* Admin Blog routes */}
-              <Route path="/blog/editor/blog" element={<BlogAdmin />} />
-              <Route path="/blog/editor/blog/add" element={<BlogEditor />} />
-              <Route path="/blog/editor/blog/:id/edit" element={<BlogEditor />} />
               
               <Route path="/community" element={<Community />} />
               <Route path="/documentation" element={<Documentation />} />

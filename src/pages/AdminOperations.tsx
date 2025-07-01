@@ -33,7 +33,7 @@ const AdminOperations = () => {
       title: 'Blog Management',
       description: 'Create, edit, delete and manage blog posts',
       icon: FileText,
-      action: () => navigate('/blog/editor/blog'),
+      action: () => navigate('/admin/blog'),
       color: 'bg-blue-500 hover:bg-blue-600',
       stats: '56 Posts'
     },

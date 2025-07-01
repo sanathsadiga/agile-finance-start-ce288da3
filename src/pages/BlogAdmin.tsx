@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +18,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { blogService, Blog } from '@/services/blogService';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Calendar, ArrowRight, ChevronLeft, ChevronRight, Plus, Edit, Trash2, ArrowLeft } from 'lucide-react';
+import { Search, Calendar, ArrowRight, ChevronLeft, ChevronRight, Plus, Edit, Trash2, ArrowLeft, FileText, Shield, LogOut } from 'lucide-react';
 
 const BlogAdmin = () => {
   const [blogs, setBlogs] = useState<Blog[]>([]);
@@ -30,12 +29,19 @@ const BlogAdmin = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const blogsPerPage = 6;
 
   useEffect(() => {
+    // Check if admin is logged in
+    const adminToken = localStorage.getItem('adminToken');
+    if (!adminToken) {
+      navigate('/admin/login');
+      return;
+    }
     loadBlogs();
-  }, []);
+  }, [navigate]);
 
   const loadBlogs = async () => {
     try {
@@ -120,40 +126,69 @@ const BlogAdmin = () => {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('adminToken');
+    toast({
+      title: 'Logged out',
+      description: 'You have been logged out from admin panel',
+    });
+    navigate('/admin/login');
+  };
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-purple mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading blog posts...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading blog posts...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-900 text-white">
       <Helmet>
-        <title>Blog Management | FinanceFlow</title>
+        <title>Blog Management | Admin Panel</title>
         <meta name="description" content="Manage your blog posts - create, edit, and publish articles." />
       </Helmet>
 
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-4 mb-6">
-              <Link to="/blog">
-                <Button variant="outline" size="sm">
+      {/* Admin Header */}
+      <div className="bg-gray-800 border-b border-gray-700">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link to="/admin/operations">
+                <Button variant="outline" size="sm" className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Public Blog
+                  Back to Operations
                 </Button>
               </Link>
-              <div>
-                <h1 className="text-4xl font-bold text-gray-900">Blog Management</h1>
-                <p className="text-xl text-gray-600">Create, edit, and manage your blog posts</p>
+              <div className="flex items-center gap-3">
+                <FileText className="h-8 w-8 text-blue-500" />
+                <div>
+                  <h1 className="text-2xl font-bold text-white">Blog Management</h1>
+                  <p className="text-gray-400 text-sm">Create, edit, and manage blog posts</p>
+                </div>
               </div>
             </div>
             
+            <Button
+              variant="outline"
+              onClick={handleLogout}
+              className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Search and Actions */}
+      <div className="bg-gray-800 border-b border-gray-700">
+        <div className="container mx-auto px-4 py-6">
+          <div className="max-w-6xl mx-auto">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -162,11 +197,11 @@ const BlogAdmin = () => {
                   placeholder="Search articles..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400"
                 />
               </div>
-              <Link to="/blog/editor/blog/add">
-                <Button className="bg-gradient-to-r from-brand-purple to-brand-tertiary-purple whitespace-nowrap">
+              <Link to="/admin/blog/add">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap">
                   <Plus className="h-4 w-4 mr-2" />
                   New Post
                 </Button>
@@ -178,6 +213,7 @@ const BlogAdmin = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
+          {/* Status Filter */}
           <div className="flex flex-wrap gap-2 mb-8 justify-center">
             {statuses.map((status) => (
               <Button
@@ -185,7 +221,11 @@ const BlogAdmin = () => {
                 variant={selectedStatus === status ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedStatus(status)}
-                className="mb-2"
+                className={`mb-2 ${
+                  selectedStatus === status 
+                    ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                    : "border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+                }`}
               >
                 {status}
               </Button>
@@ -194,18 +234,18 @@ const BlogAdmin = () => {
 
           {currentBlogs.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-600 text-lg mb-4">No blog posts found.</p>
+              <p className="text-gray-400 text-lg mb-4">No blog posts found.</p>
               {searchTerm ? (
                 <Button
                   variant="outline"
                   onClick={() => setSearchTerm('')}
-                  className="mr-4"
+                  className="mr-4 border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
                 >
                   Clear Search
                 </Button>
               ) : null}
-              <Link to="/blog/editor/blog/add">
-                <Button className="bg-gradient-to-r from-brand-purple to-brand-tertiary-purple">
+              <Link to="/admin/blog/add">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                   <Plus className="h-4 w-4 mr-2" />
                   Create First Post
                 </Button>
@@ -214,9 +254,9 @@ const BlogAdmin = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
               {currentBlogs.map((blog) => (
-                <Card key={blog.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
+                <Card key={blog.id} className="bg-gray-800 border-gray-700 hover:border-gray-600 transition-all duration-200 hover:shadow-lg group">
                   {blog.imageUrls && blog.imageUrls.length > 0 && (
-                    <div className="aspect-video overflow-hidden">
+                    <div className="aspect-video overflow-hidden rounded-t-lg">
                       <img
                         src={blog.imageUrls[0]}
                         alt={blog.title}
@@ -227,37 +267,37 @@ const BlogAdmin = () => {
                   
                   <CardHeader>
                     <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <div className="flex items-center gap-2 text-sm text-gray-400">
                         <Calendar className="h-4 w-4" />
                         {new Date(blog.createdAt).toLocaleDateString()}
                       </div>
                       
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Link to={`/blog/editor/blog/${blog.id}/edit`}>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Link to={`/admin/blog/${blog.id}/edit`}>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-blue-400 hover:text-blue-300 hover:bg-gray-700">
                             <Edit className="h-4 w-4" />
                           </Button>
                         </Link>
                         
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive">
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-400 hover:text-red-300 hover:bg-gray-700">
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent>
+                          <AlertDialogContent className="bg-gray-800 border-gray-700">
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Blog Post</AlertDialogTitle>
-                              <AlertDialogDescription>
+                              <AlertDialogTitle className="text-white">Delete Blog Post</AlertDialogTitle>
+                              <AlertDialogDescription className="text-gray-400">
                                 Are you sure you want to delete "{blog.title}"? This action cannot be undone.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogCancel className="border-gray-600 text-gray-300 hover:bg-gray-700">Cancel</AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={() => handleDeleteBlog(blog.id)}
                                 disabled={deletingId === blog.id}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                className="bg-red-600 text-white hover:bg-red-700"
                               >
                                 {deletingId === blog.id ? 'Deleting...' : 'Delete'}
                               </AlertDialogAction>
@@ -267,23 +307,23 @@ const BlogAdmin = () => {
                       </div>
                     </div>
                     
-                    <CardTitle className="line-clamp-2">
+                    <CardTitle className="line-clamp-2 text-white">
                       {blog.title}
                     </CardTitle>
                     
-                    <CardDescription className="line-clamp-3">
+                    <CardDescription className="line-clamp-3 text-gray-400">
                       {blog.metaDescription}
                     </CardDescription>
                   </CardHeader>
 
                   <CardContent>
                     <div className="flex items-center justify-between">
-                      <Badge className={getStatusColor(blog.status)}>
+                      <Badge className={`${getStatusColor(blog.status)} border-0`}>
                         {blog.status}
                       </Badge>
                       
                       <Link to={`/blog/${blog.slug}`}>
-                        <Button variant="ghost" size="sm" className="p-0 h-auto">
+                        <Button variant="ghost" size="sm" className="p-0 h-auto text-gray-400 hover:text-white">
                           View
                           <ArrowRight className="h-4 w-4 ml-1" />
                         </Button>
@@ -295,6 +335,7 @@ const BlogAdmin = () => {
             </div>
           )}
 
+          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-center items-center space-x-2">
               <Button
@@ -302,6 +343,7 @@ const BlogAdmin = () => {
                 size="sm"
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
+                className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
               >
                 <ChevronLeft className="h-4 w-4" />
                 Previous
@@ -313,7 +355,11 @@ const BlogAdmin = () => {
                   variant={currentPage === page ? "default" : "outline"}
                   size="sm"
                   onClick={() => handlePageChange(page)}
-                  className="min-w-[40px]"
+                  className={`min-w-[40px] ${
+                    currentPage === page 
+                      ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                      : "border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
+                  }`}
                 >
                   {page}
                 </Button>
@@ -324,6 +370,7 @@ const BlogAdmin = () => {
                 size="sm"
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
+                className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
               >
                 Next
                 <ChevronRight className="h-4 w-4" />
