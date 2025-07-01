@@ -28,25 +28,33 @@ const AdminLogin = () => {
   const onSubmit = async (data: AdminLoginFormData) => {
     setLoading(true);
     try {
-      // For now, we'll use a simple check - you can integrate with your backend later
-      if (data.email === 'admin@financeflow.com' && data.password === 'admin123') {
-        localStorage.setItem('adminToken', 'admin-logged-in');
-        toast({
-          title: 'Admin login successful',
-          description: 'Welcome to admin panel',
-        });
-        navigate('/admin/operations');
-      } else {
-        toast({
-          title: 'Login failed',
-          description: 'Invalid admin credentials',
-          variant: 'destructive',
-        });
+      const response = await fetch('http://localhost:8080/api/v1/internal/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Invalid admin credentials');
       }
+
+      const token = await response.text();
+      localStorage.setItem('adminToken', token);
+      
+      toast({
+        title: 'Admin login successful',
+        description: 'Welcome to admin panel',
+      });
+      navigate('/admin/operations');
     } catch (err) {
       toast({
         title: 'Login failed',
-        description: 'An unexpected error occurred',
+        description: 'Invalid admin credentials',
         variant: 'destructive',
       });
     } finally {
@@ -80,7 +88,7 @@ const AdminLogin = () => {
               <label htmlFor="email" className="text-sm font-medium text-white">Admin Email</label>
               <Input
                 id="email"
-                placeholder="admin@financeflow.com"
+                placeholder="admin@finance.com"
                 type="email"
                 autoComplete="email"
                 {...register('email', { 
